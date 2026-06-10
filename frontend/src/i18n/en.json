@@ -1,0 +1,48 @@
+{
+  "app": { "name": "MEAMA PRMTR", "tagline": "Coffee CRM" },
+  "nav": {
+    "overview": "Overview",
+    "customers": "Customers",
+    "products": "Products",
+    "stock": "Stock",
+    "campaigns": "Campaigns",
+    "ads": "Ads",
+    "reports": "Reports",
+    "alerts": "Alerts",
+    "actions": "Action Queue"
+  },
+  "header": {
+    "alerts": "Alerts",
+    "language": "Language",
+    "logout": "Log out"
+  },
+  "common": {
+    "loading": "Loading…",
+    "empty": "Nothing here yet",
+    "empty_hint": "Data appears once the pipeline runs.",
+    "search": "Search"
+  },
+  "pages": {
+    "overview": { "title": "Command Overview", "subtitle": "Retail KPIs (e-commerce + brand stores)" },
+    "customers": { "title": "Customer 360", "subtitle": "Segments, lifecycle, lifetime value" },
+    "customerDetail": { "title": "Customer", "back": "Back to customers" },
+    "products": { "title": "Product Intelligence", "subtitle": "Top SKUs and affinities" },
+    "stock": { "title": "Stock", "subtitle": "Cover and reorder points" },
+    "campaigns": { "title": "Campaign Intelligence", "subtitle": "Promotions and AI drafts" },
+    "ads": { "title": "Ads (Meta)", "subtitle": "Spend and ROAS in USD" },
+    "reports": { "title": "Reports", "subtitle": "Exportable views" },
+    "alerts": { "title": "Alerts", "subtitle": "Operational signals" },
+    "actions": { "title": "Action Queue", "subtitle": "Next best actions" },
+    "login": { "title": "Sign in", "email": "Email", "password": "Password", "submit": "Sign in", "invite_only": "Invite-only access." }
+  },
+  "promo": {
+    "title": "Promo calculator",
+    "discount": "Discount %",
+    "calculate": "Calculate",
+    "margin": "Effective margin",
+    "minPrice": "Min safe price",
+    "status": "Status",
+    "green": "OK",
+    "red": "Blocked"
+  }
+}

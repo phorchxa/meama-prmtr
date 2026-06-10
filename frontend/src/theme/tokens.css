@@ -1,0 +1,18 @@
+/* MEAMA design tokens — CSS custom properties mirror tailwind.config colors.
+   Use the Tailwind `meama-*` classes in components; these vars are for raw CSS. */
+:root {
+  --meama-brown: #3e1f00;
+  --meama-gold: #c8963e;
+  --meama-cream: #faf3e0;
+  --meama-charcoal: #1c1c1e;
+  --meama-green: #2d6a4f; /* positive */
+  --meama-red: #c0392b; /* negative / critical */
+  --meama-blue: #2c3e7a; /* info / Meta */
+  --meama-muted: #6b6b6b;
+}
+
+/* Numeric/tabular surfaces should use tabular figures for alignment. */
+.tabular {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}

@@ -1,0 +1,39 @@
+name: Nightly
+
+# 02:00 Asia/Tbilisi (GMT+4) = 22:00 UTC
+on:
+  schedule:
+    - cron: "0 22 * * *"
+  workflow_dispatch: {}
+
+jobs:
+  nightly:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      META_SYSTEM_USER_TOKEN: ${{ secrets.META_SYSTEM_USER_TOKEN }}
+      META_AD_ACCOUNT_ID: ${{ secrets.META_AD_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: pip install -e .
+
+      # --- Pipeline steps (stubbed in this scaffold; implemented in Phase 1) ---
+      - name: ETL (CSV -> DuckDB -> Supabase)
+        run: python ../pipeline/run_etl.py
+      - name: Recompute customer_metrics (RFM, status)
+        run: python -m app.jobs.nightly_metrics
+      - name: Claude scoring (churn_score / cluster_tag / upsell_tag)
+        run: python -m app.jobs.claude_scoring
+      - name: Evaluate alert rules -> Telegram
+        run: python -m app.jobs.alert_runner
