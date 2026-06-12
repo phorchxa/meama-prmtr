@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MEAMA PRMTR — Intelligence for every cup sold</title>
+<meta name="description" content="Commercial CRM and intelligence platform for Meama Georgia. E-Commerce + Brand Stores · 121K orders · Real-time command.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --meama-brown:    #3E1F00;
+    --meama-gold:     #C8963E;
+    --meama-cream:    #FAF3E0;
+    --meama-charcoal: #1C1C1E;
+    --meama-green:    #2D6A4F;
+    --meama-red:      #C0392B;
+    --meama-blue:     #2C3E7A;
+    --meama-muted:    #6B6B6B;
+    --u: 4px; /* base unit */
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Inter', 'DejaVu Sans', sans-serif;
+    color: var(--meama-charcoal);
+    background: var(--meama-cream);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .num { font-variant-numeric: tabular-nums; }
+
+  /* ---------- Layout primitives ---------- */
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 calc(var(--u) * 6); }
+  section { padding: calc(var(--u) * 24) 0; }
+
+  .kicker {
+    display: inline-flex; align-items: center; gap: calc(var(--u) * 2);
+    font-size: 12px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--meama-gold); margin-bottom: calc(var(--u) * 4);
+  }
+  .kicker::before {
+    content: ""; display: block; width: calc(var(--u) * 7); height: 2px; background: var(--meama-gold);
+  }
+  .kicker .ka { letter-spacing: 0.06em; font-weight: 500; opacity: 0.75; text-transform: none; }
+
+  h2 {
+    font-size: clamp(28px, 4vw, 40px); font-weight: 800; letter-spacing: -0.02em;
+    line-height: 1.15; margin-bottom: calc(var(--u) * 4);
+  }
+  .section-sub { font-size: 17px; color: var(--meama-muted); max-width: 560px; margin-bottom: calc(var(--u) * 12); }
+  .dark .section-sub { color: rgba(250, 243, 224, 0.6); }
+
+  /* ---------- Fade-in on scroll ---------- */
+  .fade {
+    opacity: 0; transform: translateY(calc(var(--u) * 5));
+    transition: opacity 0.7s ease, transform 0.7s ease;
+  }
+  .fade.visible { opacity: 1; transform: translateY(0); }
+  .fade.d1 { transition-delay: 0.08s; }
+  .fade.d2 { transition-delay: 0.16s; }
+  .fade.d3 { transition-delay: 0.24s; }
+  @media (prefers-reduced-motion: reduce) {
+    .fade { opacity: 1; transform: none; transition: none; }
+    html { scroll-behavior: auto; }
+  }
+
+  /* ---------- Nav ---------- */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    background: rgba(28, 28, 30, 0.92);
+    -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(200, 150, 62, 0.18);
+  }
+  .nav-inner {
+    max-width: 1120px; margin: 0 auto; padding: 0 calc(var(--u) * 6);
+    height: calc(var(--u) * 16);
+    display: flex; align-items: center; justify-content: space-between; gap: calc(var(--u) * 6);
+  }
+  .logo {
+    font-weight: 800; font-size: 17px; letter-spacing: 0.12em; color: var(--meama-gold);
+    text-decoration: none; white-space: nowrap; display: flex; align-items: baseline; gap: calc(var(--u) * 2);
+  }
+  .logo span { font-weight: 400; font-size: 11px; letter-spacing: 0.22em; color: rgba(250, 243, 224, 0.55); }
+  .nav-links { display: flex; align-items: center; gap: calc(var(--u) * 7); list-style: none; }
+  .nav-links a {
+    color: rgba(250, 243, 224, 0.78); text-decoration: none; font-size: 13.5px; font-weight: 500;
+    transition: color 0.2s ease;
+  }
+  .nav-links a:hover { color: var(--meama-gold); }
+
+  .btn-gold {
+    display: inline-block; background: var(--meama-gold); color: var(--meama-charcoal);
+    font-weight: 700; font-size: 14px; text-decoration: none;
+    padding: calc(var(--u) * 2.5) calc(var(--u) * 6); border-radius: 999px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+    white-space: nowrap;
+  }
+  .btn-gold:hover { background: #d6a64e; transform: translateY(-1px); box-shadow: 0 8px 24px rgba(200, 150, 62, 0.35); }
+
+  .nav-toggle {
+    display: none; background: none; border: 0; cursor: pointer; padding: calc(var(--u) * 2);
+  }
+  .nav-toggle svg { display: block; }
+
+  /* ---------- Hero ---------- */
+  .hero {
+    min-height: 100vh; display: flex; align-items: center;
+    background: var(--meama-charcoal); color: var(--meama-cream);
+    position: relative; overflow: hidden;
+    padding: calc(var(--u) * 32) 0 calc(var(--u) * 24);
+  }
+  .hero-bg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+  .hero-content { position: relative; z-index: 1; max-width: 720px; }
+  .hero .wordmark {
+    font-size: clamp(40px, 7vw, 76px); font-weight: 800; letter-spacing: 0.04em;
+    color: var(--meama-gold); line-height: 1.05; margin-bottom: calc(var(--u) * 5);
+  }
+  .hero .wordmark small {
+    display: block; font-size: clamp(13px, 1.6vw, 17px); font-weight: 500;
+    letter-spacing: 0.42em; color: rgba(250, 243, 224, 0.55); margin-bottom: calc(var(--u) * 3);
+  }
+  .hero .tagline {
+    font-size: clamp(20px, 2.6vw, 28px); font-weight: 600; letter-spacing: -0.01em;
+    margin-bottom: calc(var(--u) * 4);
+  }
+  .hero .tagline-ka { font-size: 15px; color: rgba(250, 243, 224, 0.5); margin-bottom: calc(var(--u) * 6); }
+  .hero .subcopy {
+    display: flex; flex-wrap: wrap; gap: calc(var(--u) * 3); align-items: center;
+    font-size: 14.5px; color: rgba(250, 243, 224, 0.7); margin-bottom: calc(var(--u) * 10);
+  }
+  .hero .subcopy .dot { width: 4px; height: 4px; border-radius: 50%; background: var(--meama-gold); }
+  .hero .btn-gold { font-size: 15px; padding: calc(var(--u) * 3.5) calc(var(--u) * 8); }
+  .hero .btn-note { display: block; margin-top: calc(var(--u) * 4); font-size: 12.5px; color: rgba(250, 243, 224, 0.4); }
+
+  /* ---------- Problem ---------- */
+  .problem { background: var(--meama-cream); }
+  .cards-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: calc(var(--u) * 6); }
+  .pcard {
+    background: #fff; border: 1px solid rgba(62, 31, 0, 0.08); border-radius: calc(var(--u) * 3);
+    padding: calc(var(--u) * 8);
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+  }
+  .pcard:hover { transform: translateY(calc(var(--u) * -1)); box-shadow: 0 16px 40px rgba(62, 31, 0, 0.10); }
+  .pcard .icon {
+    width: calc(var(--u) * 12); height: calc(var(--u) * 12); border-radius: calc(var(--u) * 2.5);
+    background: rgba(192, 57, 43, 0.08); color: var(--meama-red);
+    display: flex; align-items: center; justify-content: center; margin-bottom: calc(var(--u) * 5);
+  }
+  .pcard h3 { font-size: 18px; font-weight: 700; margin-bottom: calc(var(--u) * 2); letter-spacing: -0.01em; }
+  .pcard p { font-size: 14.5px; color: var(--meama-muted); }
+
+  /* ---------- Modules ---------- */
+  .modules { background: #FFFDF6; }
+  .mod-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: calc(var(--u) * 5); }
+  .mcard {
+    background: #fff; border: 1px solid rgba(62, 31, 0, 0.08);
+    border-left: 3px solid var(--meama-gold);
+    border-radius: calc(var(--u) * 2);
+    padding: calc(var(--u) * 6) calc(var(--u) * 6) calc(var(--u) * 6) calc(var(--u) * 7);
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+  }
+  .mcard:hover { transform: translateY(calc(var(--u) * -1.5)); box-shadow: 0 18px 44px rgba(62, 31, 0, 0.12); }
+  .mcard .mnum {
+    font-size: 12px; font-weight: 700; letter-spacing: 0.14em; color: var(--meama-gold);
+    margin-bottom: calc(var(--u) * 2);
+  }
+  .mcard h3 { font-size: 16.5px; font-weight: 700; letter-spacing: -0.01em; margin-bottom: calc(var(--u) * 1); }
+  .mcard .ka { display: block; font-size: 12px; font-weight: 400; color: var(--meama-muted); margin-bottom: calc(var(--u) * 2.5); }
+  .mcard p { font-size: 14px; color: var(--meama-muted); }
+
+  /* ---------- Rules (dark stats) ---------- */
+  .rules { background: var(--meama-charcoal); color: var(--meama-cream); }
+  .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: calc(var(--u) * 6); }
+  .stat {
+    border-top: 2px solid rgba(200, 150, 62, 0.4);
+    padding-top: calc(var(--u) * 6);
+  }
+  .stat .big {
+    font-size: clamp(44px, 5.5vw, 64px); font-weight: 800; letter-spacing: -0.03em;
+    color: var(--meama-gold); line-height: 1; margin-bottom: calc(var(--u) * 3);
+  }
+  .stat p { font-size: 14.5px; color: rgba(250, 243, 224, 0.72); max-width: 240px; }
+  .stat .tag {
+    display: inline-block; margin-top: calc(var(--u) * 3);
+    font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+    padding: calc(var(--u) * 1) calc(var(--u) * 2.5); border-radius: 999px;
+  }
+  .tag-green { background: rgba(45, 106, 79, 0.25); color: #7BC8A4; }
+  .tag-red   { background: rgba(192, 57, 43, 0.22); color: #E58E84; }
+  .tag-gold  { background: rgba(200, 150, 62, 0.18); color: var(--meama-gold); }
+
+  /* ---------- Stack ---------- */
+  .stack { background: var(--meama-cream); }
+  .stack-grid { display: grid; grid-template-columns: 1.1fr 1fr; gap: calc(var(--u) * 16); align-items: start; }
+  .stack-list { display: grid; grid-template-columns: 1fr 1fr; gap: calc(var(--u) * 3); list-style: none; }
+  .stack-list li {
+    display: flex; align-items: center; gap: calc(var(--u) * 3);
+    background: #fff; border: 1px solid rgba(62, 31, 0, 0.08); border-radius: calc(var(--u) * 2);
+    padding: calc(var(--u) * 3.5) calc(var(--u) * 4);
+    font-size: 14px; font-weight: 600;
+  }
+  .stack-list li svg { flex: none; color: var(--meama-gold); }
+  .stack-note h3 { font-size: 22px; font-weight: 800; letter-spacing: -0.01em; margin-bottom: calc(var(--u) * 4); }
+  .stack-note p { font-size: 15.5px; color: var(--meama-muted); margin-bottom: calc(var(--u) * 4); }
+  .stack-note .pill-row { display: flex; flex-wrap: wrap; gap: calc(var(--u) * 2); }
+  .stack-note .pill {
+    font-size: 12px; font-weight: 700; letter-spacing: 0.06em;
+    border: 1px solid rgba(62, 31, 0, 0.18); color: var(--meama-brown);
+    padding: calc(var(--u) * 1.5) calc(var(--u) * 3); border-radius: 999px;
+  }
+
+  /* ---------- Intelligence Loop ---------- */
+  .loop { background: #FFFDF6; }
+  .loop-flow {
+    display: grid; grid-template-columns: repeat(6, 1fr); gap: calc(var(--u) * 4);
+    position: relative;
+  }
+  .loop-flow::before {
+    content: ""; position: absolute; top: calc(var(--u) * 7); left: calc(100% / 12); right: calc(100% / 12);
+    height: 2px;
+    background: repeating-linear-gradient(90deg, var(--meama-gold) 0 8px, transparent 8px 16px);
+    opacity: 0.5;
+  }
+  .lstep { text-align: center; position: relative; }
+  .lstep .licon {
+    width: calc(var(--u) * 14); height: calc(var(--u) * 14); margin: 0 auto calc(var(--u) * 4);
+    border-radius: 50%; background: #fff; border: 2px solid var(--meama-gold); color: var(--meama-brown);
+    display: flex; align-items: center; justify-content: center;
+    position: relative; z-index: 1;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+  }
+  .lstep:hover .licon { transform: scale(1.08); box-shadow: 0 10px 26px rgba(200, 150, 62, 0.3); }
+  .lstep h3 { font-size: 15px; font-weight: 700; margin-bottom: calc(var(--u) * 1); }
+  .lstep .ka { display: block; font-size: 11.5px; color: var(--meama-muted); margin-bottom: calc(var(--u) * 2); }
+  .lstep p { font-size: 12.5px; color: var(--meama-muted); }
+
+  /* ---------- Footer ---------- */
+  footer {
+    background: var(--meama-brown); color: rgba(250, 243, 224, 0.7);
+    padding: calc(var(--u) * 16) 0;
+  }
+  .foot-inner {
+    display: flex; align-items: center; justify-content: space-between; gap: calc(var(--u) * 6);
+    flex-wrap: wrap;
+  }
+  .foot-mark { font-weight: 800; letter-spacing: 0.12em; font-size: 16px; color: var(--meama-gold); }
+  .foot-meta { font-size: 13px; }
+  .foot-meta .sep { margin: 0 calc(var(--u) * 2); opacity: 0.4; }
+
+  /* ---------- Responsive ---------- */
+  @media (max-width: 920px) {
+    .stat-grid { grid-template-columns: repeat(2, 1fr); }
+    .stack-grid { grid-template-columns: 1fr; gap: calc(var(--u) * 10); }
+    .loop-flow { grid-template-columns: repeat(3, 1fr); row-gap: calc(var(--u) * 10); }
+    .loop-flow::before { display: none; }
+  }
+  @media (max-width: 768px) {
+    section { padding: calc(var(--u) * 16) 0; }
+    .cards-3 { grid-template-columns: 1fr; }
+    .mod-grid { grid-template-columns: 1fr; }
+    .stat-grid { grid-template-columns: 1fr; gap: calc(var(--u) * 8); }
+    .stack-list { grid-template-columns: 1fr; }
+    .loop-flow { grid-template-columns: 1fr; }
+    .lstep { display: grid; grid-template-columns: auto 1fr; column-gap: calc(var(--u) * 4); text-align: left; }
+    .lstep .licon { margin: 0; grid-row: 1 / 4; }
+    .nav-links {
+      display: none; position: absolute; top: calc(var(--u) * 16); left: 0; right: 0;
+      flex-direction: column; align-items: flex-start; gap: 0;
+      background: rgba(28, 28, 30, 0.98); border-bottom: 1px solid rgba(200, 150, 62, 0.18);
+      padding: calc(var(--u) * 2) 0;
+    }
+    .nav-links.open { display: flex; }
+    .nav-links li { width: 100%; }
+    .nav-links a { display: block; padding: calc(var(--u) * 3.5) calc(var(--u) * 6); }
+    .nav-cta { display: none; }
+    .nav-toggle { display: block; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ================= NAV ================= -->
+<nav>
+  <div class="nav-inner">
+    <a class="logo" href="#top">MEAMA&nbsp;PRMTR <span>CRM</span></a>
+    <ul class="nav-links" id="navLinks">
+      <li><a href="#problem">Problem</a></li>
+      <li><a href="#modules">Modules</a></li>
+      <li><a href="#rules">Business Rules</a></li>
+      <li><a href="#stack">Stack</a></li>
+      <li><a href="#loop">Intelligence Loop</a></li>
+    </ul>
+    <a class="btn-gold nav-cta" href="#access">Request Access</a>
+    <button class="nav-toggle" id="navToggle" aria-label="Toggle menu" aria-expanded="false">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#C8963E" stroke-width="2" stroke-linecap="round">
+        <line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/>
+      </svg>
+    </button>
+  </div>
+</nav>
+
+<!-- ================= HERO ================= -->
+<header class="hero" id="top">
+  <svg class="hero-bg" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+    <!-- coffee cup, top view: concentric rings -->
+    <g stroke="#C8963E" fill="none" opacity="0.10">
+      <circle cx="1150" cy="260" r="230" stroke-width="1.5"/>
+      <circle cx="1150" cy="260" r="180" stroke-width="1"/>
+      <circle cx="1150" cy="260" r="120" stroke-width="1"/>
+      <circle cx="1150" cy="260" r="60" stroke-width="2"/>
+    </g>
+    <!-- capsule silhouettes -->
+    <g stroke="#C8963E" fill="none" opacity="0.08" stroke-width="1.5">
+      <path d="M180 700 L260 700 L240 790 Q210 810 200 790 Z"/>
+      <path d="M320 640 L400 640 L380 730 Q350 750 340 730 Z"/>
+    </g>
+    <!-- steam curves -->
+    <g stroke="#C8963E" fill="none" opacity="0.12" stroke-width="2" stroke-linecap="round">
+      <path d="M1100 560 q 20 -40 0 -80 q -20 -40 0 -80"/>
+      <path d="M1150 580 q 20 -40 0 -80 q -20 -40 0 -80"/>
+      <path d="M1200 560 q 20 -40 0 -80 q -20 -40 0 -80"/>
+    </g>
+    <!-- data grid lines -->
+    <g stroke="#FAF3E0" opacity="0.04" stroke-width="1">
+      <line x1="0" y1="225" x2="1440" y2="225"/><line x1="0" y1="450" x2="1440" y2="450"/><line x1="0" y1="675" x2="1440" y2="675"/>
+      <line x1="360" y1="0" x2="360" y2="900"/><line x1="720" y1="0" x2="720" y2="900"/><line x1="1080" y1="0" x2="1080" y2="900"/>
+    </g>
+    <!-- rising sparkline -->
+    <polyline points="60,820 220,760 380,790 540,700 700,720 860,620 1020,650 1180,540 1380,480"
+      stroke="#C8963E" stroke-width="2" fill="none" opacity="0.15" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>
+
+  <div class="wrap">
+    <div class="hero-content">
+      <h1 class="wordmark fade visible"><small>MEAMA GEORGIA · PREMIUM COFFEE</small>MEAMA PRMTR</h1>
+      <p class="tagline fade visible d1">Intelligence for every cup sold.</p>
+      <p class="tagline-ka fade visible d1">ინტელექტი ყოველი გაყიდული ჭიქისთვის.</p>
+      <div class="subcopy fade visible d2">
+        <span>E-Commerce + Brand Stores</span><span class="dot"></span>
+        <span class="num">121K orders</span><span class="dot"></span>
+        <span>Real-time command</span><span class="dot"></span>
+        <span class="num">₾ GEL native</span>
+      </div>
+      <div class="fade visible d3" id="access">
+        <a class="btn-gold" href="mailto:access@meama.ge?subject=MEAMA%20PRMTR%20Access%20Request">Request Access · მოითხოვე წვდომა</a>
+        <span class="btn-note">Invite-only · Supabase Auth · Role-based: admin / analyst / marketing / viewer</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- ================= PROBLEM ================= -->
+<section class="problem" id="problem">
+  <div class="wrap">
+    <div class="kicker fade">The Problem <span class="ka">· პრობლემა</span></div>
+    <h2 class="fade">Commercial decisions deserve better than spreadsheets.</h2>
+    <p class="section-sub fade">Three gaps that cost margin every single day across e-commerce and brand stores.</p>
+    <div class="cards-3">
+      <div class="pcard fade">
+        <div class="icon">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="9" cy="8" r="3.5"/><path d="M3 20c0-3.3 2.7-6 6-6"/>
+            <rect x="13" y="5" width="3" height="3" rx="0.5"/><rect x="18" y="9" width="3" height="3" rx="0.5"/><rect x="14" y="14" width="3" height="3" rx="0.5"/>
+            <line x1="11" y1="19" x2="21" y2="19" stroke-dasharray="2 2"/>
+          </svg>
+        </div>
+        <h3>No unified customer view</h3>
+        <p>Online orders, brand-store receipts and loyalty signals live in 14 separate CSV exports — no one sees the whole buyer.</p>
+      </div>
+      <div class="pcard fade d1">
+        <div class="icon">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 14l3-1 9-9 2 2-9 9-1 3-4-4z" transform="rotate(45 12 12)"/>
+            <path d="M3 11l8-7v16l-8-7z"/><path d="M11 8c4 0 7 1 9 4-2 3-5 4-9 4"/>
+            <line x1="2" y1="2" x2="22" y2="22"/>
+          </svg>
+        </div>
+        <h3>Campaigns run blind</h3>
+        <p>Discounts go out with no margin floor, no segment exclusions, and no way to measure lift after the send.</p>
+      </div>
+      <div class="pcard fade d2">
+        <div class="icon">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/>
+            <path d="M12 3v-1M21 12h1M12 21v1M3 12H2" opacity="0.5"/>
+          </svg>
+        </div>
+        <h3>Retention managed by instinct</h3>
+        <p>A customer goes quiet for 45 days and nobody notices until they are gone — churn is discovered, never predicted.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= MODULES ================= -->
+<section class="modules" id="modules">
+  <div class="wrap">
+    <div class="kicker fade">Platform Modules <span class="ka">· მოდულები</span></div>
+    <h2 class="fade">Ten modules. One commercial command center.</h2>
+    <p class="section-sub fade">Every retail metric filters to e-commerce + brand stores. Vending, B2B and Collect are stored but never pollute the numbers.</p>
+    <div class="mod-grid">
+      <div class="mcard fade"><div class="mnum num">01</div><h3>Command Overview</h3><span class="ka">მთავარი მიმოხილვა</span><p>Full business health. One screen.</p></div>
+      <div class="mcard fade"><div class="mnum num">02</div><h3>Customer 360</h3><span class="ka">მომხმარებელი 360</span><p>Every buyer. Complete behavioural profile.</p></div>
+      <div class="mcard fade"><div class="mnum num">03</div><h3>Product Intelligence</h3><span class="ka">პროდუქტის ანალიტიკა</span><p>Revenue, margin, retention — per SKU.</p></div>
+      <div class="mcard fade"><div class="mnum num">04</div><h3>Stock</h3><span class="ka">მარაგი</span><p>Inventory forecasting with 2-week early warning.</p></div>
+      <div class="mcard fade"><div class="mnum num">05</div><h3>Campaign Intelligence</h3><span class="ka">კამპანიის ანალიტიკა</span><p>AI suggests. Manager approves. Platform measures.</p></div>
+      <div class="mcard fade"><div class="mnum num">06</div><h3>Meta Ads</h3><span class="ka">Meta რეკლამა</span><p>Live ROAS. Audience insights. Spend control.</p></div>
+      <div class="mcard fade"><div class="mnum num">07</div><h3>Reports</h3><span class="ka">ანგარიშები</span><p>121K orders. Pre-computed. Instant.</p></div>
+      <div class="mcard fade"><div class="mnum num">08</div><h3>Alerts</h3><span class="ka">შეტყობინებები</span><p>Telegram alerts before problems become losses.</p></div>
+      <div class="mcard fade"><div class="mnum num">09</div><h3>Action Queue</h3><span class="ka">მოქმედებათა რიგი</span><p>AI-ranked daily task list for the commercial team.</p></div>
+      <div class="mcard fade"><div class="mnum num">10</div><h3>Build Plan</h3><span class="ka">აწყობის გეგმა</span><p>4-week delivery. Railway deployment. Zero ML bloat.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= BUSINESS RULES ================= -->
+<section class="rules dark" id="rules">
+  <div class="wrap">
+    <div class="kicker fade">Key Business Rules <span class="ka">· ბიზნეს წესები</span></div>
+    <h2 class="fade" style="color:var(--meama-cream)">Guardrails the platform enforces. Not suggests.</h2>
+    <p class="section-sub fade">Every promo, every segment, every alert runs through the same rulebook — a single source of truth in code.</p>
+    <div class="stat-grid">
+      <div class="stat fade">
+        <div class="big num">40%</div>
+        <p>Minimum gross margin enforced on every promo. The calculator blocks anything below the floor.</p>
+        <span class="tag tag-green">Margin floor</span>
+      </div>
+      <div class="stat fade d1">
+        <div class="big num">25%</div>
+        <p>Hard discount cap — platform-enforced. No override, no exceptions, no quiet Friday deals.</p>
+        <span class="tag tag-red">Discount cap</span>
+      </div>
+      <div class="stat fade d2">
+        <div class="big num">45</div>
+        <p>Days of silence before the automatic at-risk workflow fires. At 90 days, the customer is flagged lost.</p>
+        <span class="tag tag-gold">At-risk trigger</span>
+      </div>
+      <div class="stat fade d3">
+        <div class="big num">0</div>
+        <p>Discounts for Champions and Capsule Loyalists. They get early access — never a price cut.</p>
+        <span class="tag tag-gold">Segment protection</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= TECH STACK ================= -->
+<section class="stack" id="stack">
+  <div class="wrap">
+    <div class="kicker fade">Tech Stack <span class="ka">· ტექნოლოგია</span></div>
+    <h2 class="fade">Boring infrastructure. Sharp intelligence.</h2>
+    <div class="stack-grid">
+      <ul class="stack-list">
+        <li class="fade"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 7"/></svg>React + TypeScript (Vite)</li>
+        <li class="fade"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 7"/></svg>FastAPI · Python 3.11</li>
+        <li class="fade"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 7"/></svg>Supabase · Postgres + RLS</li>
+        <li class="fade"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 7"/></svg>Railway · auto-deploy</li>
+        <li class="fade"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 7"/></svg>Claude API · batch insights</li>
+        <li class="fade"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 7"/></svg>LangGraph · campaign workflows</li>
+        <li class="fade"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 7"/></svg>Telegram Bot · alerting</li>
+        <li class="fade"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 7"/></svg>Meta Marketing API</li>
+        <li class="fade"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 7"/></svg>pandas + DuckDB · ETL</li>
+      </ul>
+      <div class="stack-note fade d1">
+        <h3>No ML library bloat.</h3>
+        <p>Intelligence runs on Claude API batch jobs orchestrated via LangGraph. Churn scores, cluster tags and upsell flags are model output written back nightly — never a trained model to babysit.</p>
+        <p>RFM scoring stays pure SQL. Reorder prediction stays pandas. If a rule can be read, audited and changed in one file, it lives in code — not in weights.</p>
+        <div class="pill-row">
+          <span class="pill">RLS on every table</span>
+          <span class="pill">No PII to AI</span>
+          <span class="pill">ka + en bilingual</span>
+          <span class="pill">Nightly 02:00 Tbilisi</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= INTELLIGENCE LOOP ================= -->
+<section class="loop" id="loop">
+  <div class="wrap">
+    <div class="kicker fade">Intelligence Loop <span class="ka">· ინტელექტის ციკლი</span></div>
+    <h2 class="fade">The AI campaign loop. Humans stay in command.</h2>
+    <p class="section-sub fade">Six steps from idea to learning — AI proposes, a manager approves, the platform measures everything.</p>
+    <div class="loop-flow">
+      <div class="lstep fade">
+        <div class="licon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.7.6 1 1.5 1 2.5h6c0-1 .3-1.9 1-2.5A6 6 0 0 0 12 3z"/>
+          </svg>
+        </div>
+        <h3>Suggest</h3><span class="ka">შეთავაზება</span>
+        <p>Claude drafts campaign ideas from segment + product signals.</p>
+      </div>
+      <div class="lstep fade d1">
+        <div class="licon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 17l5-5 4 3 6-7 3 3"/><path d="M21 8v3h-3" opacity="0.6"/><line x1="3" y1="21" x2="21" y2="21" opacity="0.4"/>
+          </svg>
+        </div>
+        <h3>Predict</h3><span class="ka">პროგნოზი</span>
+        <p>Expected uplift, margin impact and safe-price bounds computed first.</p>
+      </div>
+      <div class="lstep fade d2">
+        <div class="licon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="9" cy="8" r="3.5"/><path d="M3 20c0-3.3 2.7-6 6-6"/><path d="M14 15l3 3 5-5"/>
+          </svg>
+        </div>
+        <h3>Approve</h3><span class="ka">დადასტურება</span>
+        <p>A manager reviews and signs off — nothing ships on autopilot.</p>
+      </div>
+      <div class="lstep fade">
+        <div class="licon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 15c-1.5-1.5-2-4.5-1-7 1.2-3 3.5-4.5 6-5 .5 2.5-1 5.5-2.5 7.5S13 14.5 12 15z"/>
+            <path d="M11 8.5c-2 .2-3.5 1.5-4.5 3.5l3 1"/>
+            <path d="M15.5 13c-.2 2-1.5 3.5-3.5 4.5l-1-3"/>
+            <path d="M7.5 16.5c-1 1-1.5 2.5-1.5 4 1.5 0 3-.5 4-1.5"/>
+          </svg>
+        </div>
+        <h3>Launch</h3><span class="ka">გაშვება</span>
+        <p>Campaign goes live across e-com and brand-store channels.</p>
+      </div>
+      <div class="lstep fade d1">
+        <div class="licon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="4" y="11" width="3" height="8" rx="0.5"/><rect x="10.5" y="7" width="3" height="12" rx="0.5"/><rect x="17" y="3" width="3" height="16" rx="0.5"/>
+          </svg>
+        </div>
+        <h3>Measure</h3><span class="ka">გაზომვა</span>
+        <p>Revenue lift, redemption and ROAS tracked against the prediction.</p>
+      </div>
+      <div class="lstep fade d2">
+        <div class="licon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v5h-5"/>
+          </svg>
+        </div>
+        <h3>Learn</h3><span class="ka">სწავლა</span>
+        <p>Outcomes feed the next suggestion — the loop closes itself.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= FOOTER ================= -->
+<footer>
+  <div class="wrap foot-inner">
+    <div class="foot-mark">MEAMA PRMTR</div>
+    <div class="foot-meta num">Meama Georgia<span class="sep">·</span>Confidential<span class="sep">·</span>June 2026</div>
+  </div>
+</footer>
+
+<script>
+  // Fade-in on scroll
+  (function () {
+    var els = document.querySelectorAll('.fade');
+    if (!('IntersectionObserver' in window)) {
+      els.forEach(function (el) { el.classList.add('visible'); });
+      return;
+    }
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+          io.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' });
+    els.forEach(function (el) { io.observe(el); });
+  })();
+
+  // Mobile nav toggle
+  (function () {
+    var toggle = document.getElementById('navToggle');
+    var links = document.getElementById('navLinks');
+    toggle.addEventListener('click', function () {
+      var open = links.classList.toggle('open');
+      toggle.setAttribute('aria-expanded', String(open));
+    });
+    links.addEventListener('click', function (e) {
+      if (e.target.tagName === 'A') {
+        links.classList.remove('open');
+        toggle.setAttribute('aria-expanded', 'false');
+      }
+    });
+  })();
+</script>
+</body>
+</html>

@@ -1,38 +1,47 @@
 {
-  "app": { "name": "MEAMA PRMTR", "tagline": "Coffee CRM" },
+  "app": { "name": "MEAMA PRMTR", "tagline": "Intelligence for every cup sold" },
   "nav": {
-    "overview": "Overview",
-    "customers": "Customers",
-    "products": "Products",
+    "command": "Command Center",
+    "moneyHunter": "Money Hunter",
+    "ads": "Ad Intelligence",
+    "discount": "Discount Engine",
+    "actions": "Action Queue",
+    "products": "Product Analytics",
+    "customers": "Customer Analytics",
+    "portfolios": "Portfolios",
     "stock": "Stock",
-    "campaigns": "Campaigns",
-    "ads": "Ads",
-    "reports": "Reports",
     "alerts": "Alerts",
-    "actions": "Action Queue"
+    "reports": "Reports"
   },
   "header": {
     "alerts": "Alerts",
     "language": "Language",
-    "logout": "Log out"
+    "logout": "Log out",
+    "lastSync": "Last sync"
   },
   "common": {
     "loading": "Loading…",
     "empty": "Nothing here yet",
     "empty_hint": "Data appears once the pipeline runs.",
-    "search": "Search"
+    "search": "Search",
+    "back": "Back",
+    "viewAll": "View all",
+    "demoData": "Demo data — wires to the API in phase 2"
   },
   "pages": {
-    "overview": { "title": "Command Overview", "subtitle": "Retail KPIs (e-commerce + brand stores)" },
-    "customers": { "title": "Customer 360", "subtitle": "Segments, lifecycle, lifetime value" },
-    "customerDetail": { "title": "Customer", "back": "Back to customers" },
-    "products": { "title": "Product Intelligence", "subtitle": "Top SKUs and affinities" },
-    "stock": { "title": "Stock", "subtitle": "Cover and reorder points" },
-    "campaigns": { "title": "Campaign Intelligence", "subtitle": "Promotions and AI drafts" },
-    "ads": { "title": "Ads (Meta)", "subtitle": "Spend and ROAS in USD" },
-    "reports": { "title": "Reports", "subtitle": "Exportable views" },
-    "alerts": { "title": "Alerts", "subtitle": "Operational signals" },
-    "actions": { "title": "Action Queue", "subtitle": "Next best actions" },
+    "command": { "title": "Command Center", "subtitle": "Full business health. One screen. E-commerce + brand stores only." },
+    "moneyHunter": { "title": "Money Hunter", "subtitle": "Ranked revenue opportunities sitting in the customer base right now." },
+    "ads": { "title": "Ad Intelligence", "subtitle": "Meta campaigns — spend and ROAS in USD, never mixed with GEL." },
+    "discount": { "title": "Discount Engine", "subtitle": "Margin-guarded promo calculator. 40% floor, 25% cap — enforced, not suggested." },
+    "actions": { "title": "Action Queue", "subtitle": "AI-ranked daily task list for the commercial team." },
+    "products": { "title": "Product Analytics", "subtitle": "Revenue, margin, retention — per category and per SKU." },
+    "productDetail": { "back": "Back to categories", "flavours": "Flavours", "history": "12-month selling history" },
+    "customers": { "title": "Customer Analytics", "subtitle": "Segments, churn risk, lifecycle — rule-based RFM + Claude scoring." },
+    "portfolios": { "title": "Customer Portfolios", "subtitle": "Every buyer. Complete behavioural profile." },
+    "portfolioDetail": { "back": "Back to portfolios" },
+    "stock": { "title": "Stock", "subtitle": "Inventory cover with 2-week early warning." },
+    "alerts": { "title": "Alerts", "subtitle": "Telegram + in-app signals. Written to the alerts table before sending." },
+    "reports": { "title": "Reports", "subtitle": "121K orders. Pre-computed. Instant." },
     "login": { "title": "Sign in", "email": "Email", "password": "Password", "submit": "Sign in", "invite_only": "Invite-only access." }
   },
   "promo": {
@@ -43,6 +52,8 @@
     "minPrice": "Min safe price",
     "status": "Status",
     "green": "OK",
-    "red": "Blocked"
+    "red": "Blocked",
+    "offline": "Backend offline — computed locally with the same business rules.",
+    "noDiscountNote": "Champions, Capsule Loyalists and Flavour Explorers never receive discounts — early access only."
   }
 }

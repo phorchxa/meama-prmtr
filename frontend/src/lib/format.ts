@@ -24,6 +24,16 @@ export function formatNumber(value: number): string {
   return value.toLocaleString(LOCALE);
 }
 
+/** Whole-lari amount for large stats — no decimal noise. */
+export function formatGEL0(amount: number): string {
+  return `₾${Math.round(amount).toLocaleString(LOCALE)}`;
+}
+
+/** Whole-dollar amount for large stats — no decimal noise. */
+export function formatUSD0(amount: number): string {
+  return `$${Math.round(amount).toLocaleString(LOCALE)}`;
+}
+
 export function formatPercent(fraction: number, digits = 1): string {
   return new Intl.NumberFormat(LOCALE, {
     style: "percent",

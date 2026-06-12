@@ -25,7 +25,7 @@ function renderValue(value: number, unit: KpiWidgetProps["unit"]): string {
 export function KpiWidget({ label, value, unit, deltaPct, trend }: KpiWidgetProps) {
   const positive = (deltaPct ?? 0) >= 0;
   return (
-    <div className="rounded-lg border border-meama-gold/30 bg-white p-4 shadow-sm">
+    <div className="card-m card-m-hover p-4">
       <div className="text-xs font-medium uppercase tracking-wide text-meama-muted">
         {label}
       </div>

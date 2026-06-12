@@ -42,3 +42,9 @@ Thumbs.db
 .idea/usage.statistics.xml
 .idea/dictionaries
 .idea/shelf
+
+# ---- Supabase CLI ----
+supabase/.temp/
+
+# ---- TS build artifacts ----
+*.tsbuildinfo
