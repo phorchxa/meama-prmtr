@@ -29,7 +29,7 @@ export default function Actions() {
             }`}
           >
             <div className="flex items-start gap-4">
-              <span className="tabular mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-meama-charcoal text-sm font-extrabold text-meama-gold">
+              <span className="tabular mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-meama-brown text-sm font-extrabold text-meama-gold">
                 {a.rank}
               </span>
               <div>
@@ -52,7 +52,7 @@ export default function Actions() {
         ))}
       </div>
 
-      <p className="mt-6 text-center text-[11px] text-meama-muted/70">{t("common.demoData")}</p>
+      <p className="mt-6 text-center text-[11px] text-meama-cream/30">{t("common.demoData")}</p>
     </div>
   );
 }

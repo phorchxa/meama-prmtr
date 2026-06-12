@@ -14,105 +14,26 @@ import Login from "./pages/Login";
 import MoneyHunter from "./pages/MoneyHunter";
 import PortfolioDetail from "./pages/PortfolioDetail";
 import Portfolios from "./pages/Portfolios";
-import ProductCategory from "./pages/ProductCategory";
+import ProductDetail from "./pages/ProductDetail";
 import Products from "./pages/Products";
 import Reports from "./pages/Reports";
 import Stock from "./pages/Stock";
 
 const NAV_ITEMS = [
-  { to: "/", key: "command", icon: "command", end: true },
-  { to: "/money-hunter", key: "moneyHunter", icon: "target" },
-  { to: "/ads", key: "ads", icon: "megaphone" },
-  { to: "/discount-engine", key: "discount", icon: "percent" },
-  { to: "/actions", key: "actions", icon: "check" },
-  { to: "/products", key: "products", icon: "box" },
-  { to: "/customers", key: "customers", icon: "chart" },
-  { to: "/portfolios", key: "portfolios", icon: "people" },
-  { to: "/stock", key: "stock", icon: "layers" },
-  { to: "/reports", key: "reports", icon: "doc" },
-  { to: "/alerts", key: "alerts", icon: "bell" },
+  { to: "/", key: "command", end: true },
+  { to: "/money-hunter", key: "moneyHunter" },
+  { to: "/ads", key: "ads" },
+  { to: "/discount-engine", key: "discount" },
+  { to: "/actions", key: "actions" },
+  { to: "/products", key: "products" },
+  { to: "/customers", key: "customers" },
+  { to: "/portfolios", key: "portfolios" },
+  { to: "/stock", key: "stock" },
+  { to: "/reports", key: "reports" },
+  { to: "/alerts", key: "alerts" },
 ] as const;
 
-const ICON_PATHS: Record<string, ReactNode> = {
-  command: (
-    <>
-      <rect x="3" y="3" width="7" height="7" rx="1" />
-      <rect x="14" y="3" width="7" height="7" rx="1" />
-      <rect x="3" y="14" width="7" height="7" rx="1" />
-      <rect x="14" y="14" width="7" height="7" rx="1" />
-    </>
-  ),
-  target: (
-    <>
-      <circle cx="12" cy="12" r="8" />
-      <circle cx="12" cy="12" r="3.5" />
-      <path d="M12 2v3M22 12h-3M12 22v-3M2 12h3" />
-    </>
-  ),
-  megaphone: (
-    <>
-      <path d="M3 10l9-5v14l-9-5v-4z" />
-      <path d="M12 8c4 0 7 1.5 9 4-2 2.5-5 4-9 4" />
-    </>
-  ),
-  percent: (
-    <>
-      <line x1="19" y1="5" x2="5" y2="19" />
-      <circle cx="7" cy="7" r="2.5" />
-      <circle cx="17" cy="17" r="2.5" />
-    </>
-  ),
-  check: (
-    <>
-      <rect x="3" y="4" width="18" height="16" rx="2" />
-      <path d="M8 12l3 3 5-6" />
-    </>
-  ),
-  box: (
-    <>
-      <path d="M3 7l9-4 9 4-9 4-9-4z" />
-      <path d="M3 7v10l9 4 9-4V7" />
-      <path d="M12 11v10" />
-    </>
-  ),
-  chart: (
-    <>
-      <rect x="4" y="12" width="3.5" height="8" rx="0.5" />
-      <rect x="10.25" y="7" width="3.5" height="13" rx="0.5" />
-      <rect x="16.5" y="3" width="3.5" height="17" rx="0.5" />
-    </>
-  ),
-  people: (
-    <>
-      <circle cx="9" cy="8" r="3.5" />
-      <path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6" />
-      <circle cx="17" cy="9" r="2.5" />
-      <path d="M21 19c0-2.5-1.7-4.5-4-5" />
-    </>
-  ),
-  layers: (
-    <>
-      <path d="M12 3l9 5-9 5-9-5 9-5z" />
-      <path d="M3 13l9 5 9-5" />
-      <path d="M3 17l9 5 9-5" />
-    </>
-  ),
-  doc: (
-    <>
-      <path d="M6 2h9l4 4v16H6V2z" />
-      <path d="M15 2v4h4" />
-      <path d="M9 12h6M9 16h6" />
-    </>
-  ),
-  bell: (
-    <>
-      <path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6z" />
-      <path d="M10 19a2 2 0 0 0 4 0" />
-    </>
-  ),
-};
-
-function NavIcon({ name }: { name: string }) {
+function BellIcon() {
   return (
     <svg
       width="17"
@@ -124,9 +45,30 @@ function NavIcon({ name }: { name: string }) {
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"
-      className="shrink-0"
     >
-      {ICON_PATHS[name]}
+      <path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6z" />
+      <path d="M10 19a2 2 0 0 0 4 0" />
+    </svg>
+  );
+}
+
+/** Animated coffee steam, floating above the wordmark. */
+function Steam() {
+  return (
+    <svg
+      className="steam mx-auto block"
+      width="44"
+      height="22"
+      viewBox="0 0 44 22"
+      fill="none"
+      stroke="var(--meama-gold)"
+      strokeWidth="2"
+      strokeLinecap="round"
+      aria-hidden="true"
+    >
+      <path d="M10 20 q 4 -5 0 -9 q -4 -5 0 -9" opacity="0.5" />
+      <path d="M22 20 q 4 -5 0 -9 q -4 -5 0 -9" opacity="0.7" />
+      <path d="M34 20 q 4 -5 0 -9 q -4 -5 0 -9" opacity="0.5" />
     </svg>
   );
 }
@@ -137,7 +79,7 @@ function LanguageToggle() {
   return (
     <button
       onClick={() => void i18n.changeLanguage(next)}
-      className="rounded-full border border-meama-gold/40 px-3 py-1 text-xs font-semibold text-meama-brown transition-colors hover:bg-meama-gold/10"
+      className="rounded-full border border-meama-gold/40 px-3 py-1 text-xs font-semibold text-meama-goldsoft transition-colors hover:bg-meama-gold/15"
       aria-label="toggle language"
     >
       {i18n.language === "ka" ? "EN" : "ქარ"}
@@ -145,57 +87,16 @@ function LanguageToggle() {
   );
 }
 
-function Sidebar() {
-  const { t } = useTranslation();
-  return (
-    <aside className="flex w-60 shrink-0 flex-col bg-meama-charcoal text-meama-cream">
-      <div className="border-b border-meama-gold/15 px-5 py-5">
-        <div className="text-base font-extrabold tracking-[0.12em] text-meama-gold">
-          {t("app.name")}
-        </div>
-        <div className="mt-1 text-[11px] leading-snug text-meama-cream/50">{t("app.tagline")}</div>
-      </div>
-      <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 py-4">
-        {NAV_ITEMS.map((item) => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            end={"end" in item ? item.end : false}
-            className={({ isActive }) =>
-              `flex items-center gap-2.5 rounded-md px-3 py-2 text-[13px] font-medium transition-colors ${
-                isActive
-                  ? "bg-meama-gold/15 text-meama-gold"
-                  : "text-meama-cream/70 hover:bg-white/5 hover:text-meama-cream"
-              }`
-            }
-          >
-            <NavIcon name={item.icon} />
-            {t(`nav.${item.key}`)}
-          </NavLink>
-        ))}
-      </nav>
-      <div className="border-t border-meama-gold/15 px-5 py-3 text-[10px] uppercase tracking-wider text-meama-cream/35">
-        Meama Georgia · Confidential
-      </div>
-    </aside>
-  );
-}
-
 function Header() {
   const { t } = useTranslation();
   const criticalCount = ALERTS.filter((a) => a.severity === "critical").length;
   return (
-    <header className="flex items-center justify-between border-b border-meama-brown/10 bg-white px-6 py-3">
-      <div className="text-xs text-meama-muted">
-        {t("header.lastSync")}:{" "}
-        <span className="tabular font-medium text-meama-charcoal">12.06.2026, 02:11</span>
-        <span className="mx-2 text-meama-gold">·</span>
-        <span className="tabular">121,384 orders</span>
-      </div>
-      <div className="flex items-center gap-5">
+    <header className="relative border-b border-meama-gold/20 bg-meama-espresso/80 pb-4 pt-5 backdrop-blur">
+      {/* Utility corner — language + alerts. */}
+      <div className="absolute right-5 top-5 flex items-center gap-4">
         <LanguageToggle />
-        <NavLink to="/alerts" aria-label={t("header.alerts")} className="relative text-meama-brown">
-          <NavIcon name="bell" />
+        <NavLink to="/alerts" aria-label={t("header.alerts")} className="relative text-meama-goldsoft hover:text-meama-gold">
+          <BellIcon />
           {criticalCount > 0 ? (
             <span className="tabular absolute -right-2 -top-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-meama-red px-1 text-[10px] font-bold text-white">
               {criticalCount}
@@ -203,20 +104,53 @@ function Header() {
           ) : null}
         </NavLink>
       </div>
+
+      {/* Centered wordmark. */}
+      <div className="text-center">
+        <Steam />
+        <NavLink to="/" className="inline-block">
+          <span className="font-display text-[28px] font-bold tracking-[0.18em] text-meama-gold">
+            MEAMA PRMTR
+          </span>
+        </NavLink>
+        <div className="mt-0.5 text-[11px] italic tracking-wide text-meama-cream/45">
+          {t("app.tagline")}
+        </div>
+      </div>
+
+      {/* Centered tab navigation. */}
+      <nav className="mx-auto mt-4 flex max-w-5xl flex-wrap items-center justify-center gap-1.5 px-4">
+        {NAV_ITEMS.map((item) => (
+          <NavLink
+            key={item.to}
+            to={item.to}
+            end={"end" in item ? item.end : false}
+            className={({ isActive }) =>
+              `rounded-full px-3.5 py-1.5 text-[12.5px] font-semibold transition-all duration-200 ${
+                isActive
+                  ? "bg-meama-gold text-meama-espresso shadow-[0_6px_18px_rgba(200,150,62,0.35)]"
+                  : "text-meama-cream/65 hover:bg-meama-gold/15 hover:text-meama-goldsoft"
+              }`
+            }
+          >
+            {t(`nav.${item.key}`)}
+          </NavLink>
+        ))}
+      </nav>
     </header>
   );
 }
 
 function Layout({ children }: { children: ReactNode }) {
   return (
-    <div className="flex h-screen">
-      <Sidebar />
-      <div className="flex min-w-0 flex-1 flex-col">
-        <Header />
-        <main className="flex-1 overflow-auto p-6">
-          <div className="rise mx-auto max-w-6xl">{children}</div>
-        </main>
-      </div>
+    <div className="flex min-h-screen flex-col">
+      <Header />
+      <main className="flex-1 px-5 py-8">
+        <div className="rise mx-auto max-w-6xl">{children}</div>
+      </main>
+      <footer className="border-t border-meama-gold/15 py-4 text-center text-[10px] uppercase tracking-[0.2em] text-meama-cream/30">
+        Meama Georgia · Confidential · 2026
+      </footer>
     </div>
   );
 }
@@ -246,7 +180,7 @@ function ProtectedRoute({ children }: { children: ReactNode }) {
   }, []);
 
   if (authed === null) {
-    return <div className="p-6 text-meama-muted">…</div>;
+    return <div className="p-6 text-meama-cream/50">…</div>;
   }
   if (!authed) {
     return <Navigate to="/login" replace state={{ from: location }} />;
@@ -265,7 +199,7 @@ export default function App() {
       <Route path="/campaigns" element={<Navigate to="/discount-engine" replace />} />
       <Route path="/actions" element={<ProtectedRoute><Actions /></ProtectedRoute>} />
       <Route path="/products" element={<ProtectedRoute><Products /></ProtectedRoute>} />
-      <Route path="/products/:categoryId" element={<ProtectedRoute><ProductCategory /></ProtectedRoute>} />
+      <Route path="/products/:sku" element={<ProtectedRoute><ProductDetail /></ProtectedRoute>} />
       <Route path="/customers" element={<ProtectedRoute><Customers /></ProtectedRoute>} />
       <Route path="/customers/:id" element={<Navigate to="/portfolios" replace />} />
       <Route path="/portfolios" element={<ProtectedRoute><Portfolios /></ProtectedRoute>} />

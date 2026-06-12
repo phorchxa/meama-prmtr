@@ -302,7 +302,7 @@ export const ACTIONS: ActionItem[] = [
   { rank: 2, title: "Reorder Espresso Classico capsules", signal: "1.6 weeks of cover left — below the 2-week floor", impact: 38600, severity: "critical", module: "Stock", to: "/stock" },
   { rank: 3, title: "Launch at-risk win-back (412 customers)", signal: "45-day silence threshold crossed; churn scores rising", impact: 48200, severity: "high", module: "Money Hunter", to: "/money-hunter" },
   { rank: 4, title: "Approve machine-upsell bundle draft", signal: "Claude draft ready; 184 high-confidence targets", impact: 55000, severity: "high", module: "Money Hunter", to: "/money-hunter" },
-  { rank: 5, title: "Review Hazelnut capsule decline", signal: "Units down 40% over 12 months — delist or reposition", impact: 2800, severity: "normal", module: "Products", to: "/products/coffee-capsules" },
+  { rank: 5, title: "Review Hazelnut capsule decline", signal: "Units down 40% over 12 months — delist or reposition", impact: 2800, severity: "normal", module: "Products", to: "/products/CAP-HAZ-12" },
   { rank: 6, title: "Send early-access drop to champions", signal: "36 dormant champions; NO-DISCOUNT segment", impact: 12900, severity: "normal", module: "Money Hunter", to: "/money-hunter" },
   { rank: 7, title: "QA June retail report before board export", signal: "Scheduled for Friday 18:00 Tbilisi", impact: 0, severity: "normal", module: "Reports", to: "/reports" },
 ];
@@ -369,3 +369,66 @@ export const REPORTS: ReportCard[] = [
 
 // ---------- Money totals ----------
 export const MONEY_ON_TABLE = OPPORTUNITIES.reduce((s, o) => s + o.estValue, 0);
+
+// ---------- Product descriptions & AI insights (per SKU) ----------
+export const PRODUCT_DESCRIPTIONS: Record<string, string> = {
+  "CAP-COL-01": "Single-origin Colombian arabica from the Huila highlands. Washed process, medium roast — caramel sweetness with a red-fruit lift. The portfolio's most dependable everyday cup.",
+  "CAP-ETH-02": "Heirloom Ethiopian varietals, light roast. Pours floral — jasmine and bergamot over bright citrus. The connoisseur's pick and a frequent gift-box choice.",
+  "CAP-BRA-03": "Brazilian Santos, natural process. Cocoa and hazelnut with a round, low-acid body. The crowd-pleaser that anchors most subscription baskets.",
+  "CAP-GUA-04": "Guatemalan Antigua grown in volcanic soil. Dark-chocolate depth with a warm spice finish. Strong evening-drinker following.",
+  "CAP-CLS-05": "The house espresso. Balanced roast built for crema — roasted nuts, full body, clean finish. Best-selling SKU across both channels.",
+  "CAP-INT-06": "The Classico's bolder sibling. Slow-roasted darker for a smoky punch and a long finish. Favourite of the Ristretto crowd graduating up in volume.",
+  "CAP-LUN-07": "A gentle long cup. Light roast stretched for lungo extraction — honey, almond, soft florals. The morning-routine SKU with loyal weekly buyers.",
+  "CAP-RIS-08": "Maximum intensity, minimum volume. Dense, peppery, unapologetic. Small but devoted buyer base with the portfolio's highest per-customer frequency.",
+  "CAP-DEC-09": "Swiss-water decaffeinated, nothing else removed. Cocoa-forward and smooth — the evening cup that keeps households on the platform.",
+  "CAP-CAR-10": "Dessert profile: real caramel notes over a medium base. Growing fast with newer, younger customers — strong gift-season performer.",
+  "CAP-VAN-11": "Soft vanilla aromatics over a light roast. The gateway flavour — over-indexes in first orders and flavour-explorer baskets.",
+  "CAP-HAZ-12": "Roasted hazelnut, creamy body. A legacy flavour now in steady decline as Caramel and Vanilla absorb its audience.",
+  "TEA-EGR-01": "Classic black tea scented with Italian bergamot. The tea line's anchor SKU and its most reordered.",
+  "TEA-EBF-02": "A brisk, malty breakfast blend built for milk. Steady weekday volume, strong office-order presence.",
+  "TEA-JAS-03": "Green tea layered with jasmine blossoms. Light and fragrant — the strongest cross-sell into coffee households.",
+  "TEA-MTN-04": "Wild herbs gathered in the Georgian highlands. A local-pride SKU with the line's fastest 12-month growth.",
+  "TEA-CHA-05": "Pure chamomile flowers, honeyed and calming. The evening companion to the Decaf Notte buyer.",
+  "TEA-BCU-06": "Georgian black currant over black tea — tart, jammy, distinctive. New audiences, gift-box regular.",
+  "MCH-ONE-01": "The compact capsule machine that starts most MEAMA households. Every unit sold locks in roughly ₾60/month of capsule demand.",
+  "MCH-PRO-02": "The flagship: dual-pressure extraction plus an integrated milk system. Skews to champions and office buyers.",
+  "MCH-MLK-03": "Hot and cold foam at a button press. Natural attach to machine orders — rarely bought alone.",
+};
+
+export const PRODUCT_AI: Record<string, string> = {
+  "CAP-COL-01": "Colombia buyers show the second-highest tea attach rate — bundle suggestion with Green Jasmine is queued for review.",
+  "CAP-ETH-02": "Demand is price-insensitive: the last two promos produced no measurable lift. Recommend excluding Ethiopia from future discount pools.",
+  "CAP-BRA-03": "Highest first-order conversion in the line. Recommend keeping Brazil as the default acquisition SKU in Meta creatives.",
+  "CAP-GUA-04": "Buyers reorder on a stable 24-day cadence — ideal candidate for replenishment reminders, not discounts.",
+  "CAP-CLS-05": "Stock cover is 1.6 weeks against a 14-day reorder point. A stockout would put ~₾38,600/month of repeat revenue at risk.",
+  "CAP-INT-06": "Intenso is the most common upgrade path from Classico. Suggest an intensity-ladder email to Classico loyalists.",
+  "CAP-LUN-07": "Weekend-skewed purchases suggest a leisure-occasion positioning; flat weekday volume is expected, not a decline.",
+  "CAP-RIS-08": "Smallest audience, highest frequency. Churn among Ristretto buyers is 3× costlier than average — monitor individually.",
+  "CAP-DEC-09": "Decaf attaches to evening-tea baskets. Cross-merchandising with Chamomile is the cheapest growth lever here.",
+  "CAP-CAR-10": "Fastest-growing flavour, driven by first-time customers. Watch repeat rate — sweetness profiles historically fade after month 6.",
+  "CAP-VAN-11": "Strong first-order presence but weakest repeat in the line. Recommend a second-order nudge toward Colombia or Brazil.",
+  "CAP-HAZ-12": "Units down 40% year-over-year with buyers migrating to Caramel. Recommend delisting review in Q3 — projected write-off is recoverable now.",
+  "TEA-EGR-01": "Earl Grey is the most common first tea in coffee households — keep it as the sampler-pack lead.",
+  "TEA-EBF-02": "Office orders cluster Mon–Tue; a B2B-tagged variant would remove noise from retail metrics.",
+  "TEA-JAS-03": "Best tea cross-sell from coffee. Suggested target list (921 coffee-only households) is ready in Money Hunter.",
+  "TEA-MTN-04": "Fastest 12-month growth in the tea line with zero promo support — organic momentum worth a dedicated campaign.",
+  "TEA-CHA-05": "Evening-basket affinity with Decaf Notte at 2.4× baseline. Bundle test recommended.",
+  "TEA-BCU-06": "Gift-season skew detected; pre-build December stock to avoid last year's two-week stockout.",
+  "MCH-ONE-01": "184 heavy capsule buyers still have no machine on file — the single largest upsell pool. Bundle draft is awaiting approval.",
+  "MCH-PRO-02": "Pro buyers' 12-month LTV runs 2.1× One buyers. Champions without a Pro are a high-value early-access list.",
+  "MCH-MLK-03": "92% of frother units sell attached to a machine. Standalone ads are wasted spend — recommend pausing the standalone ad set.",
+};
+
+// ---------- Customer AI notes (per customer id) ----------
+export const CUSTOMER_AI: Record<string, string> = {
+  "C-07342": "Model champion: 81 orders, intensity-ladder complete. Best used as an early-access reviewer for new single-origin drops — never discount.",
+  "C-10412": "Champion with machine-upsell flag: heavy capsule volume, no Pro on file. Early-access invite to MEAMA Pro recommended this month.",
+  "C-09873": "Loyalist on a stable 12-day cadence. A capsule subscription offer would lock in ~₾300/month with high acceptance probability.",
+  "C-10978": "Brand-store loyalist — responds to in-store tastings, ignores email. Route campaigns through the store channel.",
+  "C-08755": "Churn risk 0.74 and 61 days silent; spend decayed over 4 months. Win-back window is closing — replenishment reminder plus capped 15% voucher today.",
+  "C-10033": "At-risk with brand-store history: last three orders were in-store. A store-pickup incentive outperforms shipping vouchers for this profile.",
+  "C-11240": "Flavour explorer with 4 favourites across coffee and tea. Ideal early-access candidate for new flavour launches — never discount.",
+  "C-11587": "Tea-led explorer, growing spend. Suggest coffee sampler insert in the next tea order to widen the basket.",
+  "C-09114": "Lost (124 days, churn 0.91). LTV does not justify paid win-back — keep on the organic newsletter only.",
+  "C-12001": "New customer, 2 orders of Colombia. The second-to-third-order window is decisive: send the flavour-discovery guide now.",
+};

@@ -43,7 +43,7 @@ export default function Alerts() {
         ))}
       </div>
 
-      <p className="mt-6 text-center text-[11px] text-meama-muted/70">{t("common.demoData")}</p>
+      <p className="mt-6 text-center text-[11px] text-meama-cream/30">{t("common.demoData")}</p>
     </div>
   );
 }

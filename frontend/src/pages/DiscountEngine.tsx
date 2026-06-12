@@ -102,7 +102,7 @@ export default function DiscountEngine() {
         subtitle={t("pages.discount.subtitle")}
       />
 
-      <div className="card-m mb-6 grid grid-cols-1 gap-6 bg-meama-charcoal p-6 sm:grid-cols-4">
+      <div className="panel-dark mb-6 grid grid-cols-1 gap-6 sm:grid-cols-4">
         <StatCallout dark value="40%" tag="Margin floor" tone="green">
           Minimum gross margin enforced on every promo line.
         </StatCallout>

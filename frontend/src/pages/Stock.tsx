@@ -23,7 +23,7 @@ export default function Stock() {
         subtitle={t("pages.stock.subtitle")}
       />
 
-      <div className="card-m mb-6 grid grid-cols-1 gap-6 bg-meama-charcoal p-6 sm:grid-cols-3">
+      <div className="panel-dark mb-6 grid grid-cols-1 gap-6 sm:grid-cols-3">
         <StatCallout dark value={String(critical)} tag="Critical · <2 weeks" tone="red">
           Below the 2-week cover floor — reorder now.
         </StatCallout>
@@ -79,7 +79,7 @@ export default function Stock() {
         </table>
       </div>
 
-      <p className="mt-6 text-center text-[11px] text-meama-muted/70">{t("common.demoData")}</p>
+      <p className="mt-6 text-center text-[11px] text-meama-cream/30">{t("common.demoData")}</p>
     </div>
   );
 }

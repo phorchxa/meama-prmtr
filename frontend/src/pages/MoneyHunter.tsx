@@ -22,7 +22,7 @@ export default function MoneyHunter() {
         subtitle={t("pages.moneyHunter.subtitle")}
       />
 
-      <div className="card-m mb-6 grid grid-cols-1 gap-6 !border-l-meama-gold bg-meama-charcoal p-6 sm:grid-cols-3">
+      <div className="panel-dark mb-6 grid grid-cols-1 gap-6 sm:grid-cols-3">
         <StatCallout dark value={formatGEL0(MONEY_ON_TABLE)} tag="Total opportunity">
           Estimated recoverable revenue across all open plays.
         </StatCallout>
@@ -66,7 +66,7 @@ export default function MoneyHunter() {
         ))}
       </div>
 
-      <p className="mt-6 text-center text-[11px] text-meama-muted/70">{t("common.demoData")}</p>
+      <p className="mt-6 text-center text-[11px] text-meama-cream/30">{t("common.demoData")}</p>
     </div>
   );
 }
