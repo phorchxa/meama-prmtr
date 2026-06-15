@@ -12,12 +12,10 @@ class ProductSummary(BaseModel):
     price: float
     cogs: float | None = None
 
-    # Enrichment from products_georgia
+    # ── Enrichment ──────────────────────────────────────────────────────────
     image_url: str | None = None
-
-    # Enrichment from Meama Products Bible
-    caffeine: str | None = None         # raw string e.g. "70mg"
-    caffeine_mg: int | None = None      # parsed integer
+    caffeine: str | None = None
+    caffeine_mg: int | None = None
     intensity_level: float | None = None
     bitterness: float | None = None
     arabica_pct: float | None = None
@@ -27,16 +25,16 @@ class ProductSummary(BaseModel):
     beverage_type: str | None = None
     bio: bool = False
     compatible_with: str | None = None
-    capsule_format: str | None = None   # e.g. "Multicapsule", "European"
+    capsule_format: str | None = None
     hot_cold: str | None = None
 
-    # Sales stats (from product_stats_cache)
+    # ── 30d + 12-month series (get_product_stats) ────────────────────────────
     units_sold_30d: int = 0
     revenue_30d: float = 0.0
-    monthly_units: list[int] = []       # 12 months oldest → newest
+    monthly_units: list[int] = []
     repeat_rate: float = 0.0
 
-    # Channel split (from get_product_channel_stats)
+    # ── Channel split (get_product_channel_stats) ────────────────────────────
     units_30d_web: int = 0
     revenue_30d_web: float = 0.0
     avg_price_web: float | None = None
@@ -44,12 +42,34 @@ class ProductSummary(BaseModel):
     revenue_30d_pos: float = 0.0
     avg_price_pos: float | None = None
 
-    # Reorder rates (from get_product_reorder_rates)
+    # ── Reorder + retention (get_product_reorder_rates) ──────────────────────
     total_buyers: int = 0
     reorder_rate_30d: float = 0.0
     reorder_rate_60d: float = 0.0
     reorder_rate_90d: float = 0.0
     retention_rate: float = 0.0
+
+    # ── New metrics (get_product_new_metrics) ─────────────────────────────────
+    total_revenue: float = 0.0          # all-time retail revenue
+    total_quantity: int = 0             # all-time retail units sold
+    format_rank_pct: float | None = None  # share within same category (90d)
+    total_rank_pct: float | None = None   # share of all retail units (90d)
+    monthly_growth_pct: float | None = None  # current vs prev month units
+    margin_pct: float | None = None     # (sales/1.18 – COGS) / (sales/1.18)
+    full_price_revenue: float = 0.0
+    full_price_units: int = 0
+    discounted_revenue: float = 0.0
+    discounted_units: int = 0
+    avg_monthly_consumption: float = 0.0  # avg units/month last 6 months
+    refund_rate: float = 0.0
+
+    # ── Top bundle partner (get_product_top_bundles) ──────────────────────────
+    top_bundle_sku: str | None = None
+    top_bundle_name: str | None = None
+    top_bundle_count: int = 0
+
+    # ── Stock status (derived from avg_monthly_consumption + stock_quantity) ──
+    stock_status: str | None = None     # 'understock' | 'in_stock' | 'overstock'
 
     ai_insight: str | None = None
 

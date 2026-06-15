@@ -19,7 +19,7 @@ const CAT_LABELS: Record<string, string> = {
 };
 
 type Tab = "catalog" | "revenue" | "retention" | "affinity";
-type SortKey = "revenue" | "units" | "price" | "repeat" | "reorder90" | "buyers" | "trend";
+type SortKey = "revenue" | "units" | "price" | "repeat" | "reorder90" | "buyers" | "trend" | "total_revenue" | "growth" | "margin";
 type SortDir = "desc" | "asc";
 
 // ── Caffeine bucket ────────────────────────────────────────────────────────────
@@ -142,26 +142,16 @@ function SkeletonCard() {
   );
 }
 
-// ── Filter/sort bar ───────────────────────────────────────────────────────────
-interface FiltersState {
-  search: string;
-  category: string;
-  caffeine: "all" | "none" | "low" | "medium" | "high";
-  bio: boolean;
-  hotcold: "all" | "hot" | "cold";
-  trend: "all" | "up" | "down";
-  sortKey: SortKey;
-  sortDir: SortDir;
-  view: "grid" | "table";
-}
-
 const SORT_OPTIONS: { key: SortKey; label: string }[] = [
   { key: "revenue", label: "Revenue 30d" },
+  { key: "total_revenue", label: "Revenue All-time" },
   { key: "units", label: "Units 30d" },
   { key: "price", label: "Price" },
   { key: "repeat", label: "Repeat rate" },
   { key: "reorder90", label: "Reorder 90d" },
   { key: "buyers", label: "Total buyers" },
+  { key: "growth", label: "Monthly growth" },
+  { key: "margin", label: "Margin %" },
   { key: "trend", label: "Trend" },
 ];
 
@@ -170,13 +160,16 @@ function sortProducts(products: ProductSummary[], key: SortKey, dir: SortDir): P
   return [...products].sort((a, b) => {
     let va = 0, vb = 0;
     switch (key) {
-      case "revenue":  va = a.revenue_30d; vb = b.revenue_30d; break;
-      case "units":    va = a.units_sold_30d; vb = b.units_sold_30d; break;
-      case "price":    va = a.price; vb = b.price; break;
-      case "repeat":   va = a.repeat_rate; vb = b.repeat_rate; break;
-      case "reorder90": va = a.reorder_rate_90d; vb = b.reorder_rate_90d; break;
-      case "buyers":   va = a.total_buyers; vb = b.total_buyers; break;
-      case "trend":    va = a.monthly_units[11] ?? 0; vb = b.monthly_units[11] ?? 0; break;
+      case "revenue":       va = a.revenue_30d; vb = b.revenue_30d; break;
+      case "total_revenue": va = a.total_revenue; vb = b.total_revenue; break;
+      case "units":         va = a.units_sold_30d; vb = b.units_sold_30d; break;
+      case "price":         va = a.price; vb = b.price; break;
+      case "repeat":        va = a.repeat_rate; vb = b.repeat_rate; break;
+      case "reorder90":     va = a.reorder_rate_90d; vb = b.reorder_rate_90d; break;
+      case "buyers":        va = a.total_buyers; vb = b.total_buyers; break;
+      case "growth":        va = a.monthly_growth_pct ?? -999; vb = b.monthly_growth_pct ?? -999; break;
+      case "margin":        va = a.margin_pct ?? -999; vb = b.margin_pct ?? -999; break;
+      case "trend":         va = a.monthly_units[11] ?? 0; vb = b.monthly_units[11] ?? 0; break;
     }
     return (va - vb) * multiplier;
   });
@@ -184,52 +177,51 @@ function sortProducts(products: ProductSummary[], key: SortKey, dir: SortDir): P
 
 // ── Revenue tab ───────────────────────────────────────────────────────────────
 function RevenueTab({ products }: { products: ProductSummary[] }) {
-  const top = [...products].sort((a, b) => b.revenue_30d - a.revenue_30d).slice(0, 20);
+  const top = [...products].sort((a, b) => b.total_revenue - a.total_revenue).slice(0, 20);
   const totalRev = products.reduce((s, p) => s + p.revenue_30d, 0);
   const totalWeb = products.reduce((s, p) => s + p.revenue_30d_web, 0);
   const totalPos = products.reduce((s, p) => s + p.revenue_30d_pos, 0);
-  const capsules = products.filter((p) => p.repeat_rate > 0 && p.revenue_30d > 0);
-  const activeCapsuleBuyers = new Set<string>();
-  // Use repeat_rate as proxy for active capsule customers (can't enumerate here)
-  const avgMonthlySpend = capsules.length > 0
-    ? capsules.reduce((s, p) => s + p.revenue_30d, 0) / Math.max(1, capsules.length)
-    : 0;
+  const totalAllTime = products.reduce((s, p) => s + p.total_revenue, 0);
+  const totalFullPrice = products.reduce((s, p) => s + p.full_price_revenue, 0);
+  const totalDiscounted = products.reduce((s, p) => s + p.discounted_revenue, 0);
 
   return (
     <div className="space-y-6">
       {/* Summary row */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         {[
-          { label: "Total Revenue · 30d", value: formatGEL0(totalRev) },
-          { label: "E-Commerce", value: formatGEL0(totalWeb), sub: totalRev ? `${((totalWeb/totalRev)*100).toFixed(0)}%` : "—" },
-          { label: "Brand Store", value: formatGEL0(totalPos), sub: totalRev ? `${((totalPos/totalRev)*100).toFixed(0)}%` : "—" },
-          { label: "Avg Capsule Rev / SKU", value: formatGEL0(avgMonthlySpend) },
+          { label: "Revenue · 30d", value: formatGEL0(totalRev) },
+          { label: "E-Commerce · 30d", value: formatGEL0(totalWeb), sub: totalRev ? `${((totalWeb/totalRev)*100).toFixed(0)}% of 30d` : "—" },
+          { label: "Brand Store · 30d", value: formatGEL0(totalPos), sub: totalRev ? `${((totalPos/totalRev)*100).toFixed(0)}% of 30d` : "—" },
+          { label: "All-Time Revenue", value: formatGEL0(totalAllTime) },
         ].map((s) => (
           <div key={s.label} className="panel-dark border-l-2 border-l-[#3A3A3A]">
             <div className="font-mono text-[10px] uppercase tracking-wider text-[#9A9590]">{s.label}</div>
             <div className="tabular mt-1 font-display text-[28px] uppercase leading-none text-[#F4F0EA]">{s.value}</div>
-            {s.sub ? <div className="font-mono text-xs text-[#C8C3BC]">{s.sub} of total</div> : null}
+            {s.sub ? <div className="font-mono text-xs text-[#C8C3BC]">{s.sub}</div> : null}
           </div>
         ))}
       </div>
 
-      {/* Ranked table */}
+      {/* Ranked table — all-time + new metrics */}
       <div>
         <div className="mb-3 font-mono text-[10px] uppercase tracking-wider text-meama-gold">
-          — Top 20 by Revenue · 30d
+          — Top 20 by All-Time Revenue
         </div>
         <div className="overflow-x-auto border border-meama-charcoal">
           <table className="min-w-full text-sm">
             <thead>
               <tr className="border-b border-meama-charcoal">
-                {["#", "Product", "Category", "Price", "Rev 30d", "Web", "POS", "ASP Web", "ASP POS", "Repeat"].map((h) => (
-                  <th key={h} className="px-3 py-2.5 font-mono text-[10px] font-medium uppercase tracking-wider text-meama-gold text-right first:text-left">{h}</th>
+                {["#", "Product", "Cat.", "All-Time Rev", "Total Units", "Format Rank", "Total Rank", "MoM Growth", "Margin %", "Rev 30d"].map((h) => (
+                  <th key={h} className="px-3 py-2.5 font-mono text-[10px] font-medium uppercase tracking-wider text-meama-gold text-right first:text-left second:text-left">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {top.map((p, i) => {
-                const declining = (p.monthly_units[11] ?? 0) < (p.monthly_units[0] ?? 0);
+                const growth = p.monthly_growth_pct;
+                const growthColor = growth == null ? "text-meama-muted" : growth > 0 ? "text-meama-green" : growth < 0 ? "text-meama-red" : "text-meama-muted";
+                const marginColor = p.margin_pct == null ? "text-meama-muted" : p.margin_pct >= 0.4 ? "text-meama-green" : p.margin_pct >= 0.2 ? "text-meama-gold" : "text-meama-red";
                 return (
                   <tr key={p.sku} className="border-b border-meama-charcoal hover:bg-meama-ivory">
                     <td className="px-3 py-2 font-mono text-xs text-meama-muted">{i + 1}</td>
@@ -240,19 +232,21 @@ function RevenueTab({ products }: { products: ProductSummary[] }) {
                       <div className="font-mono text-[10px] text-meama-muted">{p.sku}</div>
                     </td>
                     <td className="px-3 py-2 text-xs text-meama-cream">{CAT_LABELS[p.category] ?? p.category}</td>
-                    <td className="tabular px-3 py-2 text-right text-meama-cream">{formatGEL(p.price)}</td>
-                    <td className="tabular px-3 py-2 text-right font-semibold text-meama-brown">{formatGEL0(p.revenue_30d)}</td>
-                    <td className="tabular px-3 py-2 text-right text-meama-cream">{formatGEL0(p.revenue_30d_web)}</td>
-                    <td className="tabular px-3 py-2 text-right text-meama-cream">{formatGEL0(p.revenue_30d_pos)}</td>
+                    <td className="tabular px-3 py-2 text-right font-semibold text-meama-brown">{formatGEL0(p.total_revenue)}</td>
+                    <td className="tabular px-3 py-2 text-right text-meama-cream">{formatNumber(p.total_quantity)}</td>
                     <td className="tabular px-3 py-2 text-right text-meama-cream">
-                      {p.avg_price_web != null ? formatGEL(p.avg_price_web) : <span className="text-meama-muted">—</span>}
+                      {p.format_rank_pct != null ? formatPercent(p.format_rank_pct, 1) : <span className="text-meama-muted">—</span>}
                     </td>
                     <td className="tabular px-3 py-2 text-right text-meama-cream">
-                      {p.avg_price_pos != null ? formatGEL(p.avg_price_pos) : <span className="text-meama-muted">—</span>}
+                      {p.total_rank_pct != null ? formatPercent(p.total_rank_pct, 1) : <span className="text-meama-muted">—</span>}
                     </td>
-                    <td className={`tabular px-3 py-2 text-right font-mono ${declining ? "text-meama-red" : "text-meama-green"}`}>
-                      {formatPercent(p.repeat_rate, 0)}
+                    <td className={`tabular px-3 py-2 text-right font-mono font-bold ${growthColor}`}>
+                      {growth != null ? `${growth > 0 ? "+" : ""}${formatPercent(growth, 1)}` : "—"}
                     </td>
+                    <td className={`tabular px-3 py-2 text-right font-mono font-bold ${marginColor}`}>
+                      {p.margin_pct != null ? formatPercent(p.margin_pct, 1) : <span className="text-meama-muted">—</span>}
+                    </td>
+                    <td className="tabular px-3 py-2 text-right text-meama-cream">{formatGEL0(p.revenue_30d)}</td>
                   </tr>
                 );
               })}
@@ -264,7 +258,7 @@ function RevenueTab({ products }: { products: ProductSummary[] }) {
       {/* Monthly trend chart — top 6 */}
       <div>
         <div className="mb-3 font-mono text-[10px] uppercase tracking-wider text-meama-gold">
-          — Revenue Growth by Month · Top 6 SKUs
+          — Unit Trend by Month · Top 6 SKUs
         </div>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {top.slice(0, 6).map((p) => {
@@ -276,13 +270,18 @@ function RevenueTab({ products }: { products: ProductSummary[] }) {
                   {CAT_LABELS[p.category] ?? p.category}
                 </div>
                 <div className="mt-1 truncate text-sm font-semibold text-meama-brown">{p.name}</div>
+                {p.monthly_growth_pct != null && (
+                  <div className={`font-mono text-[10px] ${p.monthly_growth_pct > 0 ? "text-meama-green" : p.monthly_growth_pct < 0 ? "text-meama-red" : "text-meama-muted"}`}>
+                    MoM {p.monthly_growth_pct > 0 ? "+" : ""}{formatPercent(p.monthly_growth_pct, 1)}
+                  </div>
+                )}
                 <div className="mt-3 flex items-end gap-1" style={{ height: 40 }}>
-                  {monthly.map((v, i) => {
+                  {monthly.map((v, idx) => {
                     const max = Math.max(...monthly, 1);
                     return (
                       <div
-                        key={i}
-                        className={`flex-1 rounded-t-none ${i === 11 ? "bg-meama-gold" : declining ? "bg-meama-red/40" : "bg-meama-gold/35"}`}
+                        key={idx}
+                        className={`flex-1 rounded-t-none ${idx === 11 ? "bg-meama-gold" : declining ? "bg-meama-red/40" : "bg-meama-gold/35"}`}
                         style={{ height: `${(v / max) * 100}%`, minHeight: 1 }}
                       />
                     );
@@ -301,19 +300,88 @@ function RevenueTab({ products }: { products: ProductSummary[] }) {
         </div>
       </div>
 
-      {/* Promo behavior — pending */}
-      <div className="border border-dashed border-meama-charcoal p-6">
-        <div className="font-mono text-[10px] uppercase tracking-wider text-meama-muted">
-          — Promo Behavior
+      {/* Promo behavior — full price vs discounted */}
+      <div>
+        <div className="mb-3 font-mono text-[10px] uppercase tracking-wider text-meama-gold">
+          — Promo Behaviour · Full Price vs Discounted (All-Time)
         </div>
-        <p className="mt-2 font-mono text-sm text-meama-muted">
-          Promo vs. non-promo velocity and campaign rankings will appear once the ETL
-          ingests promo codes from the order data. Fields needed:{" "}
-          <code className="text-meama-gold">discount_codes</code> /{" "}
-          <code className="text-meama-gold">discount_amount</code> per order.
-        </p>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="panel-dark border-l-2 border-l-[#3A3A3A]">
+            <div className="font-mono text-[10px] uppercase tracking-wider text-[#9A9590]">Full-Price Revenue</div>
+            <div className="tabular mt-1 font-display text-[28px] uppercase leading-none text-[#F4F0EA]">{formatGEL0(totalFullPrice)}</div>
+            <div className="font-mono text-xs text-[#C8C3BC]">
+              {totalAllTime > 0 ? `${((totalFullPrice / totalAllTime) * 100).toFixed(1)}% of all-time` : "—"}
+            </div>
+          </div>
+          <div className="panel-dark border-l-2 border-l-[#3A3A3A]">
+            <div className="font-mono text-[10px] uppercase tracking-wider text-[#9A9590]">Discounted Revenue</div>
+            <div className="tabular mt-1 font-display text-[28px] uppercase leading-none text-[#F4F0EA]">{formatGEL0(totalDiscounted)}</div>
+            <div className="font-mono text-xs text-[#C8C3BC]">
+              {totalAllTime > 0 ? `${((totalDiscounted / totalAllTime) * 100).toFixed(1)}% of all-time` : "—"}
+            </div>
+          </div>
+        </div>
+        {/* Per-product promo breakdown — top 15 by discounted units */}
+        <div className="mt-4 overflow-x-auto border border-meama-charcoal">
+          <table className="min-w-full text-sm">
+            <thead>
+              <tr className="border-b border-meama-charcoal">
+                {["Product", "Full-Price Rev", "Full-Price Units", "Discounted Rev", "Discounted Units", "Discount Share"].map((h) => (
+                  <th key={h} className="px-3 py-2.5 font-mono text-[10px] font-medium uppercase tracking-wider text-meama-gold text-right first:text-left">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {[...products]
+                .filter((p) => p.discounted_units > 0 || p.full_price_units > 0)
+                .sort((a, b) => b.discounted_units - a.discounted_units)
+                .slice(0, 15)
+                .map((p) => {
+                  const totalUnits = p.full_price_units + p.discounted_units;
+                  const discShare = totalUnits > 0 ? p.discounted_units / totalUnits : 0;
+                  return (
+                    <tr key={p.sku} className="border-b border-meama-charcoal hover:bg-meama-ivory">
+                      <td className="px-3 py-2">
+                        <Link to={`/products/${p.sku}`} className="font-medium text-meama-brown hover:text-meama-gold">{p.name}</Link>
+                        <div className="font-mono text-[10px] text-meama-muted">{p.sku}</div>
+                      </td>
+                      <td className="tabular px-3 py-2 text-right text-meama-cream">{formatGEL0(p.full_price_revenue)}</td>
+                      <td className="tabular px-3 py-2 text-right text-meama-cream">{formatNumber(p.full_price_units)}</td>
+                      <td className="tabular px-3 py-2 text-right text-meama-cream">{formatGEL0(p.discounted_revenue)}</td>
+                      <td className="tabular px-3 py-2 text-right text-meama-cream">{formatNumber(p.discounted_units)}</td>
+                      <td className="px-3 py-2 text-right">
+                        <div className="inline-flex items-center gap-2">
+                          <div className="h-1 w-16 bg-meama-charcoal">
+                            <div className={`h-full ${discShare > 0.5 ? "bg-meama-red" : discShare > 0.25 ? "bg-meama-gold" : "bg-meama-green"}`} style={{ width: `${discShare * 100}%` }} />
+                          </div>
+                          <span className={`tabular font-mono text-xs font-bold ${discShare > 0.5 ? "text-meama-red" : discShare > 0.25 ? "text-meama-gold" : "text-meama-green"}`}>
+                            {formatPercent(discShare, 1)}
+                          </span>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
+  );
+}
+
+// ── Stock status badge ─────────────────────────────────────────────────────────
+function StockBadge({ status }: { status: string | null }) {
+  if (!status) return null;
+  const cfg = {
+    understock: { label: "UNDERSTOCK", cls: "bg-meama-red/10 text-meama-red border-meama-red/30" },
+    in_stock:   { label: "IN STOCK",   cls: "bg-meama-green/10 text-meama-green border-meama-green/30" },
+    overstock:  { label: "OVERSTOCK",  cls: "bg-meama-blue/10 text-meama-blue border-meama-blue/30" },
+  }[status] ?? { label: status.toUpperCase(), cls: "border-meama-charcoal text-meama-muted" };
+  return (
+    <span className={`inline-block border px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wider ${cfg.cls}`}>
+      {cfg.label}
+    </span>
   );
 }
 
@@ -331,9 +399,29 @@ function RetentionTab({ products }: { products: ProductSummary[] }) {
     .sort((a, b) => b.retention_rate - a.retention_rate)
     .slice(0, 5);
 
+  const understockCount = products.filter((p) => p.stock_status === "understock").length;
+  const overstockCount  = products.filter((p) => p.stock_status === "overstock").length;
+  const avgRefundRate   = products.filter((p) => p.total_quantity > 0).reduce((s, p) => s + p.refund_rate, 0) /
+    Math.max(1, products.filter((p) => p.total_quantity > 0).length);
+
   return (
     <div className="space-y-6">
-      {/* Which capsule brings customers back */}
+      {/* Stock + refund summary */}
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+        {[
+          { label: "Understock SKUs", value: String(understockCount), cls: understockCount > 0 ? "text-meama-red" : "text-[#F4F0EA]" },
+          { label: "Overstock SKUs",  value: String(overstockCount),  cls: overstockCount  > 0 ? "text-meama-blue" : "text-[#F4F0EA]" },
+          { label: "Avg Refund Rate", value: formatPercent(avgRefundRate, 2), cls: avgRefundRate > 0.05 ? "text-meama-red" : "text-[#F4F0EA]" },
+          { label: "Products Tracked", value: String(products.filter((p) => p.avg_monthly_consumption > 0).length), cls: "text-[#F4F0EA]" },
+        ].map((s) => (
+          <div key={s.label} className="panel-dark border-l-2 border-l-[#3A3A3A]">
+            <div className="font-mono text-[10px] uppercase tracking-wider text-[#9A9590]">{s.label}</div>
+            <div className={`tabular mt-1 font-display text-[28px] uppercase leading-none ${s.cls}`}>{s.value}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Top retention capsules */}
       <div className="panel-dark border-l-2 border-l-[#3A3A3A]">
         <div className="mb-4 font-mono text-[9.5px] uppercase tracking-[0.3em] text-[#9A9590]">
           — Capsules That Bring Customers Back Most · 90d Retention Rate
@@ -343,7 +431,10 @@ function RetentionTab({ products }: { products: ProductSummary[] }) {
             <div key={p.sku} className="flex items-center gap-3">
               <span className="tabular w-4 font-mono text-xs text-[#5A5A5A]">{i + 1}</span>
               <div className="flex-1">
-                <div className="text-sm font-medium text-[#F4F0EA]">{p.name}</div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-[#F4F0EA]">{p.name}</span>
+                  <StockBadge status={p.stock_status} />
+                </div>
                 <div className="mt-1 h-px bg-[#2A2A2A]">
                   <div className="h-full bg-[#F4F0EA]" style={{ width: `${p.retention_rate * 100}%` }} />
                 </div>
@@ -357,7 +448,7 @@ function RetentionTab({ products }: { products: ProductSummary[] }) {
         </div>
       </div>
 
-      {/* Window toggle + table */}
+      {/* Window toggle + full table */}
       <div>
         <div className="mb-3 flex items-center justify-between">
           <div className="font-mono text-[10px] uppercase tracking-wider text-meama-gold">
@@ -383,7 +474,7 @@ function RetentionTab({ products }: { products: ProductSummary[] }) {
           <table className="min-w-full text-sm">
             <thead>
               <tr className="border-b border-meama-charcoal">
-                {["Product", "Category", "Buyers", "Reorder Rate", "Retention 90d", "Repeat"].map((h) => (
+                {["Product", "Category", "Buyers", "Reorder Rate", "Retention 90d", "Avg Monthly", "Refund Rate", "Stock", "Repeat"].map((h) => (
                   <th key={h} className="px-3 py-2.5 font-mono text-[10px] font-medium uppercase tracking-wider text-meama-gold text-left last:text-right">{h}</th>
                 ))}
               </tr>
@@ -403,7 +494,7 @@ function RetentionTab({ products }: { products: ProductSummary[] }) {
                     <td className="px-3 py-2">
                       <div className="flex items-center gap-2">
                         <div className="h-1 w-20 bg-meama-charcoal">
-                          <div className="h-full bg-meama-gold" style={{ width: `${rate * 100}%` }} />
+                          <div className="h-full bg-meama-gold" style={{ width: `${Math.min(rate * 100, 100)}%` }} />
                         </div>
                         <span className={`tabular font-mono text-xs font-bold ${rate > 0.15 ? "text-meama-green" : rate > 0.05 ? "text-meama-gold" : "text-meama-muted"}`}>
                           {formatPercent(rate, 1)}
@@ -412,6 +503,15 @@ function RetentionTab({ products }: { products: ProductSummary[] }) {
                     </td>
                     <td className={`tabular px-3 py-2 font-mono text-xs ${p.retention_rate > 0.2 ? "text-meama-green" : "text-meama-muted"}`}>
                       {formatPercent(p.retention_rate, 1)}
+                    </td>
+                    <td className="tabular px-3 py-2 font-mono text-xs text-meama-cream">
+                      {p.avg_monthly_consumption > 0 ? formatNumber(Math.round(p.avg_monthly_consumption)) : <span className="text-meama-muted">—</span>}
+                    </td>
+                    <td className={`tabular px-3 py-2 font-mono text-xs ${p.refund_rate > 0.05 ? "text-meama-red" : p.refund_rate > 0.02 ? "text-meama-gold" : "text-meama-muted"}`}>
+                      {formatPercent(p.refund_rate, 2)}
+                    </td>
+                    <td className="px-3 py-2">
+                      <StockBadge status={p.stock_status} />
                     </td>
                     <td className="tabular px-3 py-2 text-right font-mono text-xs text-meama-cream">
                       {formatPercent(p.repeat_rate, 1)}
@@ -796,9 +896,12 @@ export default function Products() {
                               <div className="truncate text-sm font-semibold text-meama-brown">{p.name}</div>
                               <div className="font-mono text-[9px] text-meama-muted">{p.sku}</div>
                             </div>
-                            <span className="tabular shrink-0 border border-meama-gold/50 px-2 py-0.5 font-mono text-[11px] font-bold text-meama-gold">
-                              {formatGEL(p.price)}
-                            </span>
+                            <div className="flex shrink-0 flex-col items-end gap-1">
+                              <span className="tabular border border-meama-gold/50 px-2 py-0.5 font-mono text-[11px] font-bold text-meama-gold">
+                                {formatGEL(p.price)}
+                              </span>
+                              <StockBadge status={p.stock_status} />
+                            </div>
                           </div>
 
                           {/* Intensity + caffeine */}
@@ -811,6 +914,13 @@ export default function Products() {
                             <div className="mt-1 font-mono text-[9px] text-meama-muted">
                               ⚡ {p.caffeine}
                               {p.bio && <span className="ml-2 text-meama-green">· BIO</span>}
+                            </div>
+                          )}
+
+                          {/* Top bundle partner */}
+                          {p.top_bundle_name && (
+                            <div className="mt-1 font-mono text-[9px] text-meama-muted">
+                              + often with <span className="text-meama-cream">{p.top_bundle_name}</span>
                             </div>
                           )}
 
@@ -843,7 +953,7 @@ export default function Products() {
               <table className="min-w-full text-sm">
                 <thead>
                   <tr className="border-b border-meama-charcoal">
-                    {["Product", "Category", "Price", "Rev 30d", "Units 30d", "Caffeine", "Intensity", "Repeat", "Reorder 90d", "Bio", "Trend"].map((h) => (
+                    {["Product", "Category", "Price", "Rev 30d", "Units 30d", "Caffeine", "Intensity", "Repeat", "Reorder 90d", "Bio", "Stock", "Bundle", "Trend"].map((h) => (
                       <th key={h} className="px-3 py-2.5 font-mono text-[10px] font-medium uppercase tracking-wider text-meama-gold text-left last:text-center">{h}</th>
                     ))}
                   </tr>
@@ -875,6 +985,14 @@ export default function Products() {
                         </td>
                         <td className="px-3 py-2 text-center font-mono text-xs">
                           {p.bio ? <span className="text-meama-green">✓</span> : <span className="text-meama-muted">—</span>}
+                        </td>
+                        <td className="px-3 py-2">
+                          <StockBadge status={p.stock_status} />
+                        </td>
+                        <td className="px-3 py-2 font-mono text-[10px] text-meama-muted">
+                          {p.top_bundle_name
+                            ? <span title={`${p.top_bundle_count}×`} className="text-meama-cream">{p.top_bundle_name}</span>
+                            : <span>—</span>}
                         </td>
                         <td className={`px-3 py-2 text-center font-mono text-xs ${declining ? "text-meama-red" : "text-meama-green"}`}>
                           {declining ? "▼" : "▲"}

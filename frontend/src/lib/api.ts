@@ -45,6 +45,28 @@ export interface ProductSummary {
   reorder_rate_90d: number;
   retention_rate: number;
 
+  // New metrics
+  total_revenue: number;
+  total_quantity: number;
+  format_rank_pct: number | null;
+  total_rank_pct: number | null;
+  monthly_growth_pct: number | null;
+  margin_pct: number | null;
+  full_price_revenue: number;
+  full_price_units: number;
+  discounted_revenue: number;
+  discounted_units: number;
+  avg_monthly_consumption: number;
+  refund_rate: number;
+
+  // Bundle
+  top_bundle_sku: string | null;
+  top_bundle_name: string | null;
+  top_bundle_count: number;
+
+  // Stock
+  stock_status: "understock" | "in_stock" | "overstock" | null;
+
   ai_insight: string | null;
 }
 
