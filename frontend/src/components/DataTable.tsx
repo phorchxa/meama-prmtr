@@ -1,5 +1,4 @@
 import type { ReactNode } from "react";
-
 import { EmptyState } from "./EmptyState";
 
 export interface Column<T> {
@@ -21,14 +20,14 @@ export function DataTable<T>({ columns, rows, rowKey, emptyTitle }: DataTablePro
     return <EmptyState title={emptyTitle} />;
   }
   return (
-    <div className="overflow-x-auto rounded-lg border border-meama-gold/30 bg-white">
+    <div className="overflow-x-auto border border-meama-charcoal bg-meama-ivory">
       <table className="min-w-full text-sm">
         <thead>
-          <tr className="border-b border-meama-gold/30 bg-meama-cream/60 text-left">
+          <tr className="border-b border-meama-charcoal bg-meama-roast text-left">
             {columns.map((col) => (
               <th
                 key={col.key}
-                className={`px-3 py-2 font-medium text-meama-brown ${
+                className={`px-4 py-3 font-mono text-[9.5px] uppercase tracking-[0.22em] text-meama-muted ${
                   col.numeric ? "text-right" : ""
                 }`}
               >
@@ -39,11 +38,14 @@ export function DataTable<T>({ columns, rows, rowKey, emptyTitle }: DataTablePro
         </thead>
         <tbody>
           {rows.map((row) => (
-            <tr key={rowKey(row)} className="border-b border-meama-gold/10 last:border-0">
+            <tr
+              key={rowKey(row)}
+              className="border-b border-meama-charcoal last:border-0 transition-colors duration-100 hover:bg-meama-roast"
+            >
               {columns.map((col) => (
                 <td
                   key={col.key}
-                  className={`px-3 py-2 ${col.numeric ? "tabular text-right" : ""}`}
+                  className={`px-4 py-2.5 text-meama-cream ${col.numeric ? "tabular text-right" : ""}`}
                 >
                   {col.render
                     ? col.render(row)

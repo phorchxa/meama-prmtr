@@ -1,17 +1,17 @@
 export type BadgeTone = "green" | "gold" | "blue" | "red" | "muted";
 
 const TONES: Record<BadgeTone, string> = {
-  green: "bg-meama-green/12 text-meama-green",
-  gold: "bg-meama-gold/15 text-[#8a6526]",
-  blue: "bg-meama-blue/10 text-meama-blue",
-  red: "bg-meama-red/10 text-meama-red",
-  muted: "bg-meama-charcoal/8 text-meama-muted",
+  green: "border-meama-green/40 text-meama-green bg-meama-green/8",
+  gold:  "border-meama-charcoal text-meama-brown bg-transparent",
+  blue:  "border-meama-blue/40 text-meama-blue bg-meama-blue/8",
+  red:   "border-meama-red/40 text-meama-red bg-meama-red/8",
+  muted: "border-meama-charcoal text-meama-muted bg-transparent",
 };
 
 export function Badge({ tone, children }: { tone: BadgeTone; children: string }) {
   return (
     <span
-      className={`inline-block whitespace-nowrap rounded-full px-2.5 py-0.5 text-[11px] font-bold ${TONES[tone]}`}
+      className={`inline-block whitespace-nowrap border px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.12em] ${TONES[tone]}`}
     >
       {children}
     </span>

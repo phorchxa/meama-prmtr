@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-/** Large stat in the dark-section style: gold top rule, big gold figure. */
+/** Large editorial stat block — Yeezy style big numbers. */
 export function StatCallout({
   value,
   children,
@@ -15,28 +15,29 @@ export function StatCallout({
   dark?: boolean;
 }) {
   const toneText = {
-    gold: "text-meama-gold",
-    green: "text-meama-green",
-    red: "text-meama-red",
-    blue: "text-meama-blue",
+    gold:  dark ? "text-[#F4F0EA]"   : "text-meama-brown",
+    green: dark ? "text-[#5CB87A]"   : "text-meama-green",
+    red:   dark ? "text-[#E05A52]"   : "text-meama-red",
+    blue:  dark ? "text-[#6B8FD8]"   : "text-meama-blue",
   }[tone];
-  const tagTone = {
-    gold: "bg-meama-gold/15 text-meama-gold",
-    green: "bg-meama-green/15 text-meama-green",
-    red: "bg-meama-red/15 text-meama-red",
-    blue: "bg-meama-blue/15 text-meama-blue",
-  }[tone];
+
+  const tagBase = dark
+    ? "border-[#F4F0EA]/20 text-[#C8C3BC]"
+    : "border-meama-charcoal text-meama-muted";
+
   return (
-    <div className="border-t-2 border-meama-gold/40 pt-4">
-      <div className={`tabular text-4xl font-extrabold leading-none tracking-tight ${toneText}`}>
+    <div className="border-t border-meama-charcoal/50 pt-5">
+      <div
+        className={`tabular font-display text-[52px] uppercase leading-none tracking-[0.04em] ${toneText}`}
+      >
         {value}
       </div>
-      <p className={`mt-2 text-sm ${dark ? "text-meama-cream/70" : "text-meama-muted"}`}>
+      <p className={`mt-2 text-sm leading-relaxed ${dark ? "text-[#9A9590]" : "text-meama-muted"}`}>
         {children}
       </p>
       {tag ? (
         <span
-          className={`mt-2 inline-block rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${tagTone}`}
+          className={`mt-3 inline-block border px-2.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.2em] ${tagBase}`}
         >
           {tag}
         </span>

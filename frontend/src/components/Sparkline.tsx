@@ -10,7 +10,7 @@ export function Sparkline({
   data,
   width = 96,
   height = 28,
-  color = "var(--meama-gold)",
+  color = "#0D0D0D",
 }: SparklineProps) {
   if (data.length < 2) {
     return <svg width={width} height={height} aria-hidden="true" />;
@@ -22,7 +22,7 @@ export function Sparkline({
   const points = data
     .map((v, i) => {
       const x = i * stepX;
-      const y = height - ((v - min) / span) * height;
+      const y = height - ((v - min) / span) * (height - 2);
       return `${x.toFixed(1)},${y.toFixed(1)}`;
     })
     .join(" ");
@@ -33,9 +33,10 @@ export function Sparkline({
         points={points}
         fill="none"
         stroke={color}
-        strokeWidth={1.5}
+        strokeWidth={1.2}
         strokeLinecap="round"
         strokeLinejoin="round"
+        opacity="0.5"
       />
     </svg>
   );

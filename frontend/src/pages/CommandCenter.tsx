@@ -24,16 +24,16 @@ function RevenueArea({ data }: { data: number[] }) {
       {[0.25, 0.5, 0.75].map((f) => (
         <line key={f} x1="0" y1={h * f} x2={w} y2={h * f} stroke="var(--meama-charcoal)" opacity="0.06" />
       ))}
-      <polygon points={area} fill="var(--meama-gold)" opacity="0.12" />
+      <polygon points={area} fill="var(--meama-brown)" opacity="0.06" />
       <polyline
         points={line}
         fill="none"
-        stroke="var(--meama-gold)"
-        strokeWidth="2.5"
+        stroke="var(--meama-brown)"
+        strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
-      <circle cx={pts[pts.length - 1][0]} cy={pts[pts.length - 1][1]} r="4" fill="var(--meama-gold)" />
+      <circle cx={pts[pts.length - 1][0]} cy={pts[pts.length - 1][1]} r="4" fill="var(--meama-brown)" />
     </svg>
   );
 }
@@ -79,22 +79,27 @@ export default function CommandCenter() {
               <span>E-commerce {Math.round(CHANNEL_SPLIT.ecom * 100)}%</span>
               <span>Brand stores {Math.round(CHANNEL_SPLIT.brandStore * 100)}%</span>
             </div>
-            <div className="flex h-2 overflow-hidden rounded-full">
-              <div className="bg-meama-gold" style={{ width: `${CHANNEL_SPLIT.ecom * 100}%` }} />
-              <div className="bg-meama-brown" style={{ width: `${CHANNEL_SPLIT.brandStore * 100}%` }} />
+            <div className="flex h-1 overflow-hidden">
+              <div className="bg-meama-brown" style={{ width: `${CHANNEL_SPLIT.ecom * 100}%` }} />
+              <div className="bg-meama-charcoal" style={{ width: `${CHANNEL_SPLIT.brandStore * 100}%` }} />
             </div>
           </div>
         </div>
 
-        <Link to="/money-hunter" className="card-m card-m-hover block bg-meama-charcoal !border-meama-gold/30">
-          <Kicker>Money on the table</Kicker>
-          <div className="tabular mt-2 text-4xl font-extrabold leading-none text-meama-gold">
+        <Link
+          to="/money-hunter"
+          className="card-m-hover block border border-meama-charcoal bg-[#0D0D0D] p-5 text-[#F4F0EA] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_8px_32px_rgba(0,0,0,0.15)]"
+        >
+          <div className="mb-3 font-mono text-[9.5px] uppercase tracking-[0.32em] text-[#9A9590]">
+            Money on the table
+          </div>
+          <div className="tabular font-display text-[42px] uppercase leading-none text-[#F4F0EA]">
             {formatGEL0(MONEY_ON_TABLE)}
           </div>
-          <p className="mt-3 text-sm text-meama-cream/70">
+          <p className="mt-3 text-sm leading-relaxed text-[#9A9590]">
             5 ranked opportunities sitting in the customer base — win-backs, upsells, cross-sells.
           </p>
-          <span className="mt-4 inline-block text-xs font-bold uppercase tracking-wider text-meama-gold">
+          <span className="mt-4 inline-block font-mono text-[10px] uppercase tracking-[0.22em] text-[#C8C3BC]">
             {t("nav.moneyHunter")} →
           </span>
         </Link>
@@ -104,7 +109,7 @@ export default function CommandCenter() {
         <div className="card-m !border-l-meama-red">
           <div className="mb-3 flex items-center justify-between">
             <Kicker>Live alerts</Kicker>
-            <Link to="/alerts" className="text-xs font-semibold text-meama-gold hover:underline">
+            <Link to="/alerts" className="font-mono text-[10px] uppercase tracking-[0.18em] text-meama-muted hover:text-meama-brown transition-colors">
               {t("common.viewAll")} →
             </Link>
           </div>
@@ -113,7 +118,7 @@ export default function CommandCenter() {
               <li key={a.id} className="flex items-start gap-3 text-sm">
                 <span aria-hidden="true">{a.emoji}</span>
                 <div>
-                  <div className="font-semibold text-meama-charcoal">{a.title}</div>
+                  <div className="font-semibold text-meama-brown">{a.title}</div>
                   <div className="text-xs text-meama-muted">{a.detail}</div>
                 </div>
               </li>
@@ -124,7 +129,7 @@ export default function CommandCenter() {
         <div className="card-m">
           <div className="mb-3 flex items-center justify-between">
             <Kicker>Next best actions</Kicker>
-            <Link to="/actions" className="text-xs font-semibold text-meama-gold hover:underline">
+            <Link to="/actions" className="font-mono text-[10px] uppercase tracking-[0.18em] text-meama-muted hover:text-meama-brown transition-colors">
               {t("common.viewAll")} →
             </Link>
           </div>
@@ -132,11 +137,11 @@ export default function CommandCenter() {
             {topActions.map((a) => (
               <li key={a.rank} className="flex items-start justify-between gap-3 text-sm">
                 <div className="flex items-start gap-3">
-                  <span className="tabular mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-meama-gold/15 text-[11px] font-bold text-meama-gold">
+                  <span className="tabular mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center border border-meama-charcoal font-mono text-[9px] font-bold text-meama-muted">
                     {a.rank}
                   </span>
                   <div>
-                    <div className="font-semibold text-meama-charcoal">{a.title}</div>
+                    <div className="font-semibold text-meama-brown">{a.title}</div>
                     <div className="text-xs text-meama-muted">{a.signal}</div>
                   </div>
                 </div>
