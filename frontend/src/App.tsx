@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { NavLink, Navigate, Route, Routes, useLocation } from "react-router-dom";
 
@@ -33,53 +33,92 @@ const NAV_ITEMS = [
   { to: "/alerts", key: "alerts" },
 ] as const;
 
-function BellIcon() {
+const TICKER_ITEMS = [
+  "MEAMA GEORGIA",
+  "RETAIL INTELLIGENCE PLATFORM",
+  "E-COMMERCE + BRAND STORES",
+  "AI-POWERED ANALYTICS",
+  "PRODUCT INTELLIGENCE",
+  "CUSTOMER 360",
+  "REVENUE · MARGIN · RETENTION",
+  "POWERED BY CLAUDE",
+  "NIGHTLY ETL SYNC",
+  "INVITE ONLY",
+];
+
+/* ── Custom cursor ──────────────────────────────────────────────── */
+function CursorFollower() {
+  const dotRef = useRef<HTMLDivElement>(null);
+  const ringRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    let dotX = 0, dotY = 0, ringX = 0, ringY = 0;
+    let raf: number;
+
+    const onMove = (e: MouseEvent) => {
+      dotX = e.clientX;
+      dotY = e.clientY;
+    };
+    const onOver = (e: MouseEvent) => {
+      const el = (e.target as Element).closest("a, button, [data-cursor]");
+      document.documentElement.toggleAttribute("data-hover", Boolean(el));
+    };
+    const animate = () => {
+      ringX += (dotX - ringX) * 0.12;
+      ringY += (dotY - ringY) * 0.12;
+      dotRef.current && (dotRef.current.style.transform = `translate3d(${dotX - 4}px,${dotY - 4}px,0)`);
+      ringRef.current && (ringRef.current.style.transform = `translate3d(${ringX - 16}px,${ringY - 16}px,0)`);
+      raf = requestAnimationFrame(animate);
+    };
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseover", onOver);
+    raf = requestAnimationFrame(animate);
+    return () => {
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseover", onOver);
+      cancelAnimationFrame(raf);
+    };
+  }, []);
+
   return (
-    <svg
-      width="17"
-      height="17"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.7"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6z" />
-      <path d="M10 19a2 2 0 0 0 4 0" />
-    </svg>
+    <>
+      <div ref={dotRef} className="cursor-dot" />
+      <div ref={ringRef} className="cursor-ring" />
+    </>
   );
 }
 
-/** Animated coffee steam, floating above the wordmark. */
-function Steam() {
+/* ── Marquee ticker ──────────────────────────────────────────────── */
+function Ticker() {
+  const doubled = [...TICKER_ITEMS, ...TICKER_ITEMS];
   return (
-    <svg
-      className="steam mx-auto block"
-      width="44"
-      height="22"
-      viewBox="0 0 44 22"
-      fill="none"
-      stroke="var(--meama-gold)"
-      strokeWidth="2"
-      strokeLinecap="round"
+    <div
+      className="overflow-hidden border-b border-meama-charcoal bg-meama-espresso py-2.5"
       aria-hidden="true"
     >
-      <path d="M10 20 q 4 -5 0 -9 q -4 -5 0 -9" opacity="0.5" />
-      <path d="M22 20 q 4 -5 0 -9 q -4 -5 0 -9" opacity="0.7" />
-      <path d="M34 20 q 4 -5 0 -9 q -4 -5 0 -9" opacity="0.5" />
-    </svg>
+      <div className="marquee-track">
+        {doubled.map((item, i) => (
+          <span
+            key={i}
+            className="shrink-0 px-6 font-mono text-[9.5px] uppercase tracking-[0.32em] text-meama-muted"
+          >
+            {item}
+            <span className="mx-5 text-meama-charcoal">·</span>
+          </span>
+        ))}
+      </div>
+    </div>
   );
 }
 
+/* ── Language toggle ─────────────────────────────────────────────── */
 function LanguageToggle() {
   const { i18n } = useTranslation();
   const next = i18n.language === "ka" ? "en" : "ka";
   return (
     <button
       onClick={() => void i18n.changeLanguage(next)}
-      className="rounded-full border border-meama-gold/40 px-3 py-1 text-xs font-semibold text-meama-goldsoft transition-colors hover:bg-meama-gold/15"
+      className="font-mono text-[10px] uppercase tracking-[0.22em] text-meama-muted transition-colors hover:text-meama-brown"
       aria-label="toggle language"
     >
       {i18n.language === "ka" ? "EN" : "ქარ"}
@@ -87,49 +126,79 @@ function LanguageToggle() {
   );
 }
 
+/* ── Alerts bell ──────────────────────────────────────────────────── */
+function BellIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6z" />
+      <path d="M10 19a2 2 0 0 0 4 0" />
+    </svg>
+  );
+}
+
+/* ── Header ───────────────────────────────────────────────────────── */
 function Header() {
   const { t } = useTranslation();
   const criticalCount = ALERTS.filter((a) => a.severity === "critical").length;
-  return (
-    <header className="relative border-b border-meama-gold/20 bg-meama-espresso/80 pb-4 pt-5 backdrop-blur">
-      {/* Utility corner — language + alerts. */}
-      <div className="absolute right-5 top-5 flex items-center gap-4">
-        <LanguageToggle />
-        <NavLink to="/alerts" aria-label={t("header.alerts")} className="relative text-meama-goldsoft hover:text-meama-gold">
-          <BellIcon />
-          {criticalCount > 0 ? (
-            <span className="tabular absolute -right-2 -top-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-meama-red px-1 text-[10px] font-bold text-white">
-              {criticalCount}
-            </span>
-          ) : null}
-        </NavLink>
-      </div>
+  const [scrolled, setScrolled] = useState(false);
 
-      {/* Centered wordmark. */}
-      <div className="text-center">
-        <Steam />
-        <NavLink to="/" className="inline-block">
-          <span className="font-display text-[28px] font-bold tracking-[0.18em] text-meama-gold">
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  return (
+    <header
+      className={`sticky top-0 z-50 bg-meama-espresso transition-shadow duration-300 ${
+        scrolled ? "shadow-[0_1px_0_#D8D4CE]" : "border-b border-meama-charcoal"
+      }`}
+    >
+      {/* Top bar: wordmark + utils */}
+      <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
+        <NavLink to="/" className="group flex items-baseline gap-3">
+          <span
+            className="font-display text-[32px] uppercase leading-none tracking-[0.12em] text-meama-brown
+                       transition-opacity duration-200 group-hover:opacity-70"
+          >
             MEAMA PRMTR
           </span>
+          <span className="hidden font-mono text-[9px] uppercase tracking-[0.35em] text-meama-muted sm:block">
+            {t("app.tagline")}
+          </span>
         </NavLink>
-        <div className="mt-0.5 text-[11px] italic tracking-wide text-meama-cream/45">
-          {t("app.tagline")}
+
+        <div className="flex items-center gap-5">
+          <LanguageToggle />
+          <NavLink
+            to="/alerts"
+            aria-label={t("header.alerts")}
+            className="relative text-meama-muted transition-colors hover:text-meama-brown"
+          >
+            <BellIcon />
+            {criticalCount > 0 ? (
+              <span
+                className="tabular absolute -right-2 -top-2 flex h-4 min-w-4 items-center justify-center
+                           rounded-full bg-meama-red px-1 text-[9px] font-bold text-white"
+              >
+                {criticalCount}
+              </span>
+            ) : null}
+          </NavLink>
         </div>
       </div>
 
-      {/* Centered tab navigation. */}
-      <nav className="mx-auto mt-4 flex max-w-5xl flex-wrap items-center justify-center gap-1.5 px-4">
+      {/* Nav row */}
+      <nav className="mx-auto flex max-w-7xl flex-wrap gap-x-6 gap-y-1 px-6 pb-3">
         {NAV_ITEMS.map((item) => (
           <NavLink
             key={item.to}
             to={item.to}
             end={"end" in item ? item.end : false}
             className={({ isActive }) =>
-              `rounded-full px-3.5 py-1.5 text-[12.5px] font-semibold transition-all duration-200 ${
-                isActive
-                  ? "bg-meama-gold text-meama-espresso shadow-[0_6px_18px_rgba(200,150,62,0.35)]"
-                  : "text-meama-cream/65 hover:bg-meama-gold/15 hover:text-meama-goldsoft"
+              `nav-underline pb-0.5 font-mono text-[10px] uppercase tracking-[0.22em] transition-colors duration-150 ${
+                isActive ? "active text-meama-brown" : "text-meama-muted hover:text-meama-brown"
               }`
             }
           >
@@ -137,33 +206,55 @@ function Header() {
           </NavLink>
         ))}
       </nav>
+
+      {/* Ticker */}
+      <Ticker />
     </header>
   );
 }
 
+/* ── Page transition wrapper ─────────────────────────────────────── */
+function PageTransition({ children }: { children: ReactNode }) {
+  const location = useLocation();
+  return (
+    <div key={location.pathname} className="rise">
+      {children}
+    </div>
+  );
+}
+
+/* ── Layout ───────────────────────────────────────────────────────── */
 function Layout({ children }: { children: ReactNode }) {
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex min-h-screen flex-col bg-meama-espresso">
       <Header />
-      <main className="flex-1 px-5 py-8">
-        <div className="rise mx-auto max-w-6xl">{children}</div>
+      <main className="flex-1 px-6 py-10">
+        <div className="mx-auto max-w-7xl">
+          <PageTransition>{children}</PageTransition>
+        </div>
       </main>
-      <footer className="border-t border-meama-gold/15 py-4 text-center text-[10px] uppercase tracking-[0.2em] text-meama-cream/30">
-        Meama Georgia · Confidential · 2026
+      <footer className="border-t border-meama-charcoal py-5">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-6">
+          <span className="font-display text-[13px] uppercase tracking-[0.18em] text-meama-muted">
+            Meama Georgia
+          </span>
+          <span className="font-mono text-[9px] uppercase tracking-[0.28em] text-meama-charcoal">
+            Confidential · 2026
+          </span>
+        </div>
       </footer>
     </div>
   );
 }
 
+/* ── Auth guard ────────────────────────────────────────────────────── */
 function ProtectedRoute({ children }: { children: ReactNode }) {
   const location = useLocation();
-  // null = unknown (checking), true/false = resolved.
   const [authed, setAuthed] = useState<boolean | null>(null);
 
   useEffect(() => {
     let active = true;
     if (!isSupabaseConfigured) {
-      // Dev shell with no Supabase configured — allow access to explore the UI.
       setAuthed(true);
       return;
     }
@@ -180,7 +271,11 @@ function ProtectedRoute({ children }: { children: ReactNode }) {
   }, []);
 
   if (authed === null) {
-    return <div className="p-6 text-meama-cream/50">…</div>;
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-meama-espresso">
+        <div className="pulse-live h-2 w-2 rounded-full bg-meama-brown" />
+      </div>
+    );
   }
   if (!authed) {
     return <Navigate to="/login" replace state={{ from: location }} />;
@@ -188,26 +283,30 @@ function ProtectedRoute({ children }: { children: ReactNode }) {
   return <Layout>{children}</Layout>;
 }
 
+/* ── Root ────────────────────────────────────────────────────────── */
 export default function App() {
   return (
-    <Routes>
-      <Route path="/login" element={<Login />} />
-      <Route path="/" element={<ProtectedRoute><CommandCenter /></ProtectedRoute>} />
-      <Route path="/money-hunter" element={<ProtectedRoute><MoneyHunter /></ProtectedRoute>} />
-      <Route path="/ads" element={<ProtectedRoute><Ads /></ProtectedRoute>} />
-      <Route path="/discount-engine" element={<ProtectedRoute><DiscountEngine /></ProtectedRoute>} />
-      <Route path="/campaigns" element={<Navigate to="/discount-engine" replace />} />
-      <Route path="/actions" element={<ProtectedRoute><Actions /></ProtectedRoute>} />
-      <Route path="/products" element={<ProtectedRoute><Products /></ProtectedRoute>} />
-      <Route path="/products/:sku" element={<ProtectedRoute><ProductDetail /></ProtectedRoute>} />
-      <Route path="/customers" element={<ProtectedRoute><Customers /></ProtectedRoute>} />
-      <Route path="/customers/:id" element={<Navigate to="/portfolios" replace />} />
-      <Route path="/portfolios" element={<ProtectedRoute><Portfolios /></ProtectedRoute>} />
-      <Route path="/portfolios/:id" element={<ProtectedRoute><PortfolioDetail /></ProtectedRoute>} />
-      <Route path="/stock" element={<ProtectedRoute><Stock /></ProtectedRoute>} />
-      <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
-      <Route path="/alerts" element={<ProtectedRoute><Alerts /></ProtectedRoute>} />
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+    <>
+      <CursorFollower />
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route path="/" element={<ProtectedRoute><CommandCenter /></ProtectedRoute>} />
+        <Route path="/money-hunter" element={<ProtectedRoute><MoneyHunter /></ProtectedRoute>} />
+        <Route path="/ads" element={<ProtectedRoute><Ads /></ProtectedRoute>} />
+        <Route path="/discount-engine" element={<ProtectedRoute><DiscountEngine /></ProtectedRoute>} />
+        <Route path="/campaigns" element={<Navigate to="/discount-engine" replace />} />
+        <Route path="/actions" element={<ProtectedRoute><Actions /></ProtectedRoute>} />
+        <Route path="/products" element={<ProtectedRoute><Products /></ProtectedRoute>} />
+        <Route path="/products/:sku" element={<ProtectedRoute><ProductDetail /></ProtectedRoute>} />
+        <Route path="/customers" element={<ProtectedRoute><Customers /></ProtectedRoute>} />
+        <Route path="/customers/:id" element={<Navigate to="/portfolios" replace />} />
+        <Route path="/portfolios" element={<ProtectedRoute><Portfolios /></ProtectedRoute>} />
+        <Route path="/portfolios/:id" element={<ProtectedRoute><PortfolioDetail /></ProtectedRoute>} />
+        <Route path="/stock" element={<ProtectedRoute><Stock /></ProtectedRoute>} />
+        <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
+        <Route path="/alerts" element={<ProtectedRoute><Alerts /></ProtectedRoute>} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </>
   );
 }

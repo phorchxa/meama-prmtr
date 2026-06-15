@@ -5,26 +5,32 @@ export default {
     extend: {
       colors: {
         meama: {
-          brown: "#3E1F00",
-          espresso: "#241102", // darkest warm surface (app background)
-          roast: "#341A04", // dark panel surface
-          gold: "#C8963E",
-          goldsoft: "#E8C98A",
-          cream: "#FAF3E0",
-          ivory: "#FFF9EC", // card surface
-          charcoal: "#1C1C1E",
-          green: "#2D6A4F", // positive
-          red: "#C0392B", // negative / critical
-          blue: "#2C3E7A", // info / Meta
-          muted: "#6B6B6B",
+          espresso: "#F4F0EA",   // page background — sandy clay
+          roast:    "#EDEBE5",   // subtle tinted surface
+          ivory:    "#FFFFFF",   // card surface — pure white
+          brown:    "#0D0D0D",   // primary text — near black
+          cream:    "#6E6B67",   // secondary text — warm mid-gray
+          charcoal: "#D8D4CE",   // borders / dividers
+          muted:    "#9C9894",   // muted / placeholder
+          gold:     "#0D0D0D",   // accent (monochrome editorial)
+          goldsoft: "#444140",   // softer accent
+          sand:     "#C8C3BC",   // light text on dark surfaces
+          green:    "#1A3D1F",   // positive (deep forest)
+          red:      "#8B1A14",   // critical / negative (deep burgundy)
+          blue:     "#1C3A7A",   // info / Meta
         },
       },
       fontFamily: {
-        sans: ["Inter", "DejaVu Sans", "system-ui", "sans-serif"],
-        display: ["Fraunces", "Georgia", "serif"],
+        sans:    ["Inter", "Barlow", "system-ui", "sans-serif"],
+        display: ["'Bebas Neue'", "Impact", "sans-serif"],
+        mono:    ["'Space Mono'", "ui-monospace", "monospace"],
+      },
+      letterSpacing: {
+        editorial: "0.22em",
+        loose: "0.12em",
       },
     },
   },
   plugins: [],
-  presets: [require("./src/ui/tailwind.config.js")]
+  presets: [require("./src/ui/tailwind.config.js")],
 };

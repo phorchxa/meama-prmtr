@@ -18,7 +18,6 @@ export default function Login() {
     setLoading(true);
     try {
       if (!isSupabaseConfigured) {
-        // Dev shell: no Supabase configured — allow entry to explore the UI.
         navigate("/");
         return;
       }
@@ -33,44 +32,77 @@ export default function Login() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-meama-cream p-4">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-meama-espresso px-6">
+      {/* Wordmark */}
+      <div className="mb-14 text-center fade-in">
+        <div className="font-display text-[72px] uppercase leading-none tracking-[0.1em] text-meama-brown">
+          MEAMA PRMTR
+        </div>
+        <div className="mt-3 font-mono text-[9px] uppercase tracking-[0.42em] text-meama-muted">
+          {t("app.tagline")}
+        </div>
+      </div>
+
+      {/* Form */}
       <form
         onSubmit={onSubmit}
-        className="w-full max-w-sm rounded-xl border border-meama-gold/30 bg-white p-8 shadow"
+        className="rise w-full max-w-xs border border-meama-charcoal bg-meama-ivory p-8"
+        style={{ animationDelay: "0.15s" }}
       >
-        <div className="mb-6 text-center">
-          <div className="text-2xl font-bold text-meama-brown">MEAMA PRMTR</div>
-          <p className="mt-1 text-sm text-meama-muted">{t("pages.login.invite_only")}</p>
-        </div>
-        <label className="mb-3 block text-sm">
-          <span className="text-meama-muted">{t("pages.login.email")}</span>
+        <p className="mb-6 font-mono text-[9.5px] uppercase tracking-[0.28em] text-meama-muted">
+          {t("pages.login.invite_only")}
+        </p>
+
+        <label className="mb-4 block">
+          <span className="font-mono text-[9.5px] uppercase tracking-[0.22em] text-meama-muted">
+            {t("pages.login.email")}
+          </span>
           <input
             type="email"
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="mt-1 w-full rounded border border-meama-gold/40 px-3 py-2"
+            className="mt-2 w-full border border-meama-charcoal bg-transparent px-3 py-2.5
+                       font-mono text-sm text-meama-brown transition-colors duration-150
+                       focus:border-meama-brown focus:outline-none"
           />
         </label>
-        <label className="mb-4 block text-sm">
-          <span className="text-meama-muted">{t("pages.login.password")}</span>
+
+        <label className="mb-6 block">
+          <span className="font-mono text-[9.5px] uppercase tracking-[0.22em] text-meama-muted">
+            {t("pages.login.password")}
+          </span>
           <input
             type="password"
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="mt-1 w-full rounded border border-meama-gold/40 px-3 py-2"
+            className="mt-2 w-full border border-meama-charcoal bg-transparent px-3 py-2.5
+                       font-mono text-sm text-meama-brown transition-colors duration-150
+                       focus:border-meama-brown focus:outline-none"
           />
         </label>
-        {error ? <p className="mb-3 text-sm text-meama-red">⚠️ {error}</p> : null}
+
+        {error ? (
+          <p className="mb-4 font-mono text-[10px] text-meama-red">{error}</p>
+        ) : null}
+
         <button
           type="submit"
           disabled={loading}
-          className="w-full rounded bg-meama-brown px-4 py-2 font-medium text-meama-cream hover:bg-meama-brown/90 disabled:opacity-60"
+          className="w-full border border-meama-brown bg-transparent py-3 font-display
+                     text-[18px] uppercase tracking-[0.2em] text-meama-brown
+                     transition-all duration-200 hover:bg-meama-brown hover:text-meama-espresso
+                     disabled:opacity-40"
         >
-          {loading ? t("common.loading") : t("pages.login.submit")}
+          {loading ? "···" : t("pages.login.submit")}
         </button>
       </form>
+
+      <div className="mt-10 font-mono text-[9px] uppercase tracking-[0.3em] text-meama-charcoal fade-in"
+           style={{ animationDelay: "0.3s" }}>
+        Meama Georgia · Confidential · 2026
+      </div>
     </div>
   );
 }
