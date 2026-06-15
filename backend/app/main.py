@@ -14,6 +14,7 @@ from .routers import (
     campaigns,
     customers,
     overview,
+    portfolios,
     products,
     reports,
     stock,
@@ -49,6 +50,7 @@ def create_app() -> FastAPI:
     for module in (
         overview,
         customers,
+        portfolios,
         products,
         stock,
         campaigns,

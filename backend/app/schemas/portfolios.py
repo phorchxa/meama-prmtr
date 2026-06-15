@@ -1,0 +1,115 @@
+"""Portfolios (Customer 360) schemas."""
+from __future__ import annotations
+
+from datetime import datetime
+from typing import Literal
+
+from pydantic import BaseModel
+
+CustomerStatus = Literal["new", "active", "at_risk", "lost"]
+CustomerSegment = Literal["loyalist", "at_risk", "lapsed", "new_machine", "active"]
+CustomerChannel = Literal["online", "in_store", "app", "mixed"]
+CustomerRegion = Literal["tbilisi", "regions", "unknown"]
+CapitalVsRegional = Literal["capital", "regional", "unknown"]
+MachineConversionStatus = Literal[
+    "no_machine",
+    "machine_only_no_capsules",
+    "machine_then_capsules",
+    "capsules_without_machine_purchase",
+    "unknown",
+]
+CapsulePriceRange = Literal["budget", "mid_range", "premium"]
+ReturnPeriodLabel = Literal["frequent", "regular", "slow", "lapsed_pattern"]
+ChurnReason = Literal[
+    "healthy_active",
+    "promo_dependent",
+    "long_recency_gap",
+    "machine_without_capsules",
+    "low_frequency",
+    "single_category_dependency",
+    "new_customer",
+    "unknown",
+]
+DeliveryVsPickupPreference = Literal[
+    "delivery",
+    "pickup_or_store",
+    "mixed",
+    "unknown",
+]
+
+
+class PortfolioSummary(BaseModel):
+    shopify_customer_id: int
+    full_name: str
+    email: str | None = None
+    phone: str | None = None
+    phone_only: bool = False
+    initials: str
+    accept_marketing_email: bool = False
+    sms_marketing: bool = False
+    region: CustomerRegion
+    order_count: int
+    total_spend: float
+    aov: float
+    last_order_at: datetime | None = None
+    days_since_last_order: int | None = None
+    customer_since: datetime | None = None
+    tenure_days: int | None = None
+    tenure_months: int | None = None
+    active_months: int | None = None
+    status: CustomerStatus
+    segment: CustomerSegment = "active"
+    health_score: int = 0
+    recency_score: int | None = None
+    frequency_score: int | None = None
+    monetary_score: int | None = None
+    rfm_label: str | None = None
+    has_machine: bool = False
+    machine_model: str | None = None
+    machine_acquisition_date: datetime | None = None
+    machine_to_capsule_conversion_status: MachineConversionStatus | None = None
+    channel: CustomerChannel | None = None
+    top_product_types: list[str] | None = None
+    top_item_title: str | None = None
+    capsule_aov: float | None = None
+    avg_capsule_packs_per_month: float | None = None
+    expected_next_order_date: datetime | None = None
+    top_flavors: list[str] | None = None
+    format_preferences: list[str] | None = None
+    never_bought_capsules_flag: bool | None = None
+    favorite_intensity: float | None = None
+    avg_capsule_price: float | None = None
+    capsule_price_range: CapsulePriceRange | None = None
+    bought_capsule_categories: list[str] | None = None
+    never_bought_capsule_categories: list[str] | None = None
+    avg_return_interval_days: float | None = None
+    median_return_interval_days: float | None = None
+    return_period_label: ReturnPeriodLabel | None = None
+    expected_return_window_start: datetime | None = None
+    expected_return_window_end: datetime | None = None
+    churn_reason: ChurnReason | None = None
+    recommended_next_machine: str | None = None
+    delivery_vs_pickup_preference: DeliveryVsPickupPreference | None = None
+    promo_orders: int = 0
+    promo_spend: float = 0.0
+    full_price_spend: float = 0.0
+    promo_share: float = 0.0
+    capital_vs_regional: CapitalVsRegional | None = None
+    ecommerce_share: float | None = None
+    brand_store_share: float | None = None
+    is_registered: bool = False
+    customer_created_at: datetime | None = None
+
+
+class OrderRow(BaseModel):
+    shopify_order_id: int
+    processed_at: datetime | None = None
+    total: float = 0.0
+    source: str | None = None
+    discount_code: str | None = None
+    discount_amount: float = 0.0
+
+
+class PortfolioDetail(PortfolioSummary):
+    first_order_at: datetime | None = None
+    recent_orders: list[OrderRow] = []
