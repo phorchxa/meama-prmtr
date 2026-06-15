@@ -1,104 +1,259 @@
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, Navigate, useParams } from "react-router-dom";
 
-import { AiPanel } from "../components/AiPanel";
-import { Badge } from "../components/Badge";
+import { Badge, type BadgeTone } from "../components/Badge";
 import { Kicker } from "../components/Kicker";
-import { MiniBars } from "../components/MiniBars";
+import { Skeleton } from "../components/Skeleton";
 import { StatCallout } from "../components/StatCallout";
-import { formatGEL, formatGEL0, formatNumber } from "../lib/format";
-import { CUSTOMER_AI, CUSTOMERS, NO_DISCOUNT_SEGMENTS, SEGMENT_META } from "../lib/mock";
+import { formatGEL, formatGEL0, formatNumber, tbilisiDate } from "../lib/format";
+import {
+  fetchPortfolio,
+  type PortfolioDetail as PortfolioDetailData,
+} from "../lib/portfoliosApi";
 import { PageHeader } from "./PageHeader";
 
-const CHANNEL_LABEL = { ecom: "E-commerce", brand_store: "Brand store", mixed: "E-com + stores" } as const;
+const STATUS_TONE: Record<string, BadgeTone> = {
+  new:     "blue",
+  active:  "green",
+  at_risk: "gold",
+  lost:    "red",
+};
+
+const STATUS_KA: Record<string, string> = {
+  new:     "ახალი",
+  active:  "აქტიური",
+  at_risk: "რისკის ქვეშ",
+  lost:    "დაკარგული",
+};
+
+const CHANNEL_LABEL: Record<string, string> = {
+  online:   "E-commerce",
+  in_store: "Brand store",
+  app:      "App",
+  mixed:    "E-com + stores",
+};
+
+const SOURCE_LABEL: Record<string, string> = {
+  web:            "E-commerce",
+  pos:            "Brand store",
+  "195189899265": "App",
+};
+
+const REGION_KA: Record<string, string> = {
+  tbilisi: "თბილისი",
+  regions: "რეგიონები",
+  unknown: "უცნობი",
+};
 
 export default function PortfolioDetail() {
   const { t, i18n } = useTranslation();
   const { id } = useParams();
   const ka = i18n.language === "ka";
 
-  const c = CUSTOMERS.find((x) => x.id === id);
-  if (!c) return <Navigate to="/portfolios" replace />;
+  const [data,     setData]     = useState<PortfolioDetailData | null>(null);
+  const [loading,  setLoading]  = useState(true);
+  const [notFound, setNotFound] = useState(false);
+  const [error,    setError]    = useState<string | null>(null);
 
-  const meta = SEGMENT_META[c.segment];
-  const noDiscount = NO_DISCOUNT_SEGMENTS.includes(c.segment);
-  const churnTone = c.churnScore >= 0.7 ? "red" : c.churnScore >= 0.4 ? "gold" : "green";
+  useEffect(() => {
+    if (!id) return;
+    setLoading(true);
+    setNotFound(false);
+    setError(null);
+    fetchPortfolio(Number(id))
+      .then(setData)
+      .catch((err: Error) => {
+        if (err.message === "not_found") setNotFound(true);
+        else setError(err.message);
+      })
+      .finally(() => setLoading(false));
+  }, [id]);
+
+  if (!id || notFound) return <Navigate to="/portfolios" replace />;
+
+  const days      = data?.days_since_last_order ?? 0;
+  const daysTone: BadgeTone  = days >= 90 ? "red" : days >= 45 ? "gold" : "green";
+  const statusTone: BadgeTone = data ? (STATUS_TONE[data.status] ?? "blue") : "blue";
 
   return (
     <div>
-      <Link to="/portfolios" className="mb-4 inline-block text-xs font-bold uppercase tracking-wider text-meama-gold hover:underline">
+      <Link
+        to="/portfolios"
+        className="mb-4 inline-block text-xs font-bold uppercase tracking-wider text-meama-gold hover:underline"
+      >
         ← {t("pages.portfolioDetail.back")}
       </Link>
-      <PageHeader kicker={c.id} title={c.name} />
-      <div className="-mt-4 mb-6 flex flex-wrap gap-2">
-        <Badge tone={meta.tone}>{ka ? meta.labelKa : meta.label}</Badge>
-        {c.upsellFlag ? <Badge tone="blue">upsell target</Badge> : null}
-        {noDiscount ? <Badge tone="gold">early access only — never discounts</Badge> : null}
-      </div>
 
-      <div className="stagger space-y-5">
-        <div className="panel-dark grid grid-cols-2 gap-6 lg:grid-cols-4">
-          <StatCallout dark value={formatGEL0(c.ltv)} tag="Lifetime value">
-            Registered-customer LTV, retail channels only.
-          </StatCallout>
-          <StatCallout dark value={formatNumber(c.orders)} tag="Orders" tone="blue">
-            Average order value {formatGEL(c.aov)}.
-          </StatCallout>
-          <StatCallout dark value={`${c.lastOrderDaysAgo}d`} tag="Since last order" tone={c.lastOrderDaysAgo >= 45 ? "red" : "green"}>
-            {c.lastOrderDaysAgo >= 45
-              ? "Past the 45-day at-risk threshold — win-back is live."
-              : "Inside normal reorder cadence."}
-          </StatCallout>
-          <StatCallout dark value={c.churnScore.toFixed(2)} tag="Churn score" tone={churnTone}>
-            Claude batch output (0.0–1.0). Alert fires at 0.7.
-          </StatCallout>
+      {/* Loading skeleton */}
+      {loading && !data && (
+        <div className="space-y-5">
+          <Skeleton className="h-20 w-3/4 rounded-2xl" />
+          <div className="grid grid-cols-2 gap-5 lg:grid-cols-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="h-28 rounded-2xl" />
+            ))}
+          </div>
+          <Skeleton className="h-40 rounded-2xl" />
         </div>
+      )}
 
-        <AiPanel title={`AI Note — ${c.name.split(" ")[0]}`} actionLabel="Draft outreach with AI">
-          {CUSTOMER_AI[c.id] ?? "A fresh note for this customer lands with the next nightly Claude batch."}
-        </AiPanel>
+      {/* Error */}
+      {error && (
+        <div className="rounded-xl border border-meama-red/30 bg-meama-red/10 px-5 py-4 text-sm text-meama-red">
+          {error}
+        </div>
+      )}
 
-        <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-          <div className="card-m">
-            <Kicker>12-month spend · GEL</Kicker>
-            <div className="mt-3">
-              <MiniBars data={c.spendHistory} width={460} height={90} />
-            </div>
-            <div className="tabular mt-2 flex justify-between text-xs text-meama-muted">
-              <span>12 months ago</span>
-              <span>this month: {formatGEL0(c.spendHistory[c.spendHistory.length - 1])}</span>
-            </div>
+      {data && (
+        <>
+          <PageHeader
+            kicker={`#${data.shopify_customer_id}`}
+            title={
+              data.phone_only
+                ? `${data.initials} · Phone login`
+                : (data.full_name?.trim() || data.email || data.initials)
+            }
+          />
+
+          <div className="-mt-4 mb-6 flex flex-wrap gap-2">
+            <Badge tone={statusTone}>
+              {ka ? (STATUS_KA[data.status] ?? data.status) : data.status.replace("_", " ")}
+            </Badge>
+            <Badge tone="blue">
+              {ka ? (REGION_KA[data.region] ?? data.region) : data.region}
+            </Badge>
+            {data.has_machine && (
+              <Badge tone="blue">
+                {data.machine_model ?? (ka ? "მანქანის მფლობელი" : "Machine owner")}
+              </Badge>
+            )}
+            {data.phone_only  && <Badge tone="gold">Phone login</Badge>}
           </div>
 
-          <div className="card-m">
-            <Kicker>Profile</Kicker>
-            <dl className="mt-3 space-y-3 text-sm">
-              <div className="flex justify-between">
-                <dt className="text-meama-muted">Preferred channel</dt>
-                <dd className="font-semibold text-meama-charcoal">{CHANNEL_LABEL[c.channel]}</dd>
-              </div>
-              <div className="flex justify-between">
-                <dt className="text-meama-muted">Favourite flavours</dt>
-                <dd className="flex max-w-[60%] flex-wrap justify-end gap-1.5">
-                  {c.favouriteFlavours.map((f) => (
-                    <span key={f} className="rounded-full bg-meama-gold/15 px-2.5 py-0.5 text-[11px] font-semibold text-meama-brown">
-                      {f}
+          <div className="stagger space-y-5">
+            {/* KPI row */}
+            <div className="panel-dark grid grid-cols-2 gap-6 lg:grid-cols-4">
+              <StatCallout dark value={formatGEL0(data.total_spend)} tag="Total spend">
+                {formatNumber(data.order_count)}{" "}
+                {ka ? "შეკვეთა" : "orders"} · AOV {formatGEL(data.aov)}
+              </StatCallout>
+
+              <StatCallout dark value={formatNumber(data.order_count)} tag="Orders" tone="blue">
+                {ka ? "პირველი" : "First"}:{" "}
+                {data.first_order_at ? tbilisiDate(data.first_order_at) : "—"}
+              </StatCallout>
+
+              <StatCallout
+                dark
+                value={`${days}d`}
+                tag={ka ? "ბოლო შეკვეთიდან" : "Since last order"}
+                tone={daysTone}
+              >
+                {days >= 90
+                  ? (ka ? "დაკარგული — 90+ დღე" : "Lost — 90+ days silent")
+                  : days >= 45
+                  ? (ka ? "რისკის ქვეშ — 45-89 დღე" : "At-risk — 45–89 day window")
+                  : (ka ? "ნორმალური ციკლი" : "Inside normal reorder cadence")}
+              </StatCallout>
+
+              <StatCallout
+                dark
+                value={data.channel ? (CHANNEL_LABEL[data.channel] ?? data.channel) : "—"}
+                tag="Channel"
+                tone="gold"
+              >
+                {data.is_registered
+                  ? (ka ? "რეგისტრირებული" : "Registered customer")
+                  : (ka ? "სტუმარი" : "Guest checkout")}
+              </StatCallout>
+            </div>
+
+            {/* Top product categories */}
+            <div className="card-m">
+              <Kicker>{ka ? "ტოპ კატეგორიები · ბოლო შეკვეთები" : "Top categories · recent orders"}</Kicker>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {(data.top_product_types ?? []).length > 0 ? (
+                  data.top_product_types!.map((pt) => (
+                    <span
+                      key={pt}
+                      className="rounded-full bg-meama-gold/15 px-3 py-1 text-sm font-semibold text-meama-brown"
+                    >
+                      {pt}
                     </span>
-                  ))}
-                </dd>
+                  ))
+                ) : (
+                  <span className="text-sm text-meama-muted">—</span>
+                )}
+                {data.has_machine && (
+                  <span className="rounded-full bg-meama-blue/10 px-3 py-1 text-sm font-semibold text-meama-blue">
+                    {ka ? "მანქანის მფლობელი" : "Machine owner"}
+                  </span>
+                )}
               </div>
-              <div className="flex justify-between">
-                <dt className="text-meama-muted">Discount policy</dt>
-                <dd className={`font-semibold ${noDiscount ? "text-meama-gold" : "text-meama-charcoal"}`}>
-                  {noDiscount ? "Early access only" : "Standard (≤ 25% cap)"}
-                </dd>
-              </div>
-            </dl>
-          </div>
-        </div>
-      </div>
+            </div>
 
-      <p className="mt-6 text-center text-[11px] text-meama-cream/30">{t("common.demoData")}</p>
+            {/* Order timeline */}
+            <div className="card-m">
+              <Kicker>{ka ? "შეკვეთების ისტორია" : "Order history"}</Kicker>
+              {data.recent_orders.length === 0 ? (
+                <p className="mt-3 text-sm text-meama-muted">
+                  {ka ? "შეკვეთები ვერ მოიძებნა" : "No orders found"}
+                </p>
+              ) : (
+                <div className="mt-3 overflow-x-auto">
+                  <table className="tabular w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-meama-brown/10 text-[11px] uppercase tracking-wider text-meama-muted">
+                        <th className="pb-2 text-left font-semibold">
+                          {ka ? "შეკვეთა" : "Order"}
+                        </th>
+                        <th className="pb-2 text-left font-semibold">
+                          {ka ? "თარიღი" : "Date"}
+                        </th>
+                        <th className="pb-2 text-left font-semibold">
+                          {ka ? "არხი" : "Channel"}
+                        </th>
+                        <th className="pb-2 text-right font-semibold">
+                          {ka ? "ჯამი" : "Total"}
+                        </th>
+                        <th className="pb-2 text-right font-semibold">
+                          {ka ? "ფასდაკლება" : "Discount"}
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-meama-brown/5">
+                      {data.recent_orders.map((o) => (
+                        <tr key={o.shopify_order_id} className="hover:bg-meama-brown/5">
+                          <td className="py-2 text-meama-cream/70">
+                            #{o.shopify_order_id}
+                          </td>
+                          <td className="py-2 text-meama-muted">
+                            {o.processed_at ? tbilisiDate(o.processed_at) : "—"}
+                          </td>
+                          <td className="py-2 text-meama-muted">
+                            {o.source
+                              ? (SOURCE_LABEL[o.source] ?? o.source)
+                              : "—"}
+                          </td>
+                          <td className="py-2 text-right font-semibold text-meama-brown">
+                            {formatGEL(o.total)}
+                          </td>
+                          <td className="py-2 text-right text-meama-muted">
+                            {o.discount_code
+                              ? `${o.discount_code} (${formatGEL(o.discount_amount)})`
+                              : "—"}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
