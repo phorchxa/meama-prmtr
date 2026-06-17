@@ -8,6 +8,29 @@ import { type AffinityPair, type ProductSummary, fetchAffinityPairs, fetchProduc
 import { formatGEL, formatGEL0, formatNumber, formatPercent } from "../lib/format";
 import { PageHeader } from "./PageHeader";
 
+// ── Intensity bucket (from Bible intensity_level or intensity_bucket field) ───
+function resolveIntensityBucket(p: ProductSummary): "light" | "medium" | "strong" | null {
+  if (p.intensity_bucket) return p.intensity_bucket;
+  if (p.intensity_level === null) return null;
+  if (p.intensity_level < 4) return "light";
+  if (p.intensity_level < 7) return "medium";
+  return "strong";
+}
+
+// ── Commercial category (Tea / Coffee / Wellness) ─────────────────────────────
+function resolveCommercialCat(p: ProductSummary): "coffee" | "tea" | "wellness" | null {
+  const bev = p.beverage_type_en;
+  if (bev === "tea") return "tea";
+  if (bev === "wellness") return "wellness";
+  if (bev === "espresso" || bev === "filter_coffee" || bev === "cold_mix") return "coffee";
+  const pt = (p.product_type_geo || "").toLowerCase();
+  if (pt.includes("tea")) return "tea";
+  if (pt.includes("coffee") || pt.includes("capsule") || pt.includes("multicapsule")) return "coffee";
+  const cat = (p.category || "").toLowerCase();
+  if (cat.includes("tea")) return "tea";
+  return null;
+}
+
 // ── Category labels ────────────────────────────────────────────────────────────
 const CAT_LABELS: Record<string, string> = {
   "Multicapsule": "Multicapsule", "European": "European Format",
@@ -18,9 +41,12 @@ const CAT_LABELS: Record<string, string> = {
   "Merch": "Merch", "Add On": "Add-Ons",
 };
 
-type Tab = "catalog" | "revenue" | "retention" | "affinity";
+type Tab = "catalog" | "revenue" | "retention" | "affinity" | "segments";
 type SortKey = "revenue" | "units" | "price" | "repeat" | "reorder90" | "buyers" | "trend" | "total_revenue" | "growth" | "margin";
 type SortDir = "desc" | "asc";
+type CommercialCat = "all" | "coffee" | "tea" | "wellness";
+type IntensityFilter = "all" | "light" | "medium" | "strong";
+type PerformerFilter = "all" | "top_returning" | "worst";
 
 // ── Caffeine bucket ────────────────────────────────────────────────────────────
 function caffeineBucket(mg: number | null): "none" | "low" | "medium" | "high" {
@@ -372,7 +398,7 @@ function RevenueTab({ products }: { products: ProductSummary[] }) {
 
 // ── Stock status badge ─────────────────────────────────────────────────────────
 function StockBadge({ status }: { status: string | null }) {
-  if (!status) return null;
+  if (!status || status === "unknown") return null;
   const cfg = {
     understock: { label: "UNDERSTOCK", cls: "bg-meama-red/10 text-meama-red border-meama-red/30" },
     in_stock:   { label: "IN STOCK",   cls: "bg-meama-green/10 text-meama-green border-meama-green/30" },
@@ -626,6 +652,247 @@ function AffinityTab() {
   );
 }
 
+// ── Segment Intel tab ─────────────────────────────────────────────────────────
+function SegmentIntelTab({ products }: { products: ProductSummary[] }) {
+  const SEGMENT_ORDER = ["loyalist", "active", "at_risk", "lapsed", "new_machine", "prospect"];
+  const SEGMENT_COLOR: Record<string, string> = {
+    loyalist:    "text-meama-green",
+    active:      "text-meama-gold",
+    at_risk:     "text-meama-red",
+    lapsed:      "text-meama-muted",
+    new_machine: "text-meama-blue",
+    prospect:    "text-meama-muted",
+  };
+
+  // Cross-tab: for each commercial category, show top 5 products by reorder rate
+  const commercialGroups: Record<string, ProductSummary[]> = {};
+  for (const p of products) {
+    const cc = resolveCommercialCat(p) ?? "other";
+    if (!commercialGroups[cc]) commercialGroups[cc] = [];
+    commercialGroups[cc].push(p);
+  }
+
+  // Top products for returning customers (reorder_rate_90d × total_buyers)
+  const topReturning = [...products]
+    .filter((p) => p.total_buyers >= 5 && p.reorder_rate_90d > 0)
+    .sort((a, b) => (b.reorder_rate_90d * b.total_buyers) - (a.reorder_rate_90d * a.total_buyers))
+    .slice(0, 10);
+
+  // Worst performers: low revenue, low reorder, sufficient buyers to be meaningful
+  const worstPerformers = [...products]
+    .filter((p) => p.total_buyers >= 3 && p.total_revenue > 0)
+    .sort((a, b) => (a.revenue_30d + a.reorder_rate_90d * 1000) - (b.revenue_30d + b.reorder_rate_90d * 1000))
+    .slice(0, 10);
+
+  // Intensity distribution
+  const intensityDist = { light: 0, medium: 0, strong: 0, unknown: 0 };
+  for (const p of products) {
+    const b = resolveIntensityBucket(p) ?? "unknown";
+    intensityDist[b as keyof typeof intensityDist]++;
+  }
+
+  return (
+    <div className="space-y-8">
+      {/* Intensity distribution */}
+      <div>
+        <div className="mb-3 font-mono text-[10px] uppercase tracking-wider text-meama-gold">
+          — Intensity Distribution
+        </div>
+        <div className="grid grid-cols-4 gap-3">
+          {(["light", "medium", "strong", "unknown"] as const).map((b) => {
+            const count = intensityDist[b];
+            const pct = products.length > 0 ? count / products.length : 0;
+            return (
+              <div key={b} className="panel-dark border-l-2 border-l-[#3A3A3A]">
+                <div className="font-mono text-[10px] uppercase tracking-wider text-[#9A9590]">{b}</div>
+                <div className={`tabular mt-1 font-display text-[28px] uppercase leading-none ${
+                  b === "light" ? "text-meama-green" : b === "medium" ? "text-meama-gold" : b === "strong" ? "text-meama-red" : "text-meama-muted"
+                }`}>{count}</div>
+                <div className="font-mono text-xs text-[#C8C3BC]">{formatPercent(pct, 0)} of catalog</div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Top products for returning customers */}
+      <div>
+        <div className="mb-3 font-mono text-[10px] uppercase tracking-wider text-meama-gold">
+          — Top Products · Returning Customer Magnets
+        </div>
+        <div className="overflow-x-auto border border-meama-charcoal">
+          <table className="min-w-full text-sm">
+            <thead>
+              <tr className="border-b border-meama-charcoal">
+                {["#", "Product", "Category", "Intensity", "Reorder 90d", "Buyers", "Retention", "Action"].map((h) => (
+                  <th key={h} className="px-3 py-2.5 font-mono text-[10px] font-medium uppercase tracking-wider text-meama-gold text-left">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {topReturning.map((p, i) => {
+                const ib = resolveIntensityBucket(p);
+                return (
+                  <tr key={p.sku} className="border-b border-meama-charcoal hover:bg-meama-ivory">
+                    <td className="px-3 py-2 font-mono text-xs text-meama-muted">{i + 1}</td>
+                    <td className="px-3 py-2">
+                      <Link to={`/products/${p.sku}`} className="font-medium text-meama-brown hover:text-meama-gold">
+                        {p.name}
+                      </Link>
+                      <div className="font-mono text-[9px] text-meama-muted">{p.sku}</div>
+                    </td>
+                    <td className="px-3 py-2 font-mono text-xs text-meama-cream">{CAT_LABELS[p.category] ?? p.category}</td>
+                    <td className="px-3 py-2">
+                      {ib ? (
+                        <span className={`font-mono text-[9px] uppercase px-1.5 py-0.5 ${
+                          ib === "light" ? "bg-meama-green/10 text-meama-green" :
+                          ib === "medium" ? "bg-meama-gold/10 text-meama-gold" :
+                          "bg-meama-red/10 text-meama-red"
+                        }`}>{ib}</span>
+                      ) : <span className="text-meama-muted">—</span>}
+                    </td>
+                    <td className="tabular px-3 py-2 font-mono text-sm font-bold text-meama-green">
+                      {formatPercent(p.reorder_rate_90d, 1)}
+                    </td>
+                    <td className="tabular px-3 py-2 font-mono text-xs text-meama-cream">{formatNumber(p.total_buyers)}</td>
+                    <td className="tabular px-3 py-2 font-mono text-xs text-meama-cream">{formatPercent(p.retention_rate, 1)}</td>
+                    <td className="px-3 py-2">
+                      <Link
+                        to={`/customers?product_sku=${encodeURIComponent(p.sku)}`}
+                        className="font-mono text-[9px] text-meama-gold hover:underline whitespace-nowrap"
+                      >
+                        Buyers →
+                      </Link>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Worst performers */}
+      <div>
+        <div className="mb-3 font-mono text-[10px] uppercase tracking-wider text-meama-gold">
+          — Worst Performers · Low Revenue + Low Reorder
+        </div>
+        <div className="overflow-x-auto border border-meama-charcoal">
+          <table className="min-w-full text-sm">
+            <thead>
+              <tr className="border-b border-meama-charcoal">
+                {["Product", "Category", "Rev 30d", "Units 30d", "Reorder 90d", "Buyers", "Refund Rate", "Stock", "Action"].map((h) => (
+                  <th key={h} className="px-3 py-2.5 font-mono text-[10px] font-medium uppercase tracking-wider text-meama-gold text-left">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {worstPerformers.map((p) => (
+                <tr key={p.sku} className="border-b border-meama-charcoal hover:bg-meama-ivory">
+                  <td className="px-3 py-2">
+                    <Link to={`/products/${p.sku}`} className="font-medium text-meama-brown hover:text-meama-gold">
+                      {p.name}
+                    </Link>
+                    <div className="font-mono text-[9px] text-meama-muted">{p.sku}</div>
+                  </td>
+                  <td className="px-3 py-2 font-mono text-xs text-meama-cream">{CAT_LABELS[p.category] ?? p.category}</td>
+                  <td className="tabular px-3 py-2 text-meama-red font-semibold">{formatGEL0(p.revenue_30d)}</td>
+                  <td className="tabular px-3 py-2 font-mono text-xs text-meama-cream">{formatNumber(p.units_sold_30d)}</td>
+                  <td className="tabular px-3 py-2 font-mono text-xs text-meama-muted">{formatPercent(p.reorder_rate_90d, 1)}</td>
+                  <td className="tabular px-3 py-2 font-mono text-xs text-meama-cream">{formatNumber(p.total_buyers)}</td>
+                  <td className={`tabular px-3 py-2 font-mono text-xs ${p.refund_rate > 0.05 ? "text-meama-red font-bold" : "text-meama-muted"}`}>
+                    {formatPercent(p.refund_rate, 2)}
+                  </td>
+                  <td className="px-3 py-2"><StockBadge status={p.stock_status} /></td>
+                  <td className="px-3 py-2">
+                    <Link
+                      to={`/customers?product_sku=${encodeURIComponent(p.sku)}`}
+                      className="font-mono text-[9px] text-meama-gold/60 hover:text-meama-gold whitespace-nowrap"
+                    >
+                      Buyers →
+                    </Link>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Category breakdown: top 5 by reorder per commercial type */}
+      <div>
+        <div className="mb-3 font-mono text-[10px] uppercase tracking-wider text-meama-gold">
+          — Top 5 by Reorder Rate · per Commercial Category
+        </div>
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
+          {(["coffee", "tea", "wellness"] as const).map((cc) => {
+            const group = (commercialGroups[cc] ?? [])
+              .filter((p) => p.total_buyers >= 3)
+              .sort((a, b) => b.reorder_rate_90d - a.reorder_rate_90d)
+              .slice(0, 5);
+            if (group.length === 0) return null;
+            return (
+              <div key={cc} className="panel-dark border-l-2 border-l-[#3A3A3A]">
+                <div className={`mb-3 font-mono text-[10px] uppercase tracking-wider font-bold ${
+                  cc === "coffee" ? "text-meama-gold" : cc === "tea" ? "text-meama-green" : "text-meama-blue"
+                }`}>{cc}</div>
+                <div className="space-y-2">
+                  {group.map((p, i) => (
+                    <div key={p.sku} className="flex items-center gap-2">
+                      <span className="tabular w-3 font-mono text-[10px] text-[#5A5A5A]">{i + 1}</span>
+                      <div className="flex-1 min-w-0">
+                        <Link to={`/products/${p.sku}`} className="truncate block text-[11px] font-medium text-[#F4F0EA] hover:text-meama-gold">
+                          {p.name}
+                        </Link>
+                        <div className="mt-0.5 h-px bg-[#2A2A2A]">
+                          <div className="h-full bg-[#C8963E]" style={{ width: `${Math.min(p.reorder_rate_90d * 100, 100)}%` }} />
+                        </div>
+                      </div>
+                      <span className="tabular shrink-0 font-mono text-xs font-bold text-[#F4F0EA]">
+                        {formatPercent(p.reorder_rate_90d, 1)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-3 border-t border-[#2A2A2A] pt-2">
+                  <Link
+                    to={`/customers?beverage_type=${cc}`}
+                    className="font-mono text-[9px] text-meama-gold/60 hover:text-meama-gold"
+                  >
+                    View {cc} buyers in Portfolios →
+                  </Link>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Segment legend */}
+      <div>
+        <div className="mb-2 font-mono text-[10px] uppercase tracking-wider text-meama-gold">
+          — Segment Quick Reference
+        </div>
+        <div className="flex flex-wrap gap-3">
+          {SEGMENT_ORDER.map((seg) => (
+            <div key={seg} className="flex items-center gap-1.5">
+              <span className={`font-mono text-[10px] font-bold ${SEGMENT_COLOR[seg] ?? "text-meama-muted"}`}>
+                {seg}
+              </span>
+              <Link
+                to={`/customers?segment=${seg}`}
+                className="font-mono text-[9px] text-meama-muted hover:text-meama-gold"
+              >
+                → view
+              </Link>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Main Products page ─────────────────────────────────────────────────────────
 export default function Products() {
   const { t } = useTranslation();
@@ -641,6 +908,10 @@ export default function Products() {
   const [bioOnly, setBioOnly] = useState(false);
   const [hotcold, setHotcold] = useState<"all" | "hot" | "cold">("all");
   const [trendFilter, setTrendFilter] = useState<"all" | "up" | "down">("all");
+  const [intensityFilter, setIntensityFilter] = useState<IntensityFilter>("all");
+  const [commercialCat, setCommercialCat] = useState<CommercialCat>("all");
+  const [flavorSearch, setFlavorSearch] = useState("");
+  const [performerFilter, setPerformerFilter] = useState<PerformerFilter>("all");
   const [sortKey, setSortKey] = useState<SortKey>("revenue");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [view, setView] = useState<"grid" | "table">("grid");
@@ -659,7 +930,12 @@ export default function Products() {
     let out = products;
     if (search) {
       const q = search.toLowerCase();
-      out = out.filter((p) => p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q));
+      out = out.filter((p) =>
+        p.name.toLowerCase().includes(q) ||
+        p.sku.toLowerCase().includes(q) ||
+        (p.flavor_profile ?? "").toLowerCase().includes(q) ||
+        p.flavor_notes.some((f) => f.toLowerCase().includes(q))
+      );
     }
     if (category !== "all") out = out.filter((p) => p.category === category);
     if (caffeine !== "all") out = out.filter((p) => caffeineBucket(p.caffeine_mg) === caffeine);
@@ -676,15 +952,45 @@ export default function Products() {
         return trendFilter === "up" ? !declining : declining;
       });
     }
+    if (intensityFilter !== "all") {
+      out = out.filter((p) => resolveIntensityBucket(p) === intensityFilter);
+    }
+    if (commercialCat !== "all") {
+      out = out.filter((p) => resolveCommercialCat(p) === commercialCat);
+    }
+    if (flavorSearch.trim()) {
+      const fq = flavorSearch.toLowerCase().trim();
+      out = out.filter((p) =>
+        p.flavor_notes.some((f) => f.toLowerCase().includes(fq)) ||
+        (p.flavor_profile ?? "").toLowerCase().includes(fq)
+      );
+    }
+    if (performerFilter === "top_returning") {
+      out = out.filter((p) => p.reorder_rate_90d > 0.1 && p.total_buyers >= 5);
+      out = [...out].sort((a, b) => b.reorder_rate_90d - a.reorder_rate_90d);
+      return out.slice(0, 20);
+    }
+    if (performerFilter === "worst") {
+      out = out.filter((p) => p.total_buyers >= 3);
+      out = [...out].sort((a, b) => a.revenue_30d - b.revenue_30d);
+      return out.slice(0, 20);
+    }
     return sortProducts(out, sortKey, sortDir);
-  }, [products, search, category, caffeine, bioOnly, hotcold, trendFilter, sortKey, sortDir]);
+  }, [products, search, category, caffeine, bioOnly, hotcold, trendFilter, intensityFilter, commercialCat, flavorSearch, performerFilter, sortKey, sortDir]);
 
   const TABS: { key: Tab; label: string }[] = [
     { key: "catalog", label: "Catalog" },
     { key: "revenue", label: "Revenue & Margin" },
     { key: "retention", label: "Retention" },
     { key: "affinity", label: "Bundling & Affinity" },
+    { key: "segments", label: "Segment Intel" },
   ];
+
+  const activeFilterCount = [
+    search, category !== "all", caffeine !== "all", bioOnly,
+    hotcold !== "all", trendFilter !== "all", intensityFilter !== "all",
+    commercialCat !== "all", flavorSearch, performerFilter !== "all",
+  ].filter(Boolean).length;
 
   return (
     <div>
@@ -749,16 +1055,59 @@ export default function Products() {
       {/* ── CATALOG TAB ──────────────────────────────────────────────────── */}
       {tab === "catalog" && (
         <div>
-          {/* Filter bar */}
-          <div className="mb-5 flex flex-wrap items-center gap-2">
-            {/* Search */}
+          {/* Filter bar — row 1: search + commercial filters */}
+          <div className="mb-3 flex flex-wrap items-center gap-2">
             <input
               type="text"
-              placeholder="Search name / SKU…"
+              placeholder="Search name / SKU / flavour…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="border border-meama-charcoal bg-meama-ivory px-3 py-1.5 font-mono text-xs text-meama-brown placeholder-meama-muted focus:border-meama-gold focus:outline-none"
+              className="w-52 border border-meama-charcoal bg-meama-ivory px-3 py-1.5 font-mono text-xs text-meama-brown placeholder-meama-muted focus:border-meama-gold focus:outline-none"
             />
+
+            {/* Commercial category */}
+            <select
+              value={commercialCat}
+              onChange={(e) => setCommercialCat(e.target.value as CommercialCat)}
+              className="border border-meama-charcoal bg-meama-ivory px-3 py-1.5 font-mono text-xs text-meama-cream focus:border-meama-gold focus:outline-none"
+            >
+              <option value="all">All categories</option>
+              <option value="coffee">Coffee</option>
+              <option value="tea">Tea</option>
+              <option value="wellness">Wellness</option>
+            </select>
+
+            {/* Intensity */}
+            <select
+              value={intensityFilter}
+              onChange={(e) => setIntensityFilter(e.target.value as IntensityFilter)}
+              className="border border-meama-charcoal bg-meama-ivory px-3 py-1.5 font-mono text-xs text-meama-cream focus:border-meama-gold focus:outline-none"
+            >
+              <option value="all">All intensity</option>
+              <option value="light">Light (1–3)</option>
+              <option value="medium">Medium (4–6)</option>
+              <option value="strong">Strong (7+)</option>
+            </select>
+
+            {/* Flavour search */}
+            <input
+              type="text"
+              placeholder="Flavour (e.g. caramel)…"
+              value={flavorSearch}
+              onChange={(e) => setFlavorSearch(e.target.value)}
+              className="w-44 border border-meama-charcoal bg-meama-ivory px-3 py-1.5 font-mono text-xs text-meama-brown placeholder-meama-muted focus:border-meama-gold focus:outline-none"
+            />
+
+            {/* Performer filter */}
+            <select
+              value={performerFilter}
+              onChange={(e) => setPerformerFilter(e.target.value as PerformerFilter)}
+              className="border border-meama-charcoal bg-meama-ivory px-3 py-1.5 font-mono text-xs text-meama-cream focus:border-meama-gold focus:outline-none"
+            >
+              <option value="all">All performers</option>
+              <option value="top_returning">Top · Returning buyers</option>
+              <option value="worst">Worst · Low revenue</option>
+            </select>
 
             {/* Caffeine */}
             <select
@@ -768,9 +1117,9 @@ export default function Products() {
             >
               <option value="all">All caffeine</option>
               <option value="none">Caffeine-free</option>
-              <option value="low">Low (&lt;50mg)</option>
-              <option value="medium">Medium (50-100mg)</option>
-              <option value="high">High (&gt;100mg)</option>
+              <option value="low">Low &lt;50mg</option>
+              <option value="medium">50–100mg</option>
+              <option value="high">High &gt;100mg</option>
             </select>
 
             {/* Hot/Cold */}
@@ -807,7 +1156,24 @@ export default function Products() {
               BIO only
             </button>
 
-            {/* Sort */}
+            {/* Clear all filters */}
+            {activeFilterCount > 0 && (
+              <button
+                onClick={() => {
+                  setSearch(""); setCategory("all"); setCaffeine("all");
+                  setBioOnly(false); setHotcold("all"); setTrendFilter("all");
+                  setIntensityFilter("all"); setCommercialCat("all");
+                  setFlavorSearch(""); setPerformerFilter("all");
+                }}
+                className="border border-meama-red/40 px-3 py-1.5 font-mono text-xs text-meama-red hover:border-meama-red hover:bg-meama-red/5"
+              >
+                Clear {activeFilterCount} filter{activeFilterCount > 1 ? "s" : ""}
+              </button>
+            )}
+          </div>
+
+          {/* Filter bar — row 2: sort + view */}
+          <div className="mb-5 flex flex-wrap items-center gap-2">
             <select
               value={sortKey}
               onChange={(e) => setSortKey(e.target.value as SortKey)}
@@ -826,7 +1192,6 @@ export default function Products() {
               {sortDir === "desc" ? "↓" : "↑"}
             </button>
 
-            {/* View toggle */}
             <div className="ml-auto flex">
               <button
                 onClick={() => setView("grid")}
@@ -904,16 +1269,45 @@ export default function Products() {
                             </div>
                           </div>
 
-                          {/* Intensity + caffeine */}
+                          {/* Intensity bar + bucket badge */}
                           {p.intensity_level != null && (
                             <div className="mt-2">
                               <IntensityBar value={p.intensity_level} />
                             </div>
                           )}
+                          <div className="mt-1 flex flex-wrap items-center gap-1">
+                            {resolveIntensityBucket(p) && (
+                              <span className={`font-mono text-[9px] uppercase tracking-wide px-1.5 py-0.5 ${
+                                resolveIntensityBucket(p) === "light" ? "bg-meama-green/10 text-meama-green" :
+                                resolveIntensityBucket(p) === "medium" ? "bg-meama-gold/10 text-meama-gold" :
+                                "bg-meama-red/10 text-meama-red"
+                              }`}>
+                                {resolveIntensityBucket(p)}
+                              </span>
+                            )}
+                            {resolveCommercialCat(p) && (
+                              <span className="font-mono text-[9px] uppercase tracking-wide px-1.5 py-0.5 bg-meama-blue/10 text-meama-blue">
+                                {resolveCommercialCat(p)}
+                              </span>
+                            )}
+                            {p.bio && (
+                              <span className="font-mono text-[9px] uppercase tracking-wide px-1.5 py-0.5 bg-meama-green/10 text-meama-green">
+                                BIO
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Flavour notes */}
+                          {p.flavor_notes.length > 0 && (
+                            <div className="mt-1 font-mono text-[9px] text-meama-muted truncate">
+                              {p.flavor_notes.slice(0, 3).join(" · ")}
+                            </div>
+                          )}
+
+                          {/* Caffeine */}
                           {p.caffeine && (
-                            <div className="mt-1 font-mono text-[9px] text-meama-muted">
+                            <div className="mt-0.5 font-mono text-[9px] text-meama-muted">
                               ⚡ {p.caffeine}
-                              {p.bio && <span className="ml-2 text-meama-green">· BIO</span>}
                             </div>
                           )}
 
@@ -940,6 +1334,20 @@ export default function Products() {
                               color={declining ? "var(--meama-red)" : "var(--meama-gold)"}
                             />
                           </div>
+
+                          {/* Portfolios cross-link */}
+                          <div
+                            className="mt-2 border-t border-meama-charcoal pt-2"
+                            onClick={(e) => e.preventDefault()}
+                          >
+                            <Link
+                              to={`/customers?product_sku=${encodeURIComponent(p.sku)}`}
+                              className="font-mono text-[9px] text-meama-gold/60 hover:text-meama-gold transition-colors"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              View buyers in Portfolios →
+                            </Link>
+                          </div>
                         </div>
                       </Link>
                     );
@@ -953,14 +1361,16 @@ export default function Products() {
               <table className="min-w-full text-sm">
                 <thead>
                   <tr className="border-b border-meama-charcoal">
-                    {["Product", "Category", "Price", "Rev 30d", "Units 30d", "Caffeine", "Intensity", "Repeat", "Reorder 90d", "Bio", "Stock", "Bundle", "Trend"].map((h) => (
-                      <th key={h} className="px-3 py-2.5 font-mono text-[10px] font-medium uppercase tracking-wider text-meama-gold text-left last:text-center">{h}</th>
+                    {["Product", "Type", "Price", "Rev 30d", "Units 30d", "Intensity", "Flavours", "Caffeine", "Repeat", "Reorder 90d", "Bio", "Stock", "Trend", "Portfolios"].map((h) => (
+                      <th key={h} className="px-3 py-2.5 font-mono text-[10px] font-medium uppercase tracking-wider text-meama-gold text-left">{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {filtered.map((p) => {
                     const declining = (p.monthly_units[11] ?? 0) < (p.monthly_units[0] ?? 0);
+                    const ib = resolveIntensityBucket(p);
+                    const cc = resolveCommercialCat(p);
                     return (
                       <tr key={p.sku} className="border-b border-meama-charcoal hover:bg-meama-ivory">
                         <td className="px-3 py-2">
@@ -969,16 +1379,37 @@ export default function Products() {
                           </Link>
                           <div className="font-mono text-[9px] text-meama-muted">{p.sku}</div>
                         </td>
-                        <td className="px-3 py-2 text-xs text-meama-cream">{CAT_LABELS[p.category] ?? p.category}</td>
+                        <td className="px-3 py-2">
+                          <div className="font-mono text-[10px] text-meama-cream">{CAT_LABELS[p.category] ?? p.category}</div>
+                          {cc && (
+                            <div className={`mt-0.5 font-mono text-[9px] uppercase ${
+                              cc === "coffee" ? "text-meama-gold" : cc === "tea" ? "text-meama-green" : "text-meama-blue"
+                            }`}>{cc}</div>
+                          )}
+                        </td>
                         <td className="tabular px-3 py-2 text-meama-cream">{formatGEL(p.price)}</td>
                         <td className="tabular px-3 py-2 font-semibold text-meama-brown">{formatGEL0(p.revenue_30d)}</td>
                         <td className="tabular px-3 py-2 text-meama-cream">{formatNumber(p.units_sold_30d)}</td>
-                        <td className="px-3 py-2 font-mono text-xs text-meama-cream">{p.caffeine ?? "—"}</td>
                         <td className="px-3 py-2">
-                          {p.intensity_level != null
-                            ? <div className="w-16"><IntensityBar value={p.intensity_level} /></div>
-                            : <span className="text-meama-muted">—</span>}
+                          {p.intensity_level != null ? (
+                            <div className="flex items-center gap-1.5">
+                              <div className="w-12"><IntensityBar value={p.intensity_level} /></div>
+                              {ib && (
+                                <span className={`font-mono text-[9px] uppercase ${
+                                  ib === "light" ? "text-meama-green" : ib === "medium" ? "text-meama-gold" : "text-meama-red"
+                                }`}>{ib}</span>
+                              )}
+                            </div>
+                          ) : <span className="text-meama-muted">—</span>}
                         </td>
+                        <td className="px-3 py-2 font-mono text-[10px] text-meama-muted max-w-[120px] truncate">
+                          {p.flavor_notes.length > 0
+                            ? p.flavor_notes.slice(0, 2).join(", ")
+                            : p.flavor_profile
+                              ? p.flavor_profile.split(",")[0]?.trim()
+                              : <span>—</span>}
+                        </td>
+                        <td className="px-3 py-2 font-mono text-xs text-meama-cream">{p.caffeine ?? "—"}</td>
                         <td className="tabular px-3 py-2 font-mono text-xs text-meama-cream">{formatPercent(p.repeat_rate, 0)}</td>
                         <td className={`tabular px-3 py-2 font-mono text-xs font-bold ${p.reorder_rate_90d > 0.15 ? "text-meama-green" : p.reorder_rate_90d > 0.05 ? "text-meama-gold" : "text-meama-muted"}`}>
                           {formatPercent(p.reorder_rate_90d, 1)}
@@ -989,13 +1420,16 @@ export default function Products() {
                         <td className="px-3 py-2">
                           <StockBadge status={p.stock_status} />
                         </td>
-                        <td className="px-3 py-2 font-mono text-[10px] text-meama-muted">
-                          {p.top_bundle_name
-                            ? <span title={`${p.top_bundle_count}×`} className="text-meama-cream">{p.top_bundle_name}</span>
-                            : <span>—</span>}
-                        </td>
                         <td className={`px-3 py-2 text-center font-mono text-xs ${declining ? "text-meama-red" : "text-meama-green"}`}>
                           {declining ? "▼" : "▲"}
+                        </td>
+                        <td className="px-3 py-2">
+                          <Link
+                            to={`/customers?product_sku=${encodeURIComponent(p.sku)}`}
+                            className="font-mono text-[9px] text-meama-gold/60 hover:text-meama-gold transition-colors whitespace-nowrap"
+                          >
+                            Buyers →
+                          </Link>
                         </td>
                       </tr>
                     );
@@ -1021,6 +1455,9 @@ export default function Products() {
 
       {/* ── AFFINITY TAB ─────────────────────────────────────────────────── */}
       {tab === "affinity" && <AffinityTab />}
+
+      {/* ── SEGMENT INTEL TAB ────────────────────────────────────────────── */}
+      {tab === "segments" && !loading && <SegmentIntelTab products={products} />}
 
       {/* Loading state for non-catalog tabs */}
       {loading && tab !== "catalog" && (

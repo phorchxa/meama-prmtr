@@ -17,16 +17,20 @@ class ProductSummary(BaseModel):
     caffeine: str | None = None
     caffeine_mg: int | None = None
     intensity_level: float | None = None
+    intensity_bucket: str | None = None      # 'light' | 'medium' | 'strong'
     bitterness: float | None = None
     arabica_pct: float | None = None
     robusta_pct: float | None = None
-    flavor_profile: str | None = None
+    flavor_profile: str | None = None        # Bible: comma-separated text
+    flavor_notes: list[str] = []             # products_georgia: text[] parsed
     ingredients: str | None = None
     beverage_type: str | None = None
+    beverage_type_en: str | None = None      # normalised English label
     bio: bool = False
     compatible_with: str | None = None
     capsule_format: str | None = None
     hot_cold: str | None = None
+    product_type_geo: str | None = None      # products_georgia.product_type
 
     # ── 30d + 12-month series (get_product_stats) ────────────────────────────
     units_sold_30d: int = 0
@@ -55,7 +59,7 @@ class ProductSummary(BaseModel):
     format_rank_pct: float | None = None  # share within same category (90d)
     total_rank_pct: float | None = None   # share of all retail units (90d)
     monthly_growth_pct: float | None = None  # current vs prev month units
-    margin_pct: float | None = None     # (sales/1.18 – COGS) / (sales/1.18)
+    margin_pct: float | None = None     # (revenue_ex_vat – COGS×qty) / revenue_ex_vat; VAT=18% (GEO_VAT_RATE)
     full_price_revenue: float = 0.0
     full_price_units: int = 0
     discounted_revenue: float = 0.0
@@ -69,6 +73,7 @@ class ProductSummary(BaseModel):
     top_bundle_count: int = 0
 
     # ── Stock status (derived from avg_monthly_consumption + stock_quantity) ──
+    stock_quantity: int | None = None   # units on hand (products_master or geo fallback)
     stock_status: str | None = None     # 'understock' | 'in_stock' | 'overstock'
 
     ai_insight: str | None = None

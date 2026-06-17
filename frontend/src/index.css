@@ -21,7 +21,7 @@ body {
 /* custom cursor: hide on touch */
 @media (hover: none) {
   body { cursor: auto; }
-  .cursor-dot, .cursor-ring { display: none; }
+  .cursor-dot { display: none; }
 }
 
 /* ── Cursor ─────────────────────────────────────────────────── */
@@ -34,22 +34,6 @@ body {
   pointer-events: none;
   z-index: 9999;
   will-change: transform;
-}
-.cursor-ring {
-  position: fixed;
-  top: 0; left: 0;
-  width: 32px; height: 32px;
-  border-radius: 50%;
-  border: 1px solid #0D0D0D;
-  pointer-events: none;
-  z-index: 9998;
-  will-change: transform;
-  transition: width 0.25s ease, height 0.25s ease, opacity 0.25s ease;
-}
-[data-hover] .cursor-ring {
-  width: 52px;
-  height: 52px;
-  opacity: 0.4;
 }
 
 /* ── Marquee ─────────────────────────────────────────────────── */

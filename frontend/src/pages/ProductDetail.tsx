@@ -1,22 +1,32 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link, Navigate, useParams } from "react-router-dom";
+import { Link, Navigate, useParams, useSearchParams } from "react-router-dom";
 
 import { AiPanel } from "../components/AiPanel";
 import { Kicker } from "../components/Kicker";
 import { StatCallout } from "../components/StatCallout";
-import { type ProductSummary, fetchProducts } from "../lib/api";
+import {
+  type ProductCustomerRow,
+  type ProductSummary,
+  fetchProduct,
+  fetchProductCustomers,
+} from "../lib/api";
 import { formatGEL, formatGEL0, formatNumber, formatPercent } from "../lib/format";
 import { PageHeader } from "./PageHeader";
 
-const MONTHS = ["Jul","Aug","Sep","Oct","Nov","Dec","Jan","Feb","Mar","Apr","May","Jun"];
+// Business rule constants — must match business_rules.py
 const MIN_PRICE_MULTIPLIER = 1.6667;
+const CHURN_SCORE_ALERT = 0.7;
+
+const MONTHS = ["Jul","Aug","Sep","Oct","Nov","Dec","Jan","Feb","Mar","Apr","May","Jun"];
 
 const CAT_LABELS: Record<string, { en: string; ka: string }> = {
   machine:   { en: "Machines & Hardware", ka: "აპარატები" },
   capsule:   { en: "Capsules", ka: "კაფსულები" },
   accessory: { en: "Accessories", ka: "აქსესუარები" },
 };
+
+// ── Sub-components ────────────────────────────────────────────────────────────
 
 function ProductImage({ src, name }: { src: string | null; name: string }) {
   const [err, setErr] = useState(false);
@@ -53,22 +63,184 @@ function IntensityBar({ value, max = 12, label }: { value: number | null; max?: 
   );
 }
 
+// ── Segment chip ──────────────────────────────────────────────────────────────
+function SegmentChip({ segment }: { segment: string | null }) {
+  if (!segment) return <span className="text-meama-muted text-[10px]">—</span>;
+  const colors: Record<string, string> = {
+    champion: "bg-meama-green/10 text-meama-green border-meama-green/30",
+    capsule_loyalist: "bg-meama-gold/10 text-meama-gold border-meama-gold/30",
+    flavour_explorer: "bg-meama-blue/10 text-meama-blue border-meama-blue/30",
+    regular: "border-meama-charcoal text-meama-muted",
+    at_risk: "bg-meama-red/10 text-meama-red border-meama-red/30",
+    lost: "bg-meama-red/15 text-meama-red border-meama-red/40",
+    new: "bg-meama-blue/10 text-meama-blue border-meama-blue/30",
+  };
+  const labels: Record<string, string> = {
+    champion: "Champion",
+    capsule_loyalist: "Loyalist",
+    flavour_explorer: "Explorer",
+    regular: "Regular",
+    at_risk: "At Risk",
+    lost: "Lost",
+    new: "New",
+  };
+  return (
+    <span className={`inline-block border px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wider ${colors[segment] ?? "border-meama-charcoal text-meama-muted"}`}>
+      {labels[segment] ?? segment}
+    </span>
+  );
+}
+
+// ── Top Customers section ─────────────────────────────────────────────────────
+function TopCustomers({ sku }: { sku: string }) {
+  const [rows, setRows] = useState<ProductCustomerRow[] | null>(null);
+
+  useEffect(() => {
+    fetchProductCustomers(sku, 20)
+      .then(setRows)
+      .catch(() => setRows([]));
+  }, [sku]);
+
+  if (rows === null) {
+    return (
+      <div className="card-m">
+        <Kicker>Top Customers</Kicker>
+        <div className="mt-3 space-y-2">
+          {Array.from({ length: 5 }, (_, i) => (
+            <div key={i} className="flex gap-3">
+              <div className="h-3 w-24 animate-pulse rounded bg-meama-charcoal" />
+              <div className="h-3 flex-1 animate-pulse rounded bg-meama-charcoal" />
+              <div className="h-3 w-16 animate-pulse rounded bg-meama-charcoal" />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (rows.length === 0) {
+    return (
+      <div className="card-m">
+        <Kicker>Top Customers</Kicker>
+        <p className="mt-3 font-mono text-xs text-meama-muted">
+          No customer purchase data available for this SKU yet.
+        </p>
+      </div>
+    );
+  }
+
+  const maxSpend = rows[0]?.total_spend ?? 1;
+
+  return (
+    <div className="card-m">
+      <Kicker>{`Top Customers · ${rows.length} shown · sorted by spend`}</Kicker>
+      <div className="mt-3 overflow-x-auto">
+        <table className="min-w-full text-sm">
+          <thead>
+            <tr className="border-b border-meama-charcoal">
+              {["#", "Customer", "Segment", "Units", "Spend", "Last Purchase", "Churn"].map((h) => (
+                <th
+                  key={h}
+                  className="px-3 py-2 font-mono text-[10px] font-medium uppercase tracking-wider text-meama-gold text-left last:text-right"
+                >
+                  {h}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r, i) => {
+              const churnColor =
+                r.churn_score == null
+                  ? "text-meama-muted"
+                  : r.churn_score >= CHURN_SCORE_ALERT
+                  ? "text-meama-red font-bold"
+                  : r.churn_score >= 0.4
+                  ? "text-meama-gold"
+                  : "text-meama-green";
+              const barW = maxSpend > 0 ? (r.total_spend / maxSpend) * 100 : 0;
+              return (
+                <tr key={r.customer_id} className="border-b border-meama-charcoal hover:bg-meama-ivory">
+                  <td className="px-3 py-2 font-mono text-[10px] text-meama-muted">{i + 1}</td>
+                  <td className="px-3 py-2">
+                    <Link
+                      to={`/customers/${r.customer_id}?from=products&product_sku=${sku}`}
+                      className="font-mono text-xs font-bold text-meama-brown hover:text-meama-gold"
+                    >
+                      {r.customer_id}
+                    </Link>
+                  </td>
+                  <td className="px-3 py-2">
+                    <SegmentChip segment={r.rfm_segment} />
+                  </td>
+                  <td className="tabular px-3 py-2 font-mono text-xs text-meama-cream">
+                    {formatNumber(r.total_units)}
+                  </td>
+                  <td className="px-3 py-2">
+                    <div className="flex items-center gap-2">
+                      <div className="h-1 w-16 bg-meama-charcoal">
+                        <div className="h-full bg-meama-gold" style={{ width: `${barW}%` }} />
+                      </div>
+                      <span className="tabular font-semibold text-meama-brown">
+                        {formatGEL0(r.total_spend)}
+                      </span>
+                    </div>
+                  </td>
+                  <td className="tabular px-3 py-2 font-mono text-xs text-meama-muted">
+                    {r.last_purchase_date
+                      ? new Date(r.last_purchase_date).toLocaleDateString("ka-GE", {
+                          timeZone: "Asia/Tbilisi",
+                          year: "numeric",
+                          month: "short",
+                          day: "numeric",
+                        })
+                      : "—"}
+                  </td>
+                  <td className={`tabular px-3 py-2 text-right font-mono text-xs ${churnColor}`}>
+                    {r.churn_score != null ? r.churn_score.toFixed(2) : "—"}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      <div className="mt-3 text-right">
+        <Link
+          to={`/customers?product_sku=${sku}`}
+          className="font-mono text-[10px] font-bold uppercase tracking-wider text-meama-gold hover:underline"
+        >
+          View all customers →
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+// ── Main ──────────────────────────────────────────────────────────────────────
 export default function ProductDetail() {
   const { t } = useTranslation();
   const { sku } = useParams<{ sku: string }>();
+  const [searchParams] = useSearchParams();
   const [product, setProduct] = useState<ProductSummary | null | "not_found">(null);
 
   useEffect(() => {
-    fetchProducts()
-      .then((r) => {
-        const hit = r.products.find((p) => p.sku === sku);
-        setProduct(hit ?? "not_found");
-      })
+    if (!sku) { setProduct("not_found"); return; }
+    fetchProduct(sku)
+      .then(setProduct)
       .catch(() => setProduct("not_found"));
   }, [sku]);
 
   if (product === null) {
-    return <div className="p-8 text-center font-mono text-meama-muted">Loading…</div>;
+    return (
+      <div className="space-y-4 p-8">
+        <div className="h-3 w-32 animate-pulse rounded bg-meama-charcoal" />
+        <div className="h-6 w-2/3 animate-pulse rounded bg-meama-charcoal" />
+        <div className="grid grid-cols-3 gap-4">
+          {[0, 1, 2].map((i) => <div key={i} className="h-48 animate-pulse rounded bg-meama-charcoal" />)}
+        </div>
+      </div>
+    );
   }
   if (product === "not_found") {
     return <Navigate to="/products" replace />;
@@ -83,14 +255,28 @@ export default function ProductDetail() {
   const maxSafeDiscount = promoFloor != null ? Math.max(0, 1 - promoFloor / p.price) : null;
   const marginPerUnit = p.cogs != null ? (p.price - p.cogs) / p.price : null;
 
+  // Incoming context — e.g. navigated from a customer page
+  const fromCustomer = searchParams.get("customer_id");
+
   return (
     <div>
-      <Link
-        to="/products"
-        className="mb-4 inline-block font-mono text-xs font-bold uppercase tracking-wider text-meama-gold hover:underline"
-      >
-        ← {t("pages.productDetail.back")}
-      </Link>
+      {/* Back link — context-aware */}
+      <div className="mb-4 flex items-center gap-4">
+        <Link
+          to="/products"
+          className="font-mono text-xs font-bold uppercase tracking-wider text-meama-gold hover:underline"
+        >
+          ← {t("pages.productDetail.back")}
+        </Link>
+        {fromCustomer && (
+          <Link
+            to={`/customers/${fromCustomer}`}
+            className="font-mono text-xs uppercase tracking-wider text-meama-muted hover:text-meama-gold"
+          >
+            ← Back to customer {fromCustomer}
+          </Link>
+        )}
+      </div>
 
       <PageHeader
         kicker={cat?.en ?? p.category}
@@ -125,6 +311,21 @@ export default function ProductDetail() {
                   {p.hot_cold}
                 </span>
               )}
+            </div>
+            {/* Quick-links to cross-tabs */}
+            <div className="mt-3 flex gap-3 border-t border-meama-charcoal pt-3">
+              <Link
+                to={`/customers?product_sku=${p.sku}`}
+                className="font-mono text-[10px] text-meama-muted hover:text-meama-gold"
+              >
+                Customers →
+              </Link>
+              <Link
+                to={`/stock?sku=${p.sku}`}
+                className="font-mono text-[10px] text-meama-muted hover:text-meama-gold"
+              >
+                Stock →
+              </Link>
             </div>
           </div>
         </div>
@@ -187,6 +388,21 @@ export default function ProductDetail() {
             <div className="mt-4">
               <div className="font-mono text-[10px] uppercase tracking-wider text-meama-muted">Machine</div>
               <div className="mt-0.5 text-sm text-meama-brown">{p.compatible_with}</div>
+            </div>
+          )}
+          {/* Bundle partner */}
+          {p.top_bundle_name && (
+            <div className="mt-4 border-t border-meama-charcoal pt-3">
+              <div className="font-mono text-[10px] uppercase tracking-wider text-meama-muted">Often bought with</div>
+              <Link
+                to={`/products/${p.top_bundle_sku}`}
+                className="mt-0.5 block text-sm font-semibold text-meama-brown hover:text-meama-gold"
+              >
+                {p.top_bundle_name}
+                <span className="ml-1 font-mono text-[10px] text-meama-muted">
+                  ({formatNumber(p.top_bundle_count)}×)
+                </span>
+              </Link>
             </div>
           )}
         </div>
@@ -270,9 +486,13 @@ export default function ProductDetail() {
             {p.revenue_30d > 0 && (
               <>
                 <div className="h-2 flex-none" style={{ width: `${(p.revenue_30d_web / p.revenue_30d) * 180}px`, background: "var(--meama-gold)" }} />
-                <span className="font-mono text-[10px] text-meama-muted">Web {formatPercent(p.revenue_30d > 0 ? p.revenue_30d_web/p.revenue_30d : 0, 0)}</span>
+                <span className="font-mono text-[10px] text-meama-muted">
+                  Web {formatPercent(p.revenue_30d > 0 ? p.revenue_30d_web / p.revenue_30d : 0, 0)}
+                </span>
                 <div className="h-2 flex-none" style={{ width: `${(p.revenue_30d_pos / p.revenue_30d) * 180}px`, background: "var(--meama-blue)" }} />
-                <span className="font-mono text-[10px] text-meama-muted">POS {formatPercent(p.revenue_30d > 0 ? p.revenue_30d_pos/p.revenue_30d : 0, 0)}</span>
+                <span className="font-mono text-[10px] text-meama-muted">
+                  POS {formatPercent(p.revenue_30d > 0 ? p.revenue_30d_pos / p.revenue_30d : 0, 0)}
+                </span>
               </>
             )}
             {p.revenue_30d === 0 && (
@@ -361,6 +581,9 @@ export default function ProductDetail() {
             </p>
           </div>
         )}
+
+        {/* Top customers — cross-tab link */}
+        {sku && <TopCustomers sku={sku} />}
 
         <AiPanel title={`AI Insight — ${p.name}`} actionLabel="Generate fresh insight">
           {p.ai_insight ??

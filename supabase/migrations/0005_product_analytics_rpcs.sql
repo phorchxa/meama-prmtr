@@ -22,16 +22,21 @@ AS $$
 WITH retail AS (
   SELECT shopify_order_id, source
   FROM   meama_georgia_orders
-  WHERE  source IN ('web', 'pos')
+  WHERE  source IN ('web', 'pos', '195189899265', 'online_store', 'Online Store')
     AND  processed_at >= now() - INTERVAL '30 days'
-    AND  financial_status IN ('paid', 'partially_paid', 'pending')
+    AND  financial_status IN ('paid', 'partially_paid', 'partially_refunded')
     AND  cancelled_at IS NULL
 ),
 items AS (
   SELECT i.sku::TEXT AS sku,
          i.quantity::BIGINT AS qty,
          i.price::NUMERIC AS price,
-         r.source
+         -- normalise mobile app + legacy sources to canonical channel names
+         CASE
+           WHEN r.source IN ('web', 'online_store', 'Online Store', '195189899265') THEN 'web'
+           WHEN r.source = 'pos' THEN 'pos'
+           ELSE r.source
+         END AS source
   FROM   meama_georgia_order_items i
   JOIN   retail r ON r.shopify_order_id = i.shopify_order_id
   WHERE  i.sku IS NOT NULL AND i.quantity > 0
@@ -39,15 +44,15 @@ items AS (
 SELECT
   sku,
   SUM(qty) FILTER (WHERE source='web')  AS units_30d_web,
-  SUM(qty * price) FILTER (WHERE source='web') AS revenue_30d_web,
+  SUM(price) FILTER (WHERE source='web') AS revenue_30d_web,
   CASE WHEN SUM(qty) FILTER (WHERE source='web') > 0
-       THEN SUM(qty * price) FILTER (WHERE source='web') /
+       THEN SUM(price) FILTER (WHERE source='web') /
             SUM(qty) FILTER (WHERE source='web')
        ELSE NULL END AS avg_price_web,
   SUM(qty) FILTER (WHERE source='pos')  AS units_30d_pos,
-  SUM(qty * price) FILTER (WHERE source='pos') AS revenue_30d_pos,
+  SUM(price) FILTER (WHERE source='pos') AS revenue_30d_pos,
   CASE WHEN SUM(qty) FILTER (WHERE source='pos') > 0
-       THEN SUM(qty * price) FILTER (WHERE source='pos') /
+       THEN SUM(price) FILTER (WHERE source='pos') /
             SUM(qty) FILTER (WHERE source='pos')
        ELSE NULL END AS avg_price_pos
 FROM items
@@ -71,9 +76,9 @@ AS $$
 WITH retail AS (
   SELECT shopify_order_id, customer_id, processed_at
   FROM   meama_georgia_orders
-  WHERE  source IN ('web', 'pos')
+  WHERE  source IN ('web', 'pos', '195189899265', 'online_store', 'Online Store')
     AND  processed_at >= now() - INTERVAL '13 months'
-    AND  financial_status IN ('paid', 'partially_paid', 'pending')
+    AND  financial_status IN ('paid', 'partially_paid', 'partially_refunded')
     AND  cancelled_at IS NULL
     AND  customer_id IS NOT NULL
 ),
@@ -145,9 +150,9 @@ AS $$
 WITH retail_orders AS (
   SELECT shopify_order_id
   FROM   meama_georgia_orders
-  WHERE  source IN ('web', 'pos')
+  WHERE  source IN ('web', 'pos', '195189899265', 'online_store', 'Online Store')
     AND  cancelled_at IS NULL
-    AND  financial_status IN ('paid', 'partially_paid', 'pending')
+    AND  financial_status IN ('paid', 'partially_paid', 'partially_refunded')
     AND  processed_at >= now() - INTERVAL '6 months'
 ),
 sku_pairs AS (

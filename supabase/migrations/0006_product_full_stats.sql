@@ -80,10 +80,15 @@ retail_all AS (
   SELECT shopify_order_id,
          customer_id,
          processed_at,
-         source
+         -- normalise mobile app + legacy sources to canonical channel names
+         CASE
+           WHEN source IN ('web', 'online_store', 'Online Store', '195189899265') THEN 'web'
+           WHEN source = 'pos' THEN 'pos'
+           ELSE source
+         END AS source
   FROM   meama_georgia_orders
-  WHERE  source       IN ('web', 'pos')
-    AND  financial_status IN ('paid', 'partially_paid', 'pending')
+  WHERE  source IN ('web', 'pos', '195189899265', 'online_store', 'Online Store')
+    AND  financial_status IN ('paid', 'partially_paid', 'partially_refunded')
     AND  cancelled_at IS NULL
 ),
 -- All items on valid retail orders
@@ -107,7 +112,7 @@ items AS (
 totals AS (
   SELECT sku,
          SUM(qty)         AS total_quantity,
-         SUM(qty * price) AS total_revenue
+         SUM(price) AS total_revenue
   FROM   items
   GROUP  BY sku
 ),
@@ -116,8 +121,8 @@ totals AS (
 monthly AS (
   SELECT
     sku,
-    SUM(qty)       FILTER (WHERE processed_at >= now() - INTERVAL '30 days')   AS units_30d,
-    SUM(qty*price) FILTER (WHERE processed_at >= now() - INTERVAL '30 days')   AS revenue_30d,
+    SUM(qty)   FILTER (WHERE processed_at >= now() - INTERVAL '30 days')   AS units_30d,
+    SUM(price) FILTER (WHERE processed_at >= now() - INTERVAL '30 days')   AS revenue_30d,
     SUM(qty)  FILTER (WHERE date_trunc('month',processed_at) = date_trunc('month', now() - INTERVAL '11 months')) AS m0,
     SUM(qty)  FILTER (WHERE date_trunc('month',processed_at) = date_trunc('month', now() - INTERVAL '10 months')) AS m1,
     SUM(qty)  FILTER (WHERE date_trunc('month',processed_at) = date_trunc('month', now() - INTERVAL  '9 months')) AS m2,
@@ -167,10 +172,10 @@ rankings AS (
 -- ── Promo behaviour (all-time) ───────────────────────────────────────────────
 promo AS (
   SELECT sku,
-         SUM(qty*price) FILTER (WHERE discount  = 0) AS full_price_revenue,
-         SUM(qty)       FILTER (WHERE discount  = 0) AS full_price_units,
-         SUM(qty*price) FILTER (WHERE discount != 0) AS discounted_revenue,
-         SUM(qty)       FILTER (WHERE discount != 0) AS discounted_units
+         SUM(price) FILTER (WHERE discount  = 0) AS full_price_revenue,
+         SUM(qty)   FILTER (WHERE discount  = 0) AS full_price_units,
+         SUM(price) FILTER (WHERE discount != 0) AS discounted_revenue,
+         SUM(qty)   FILTER (WHERE discount != 0) AS discounted_units
   FROM   items
   GROUP  BY sku
 ),
@@ -180,14 +185,14 @@ channel AS (
   SELECT
     sku,
     SUM(qty)       FILTER (WHERE source='web') AS units_30d_web,
-    SUM(qty*price) FILTER (WHERE source='web') AS revenue_30d_web,
+    SUM(price) FILTER (WHERE source='web') AS revenue_30d_web,
     CASE WHEN SUM(qty) FILTER (WHERE source='web') > 0
-         THEN SUM(qty*price) FILTER (WHERE source='web') / SUM(qty) FILTER (WHERE source='web')
+         THEN SUM(price) FILTER (WHERE source='web') / SUM(qty) FILTER (WHERE source='web')
          ELSE NULL END AS avg_price_web,
-    SUM(qty)       FILTER (WHERE source='pos') AS units_30d_pos,
-    SUM(qty*price) FILTER (WHERE source='pos') AS revenue_30d_pos,
+    SUM(qty)   FILTER (WHERE source='pos') AS units_30d_pos,
+    SUM(price) FILTER (WHERE source='pos') AS revenue_30d_pos,
     CASE WHEN SUM(qty) FILTER (WHERE source='pos') > 0
-         THEN SUM(qty*price) FILTER (WHERE source='pos') / SUM(qty) FILTER (WHERE source='pos')
+         THEN SUM(price) FILTER (WHERE source='pos') / SUM(qty) FILTER (WHERE source='pos')
          ELSE NULL END AS avg_price_pos
   FROM   items
   WHERE  processed_at >= now() - INTERVAL '30 days'

@@ -27,7 +27,7 @@ retail as (
     from   meama_georgia_orders
     where  source in ('web', 'pos')
       and  processed_at >= now() - interval '13 months'
-      and  financial_status in ('paid', 'partially_paid', 'pending')
+      and  financial_status in ('paid', 'partially_paid', 'partially_refunded')
       and  cancelled_at is null
 ),
 -- Line items joined to those retail orders

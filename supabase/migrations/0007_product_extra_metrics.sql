@@ -38,8 +38,8 @@ WITH
 retail AS (
   SELECT shopify_order_id, processed_at, source
   FROM   meama_georgia_orders
-  WHERE  source IN ('web', 'pos')
-    AND  financial_status IN ('paid', 'partially_paid', 'pending')
+  WHERE  source IN ('web', 'pos', '195189899265', 'online_store', 'Online Store')
+    AND  financial_status IN ('paid', 'partially_paid', 'partially_refunded')
     AND  cancelled_at IS NULL
 ),
 items AS (
@@ -59,7 +59,7 @@ items AS (
 totals AS (
   SELECT sku,
          SUM(qty)         AS total_quantity,
-         SUM(qty * price) AS total_revenue
+         SUM(price) AS total_revenue
   FROM   items
   GROUP  BY sku
 ),
@@ -84,9 +84,9 @@ growth AS (
 -- promo split
 promo AS (
   SELECT sku,
-         SUM(qty*price) FILTER (WHERE discount  = 0) AS full_rev,
-         SUM(qty)       FILTER (WHERE discount  = 0) AS full_units,
-         SUM(qty*price) FILTER (WHERE discount != 0) AS disc_rev,
+         SUM(price) FILTER (WHERE discount  = 0) AS full_rev,
+         SUM(qty)   FILTER (WHERE discount  = 0) AS full_units,
+         SUM(price) FILTER (WHERE discount != 0) AS disc_rev,
          SUM(qty)       FILTER (WHERE discount != 0) AS disc_units
   FROM   items
   GROUP  BY sku
@@ -157,9 +157,9 @@ WITH
 recent_orders AS (
   SELECT shopify_order_id
   FROM   meama_georgia_orders
-  WHERE  source IN ('web', 'pos')
+  WHERE  source IN ('web', 'pos', '195189899265', 'online_store', 'Online Store')
     AND  cancelled_at IS NULL
-    AND  financial_status IN ('paid', 'partially_paid', 'pending')
+    AND  financial_status IN ('paid', 'partially_paid', 'partially_refunded')
     AND  processed_at >= now() - INTERVAL '6 months'
 ),
 pairs AS (

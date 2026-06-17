@@ -3,11 +3,11 @@ import { useTranslation } from "react-i18next";
 import { NavLink, Navigate, Route, Routes, useLocation } from "react-router-dom";
 
 import { isSupabaseConfigured, supabase } from "./lib/supabase";
-import { ALERTS } from "./lib/mock";
 import Actions from "./pages/Actions";
 import Ads from "./pages/Ads";
 import Alerts from "./pages/Alerts";
 import CommandCenter from "./pages/CommandCenter";
+import CustomerDetail from "./pages/CustomerDetail";
 import Customers from "./pages/Customers";
 import DiscountEngine from "./pages/DiscountEngine";
 import Login from "./pages/Login";
@@ -46,46 +46,19 @@ const TICKER_ITEMS = [
   "INVITE ONLY",
 ];
 
-/* ── Custom cursor ──────────────────────────────────────────────── */
+/* ── Custom cursor — plain 8px dot, no trailing ring ──────────── */
 function CursorFollower() {
   const dotRef = useRef<HTMLDivElement>(null);
-  const ringRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    let dotX = 0, dotY = 0, ringX = 0, ringY = 0;
-    let raf: number;
-
     const onMove = (e: MouseEvent) => {
-      dotX = e.clientX;
-      dotY = e.clientY;
-    };
-    const onOver = (e: MouseEvent) => {
-      const el = (e.target as Element).closest("a, button, [data-cursor]");
-      document.documentElement.toggleAttribute("data-hover", Boolean(el));
-    };
-    const animate = () => {
-      ringX += (dotX - ringX) * 0.12;
-      ringY += (dotY - ringY) * 0.12;
-      dotRef.current && (dotRef.current.style.transform = `translate3d(${dotX - 4}px,${dotY - 4}px,0)`);
-      ringRef.current && (ringRef.current.style.transform = `translate3d(${ringX - 16}px,${ringY - 16}px,0)`);
-      raf = requestAnimationFrame(animate);
+      dotRef.current && (dotRef.current.style.transform = `translate3d(${e.clientX - 4}px,${e.clientY - 4}px,0)`);
     };
     document.addEventListener("mousemove", onMove);
-    document.addEventListener("mouseover", onOver);
-    raf = requestAnimationFrame(animate);
-    return () => {
-      document.removeEventListener("mousemove", onMove);
-      document.removeEventListener("mouseover", onOver);
-      cancelAnimationFrame(raf);
-    };
+    return () => document.removeEventListener("mousemove", onMove);
   }, []);
 
-  return (
-    <>
-      <div ref={dotRef} className="cursor-dot" />
-      <div ref={ringRef} className="cursor-ring" />
-    </>
-  );
+  return <div ref={dotRef} className="cursor-dot" />;
 }
 
 /* ── Marquee ticker ──────────────────────────────────────────────── */
@@ -140,8 +113,19 @@ function BellIcon() {
 /* ── Header ───────────────────────────────────────────────────────── */
 function Header() {
   const { t } = useTranslation();
-  const criticalCount = ALERTS.filter((a) => a.severity === "critical").length;
+  const [criticalCount, setCriticalCount] = useState(0);
   const [scrolled, setScrolled] = useState(false);
+
+  // Fetch real alert count from API — non-blocking, fails silently
+  useEffect(() => {
+    const BASE = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
+    fetch(`${BASE}/api/v1/alerts`)
+      .then((r) => r.ok ? r.json() : { items: [] })
+      .then((data: { items: Array<{ severity: string }> }) => {
+        setCriticalCount(data.items.filter((a) => a.severity === "critical").length);
+      })
+      .catch(() => { /* no API — badge stays at 0 */ });
+  }, []);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -299,7 +283,7 @@ export default function App() {
         <Route path="/products" element={<ProtectedRoute><Products /></ProtectedRoute>} />
         <Route path="/products/:sku" element={<ProtectedRoute><ProductDetail /></ProtectedRoute>} />
         <Route path="/customers" element={<ProtectedRoute><Customers /></ProtectedRoute>} />
-        <Route path="/customers/:id" element={<Navigate to="/portfolios" replace />} />
+        <Route path="/customers/:id" element={<ProtectedRoute><CustomerDetail /></ProtectedRoute>} />
         <Route path="/portfolios" element={<ProtectedRoute><Portfolios /></ProtectedRoute>} />
         <Route path="/portfolios/:id" element={<ProtectedRoute><PortfolioDetail /></ProtectedRoute>} />
         <Route path="/stock" element={<ProtectedRoute><Stock /></ProtectedRoute>} />
