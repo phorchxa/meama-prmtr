@@ -4,9 +4,9 @@
 const API_BASE = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? "http://localhost:8000";
 const BASE = `${API_BASE}/api/v1/portfolios`;
 
-export type CustomerStatus  = "new" | "active" | "at_risk" | "lost";
-export type CustomerSegment = "loyalist" | "at_risk" | "lapsed" | "new_machine" | "active";
-export type CustomerChannel = "online" | "in_store" | "app" | "mixed";
+export type CustomerStatus  = "new" | "active" | "at_risk" | "lost" | "prospect";
+export type CustomerSegment = "loyalist" | "at_risk" | "lapsed" | "new_machine" | "active" | "prospect";
+export type CustomerChannel = "online" | "in_store" | "app" | "mixed" | "none";
 export type CustomerRegion  = "tbilisi" | "regions" | "unknown";
 export type CapitalVsRegional = "capital" | "regional" | "unknown";
 export type MachineConversionStatus =
@@ -25,6 +25,7 @@ export type ChurnReason =
   | "low_frequency"
   | "single_category_dependency"
   | "new_customer"
+  | "never_ordered"
   | "unknown";
 export type DeliveryVsPickupPreference =
   | "delivery"
@@ -72,6 +73,7 @@ export interface PortfolioSummary {
   format_preferences?: string[] | null;
   never_bought_capsules_flag?: boolean | null;
   favorite_intensity?: number | null;
+  intensity_bucket?: "light" | "medium" | "strong" | null;
   avg_capsule_price?: number | null;
   capsule_price_range?: CapsulePriceRange | null;
   bought_capsule_categories?: string[] | null;
@@ -91,6 +93,10 @@ export interface PortfolioSummary {
   capital_vs_regional?: CapitalVsRegional | null;
   ecommerce_share?: number | null;
   brand_store_share?: number | null;
+  app_share?: number | null;
+  beverage_type_preference?: string | null;
+  bible_match_rate?: number | null;
+  never_ordered?: boolean;
   is_registered: boolean;
   customer_created_at: string | null;
 }
@@ -128,6 +134,8 @@ export interface ListParams {
   sms_consent?: boolean;
   any_consent?: boolean;
   promo_heavy?: boolean;
+  never_ordered?: boolean;
+  intensity_bucket?: "light" | "medium" | "strong";
   sort?: string;
   desc?: boolean;
   page?: number;
@@ -147,7 +155,9 @@ export async function fetchPortfolios(params: ListParams = {}): Promise<Portfoli
   if (params.sms_consent   !== undefined)    sp.set("sms_consent",   String(params.sms_consent));
   if (params.any_consent   !== undefined)    sp.set("any_consent",   String(params.any_consent));
   if (params.promo_heavy   !== undefined)    sp.set("promo_heavy",   String(params.promo_heavy));
-  if (params.sort)                           sp.set("sort",          params.sort);
+  if (params.never_ordered !== undefined)    sp.set("never_ordered",    String(params.never_ordered));
+  if (params.intensity_bucket)               sp.set("intensity_bucket", params.intensity_bucket);
+  if (params.sort)                           sp.set("sort",             params.sort);
   if (params.desc !== undefined)             sp.set("desc",          String(params.desc));
   sp.set("page",      String(params.page      ?? 1));
   sp.set("page_size", String(params.page_size ?? 48));

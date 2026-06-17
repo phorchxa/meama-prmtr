@@ -1,60 +1,309 @@
-import { useEffect, useState } from "react";
-import { useTranslation } from "react-i18next";
+import { useEffect, useState, type ReactNode } from "react";
 import { Link, Navigate, useParams } from "react-router-dom";
 
-import { Badge, type BadgeTone } from "../components/Badge";
-import { Kicker } from "../components/Kicker";
 import { Skeleton } from "../components/Skeleton";
-import { StatCallout } from "../components/StatCallout";
 import { formatGEL, formatGEL0, formatNumber, tbilisiDate } from "../lib/format";
 import {
   fetchPortfolio,
+  type ChurnReason,
+  type CustomerSegment,
+  type CustomerStatus,
+  type DeliveryVsPickupPreference,
   type PortfolioDetail as PortfolioDetailData,
+  type ReturnPeriodLabel,
 } from "../lib/portfoliosApi";
 import { PageHeader } from "./PageHeader";
 
-const STATUS_TONE: Record<string, BadgeTone> = {
-  new:     "blue",
-  active:  "green",
-  at_risk: "gold",
-  lost:    "red",
+type Tone = "green" | "red" | "amber" | "blue" | "purple" | "neutral";
+
+const SEGMENT_LABEL: Record<CustomerSegment, string> = {
+  loyalist: "Loyal",
+  at_risk: "At Risk",
+  lapsed: "Lost",
+  new_machine: "New Machine",
+  active: "Active",
+  prospect: "Prospect",
 };
 
-const STATUS_KA: Record<string, string> = {
-  new:     "ახალი",
-  active:  "აქტიური",
-  at_risk: "რისკის ქვეშ",
-  lost:    "დაკარგული",
+const STATUS_LABEL: Record<CustomerStatus, string> = {
+  new: "New",
+  active: "Active",
+  at_risk: "At Risk",
+  lost: "Lost",
+  prospect: "Prospect",
 };
 
-const CHANNEL_LABEL: Record<string, string> = {
-  online:   "E-commerce",
-  in_store: "Brand store",
-  app:      "App",
-  mixed:    "E-com + stores",
+const CHURN_LABEL: Record<ChurnReason, string> = {
+  healthy_active: "Healthy active",
+  promo_dependent: "Promo dependent",
+  long_recency_gap: "Long recency gap",
+  machine_without_capsules: "Machine without capsules",
+  low_frequency: "Low frequency",
+  single_category_dependency: "Single category dependency",
+  new_customer: "New customer",
+  never_ordered: "Never ordered",
+  unknown: "Unknown",
+};
+
+const RETURN_LABEL: Record<ReturnPeriodLabel, string> = {
+  frequent: "Frequent",
+  regular: "Regular",
+  slow: "Slow",
+  lapsed_pattern: "Lapsed pattern",
+};
+
+const DELIVERY_LABEL: Record<DeliveryVsPickupPreference, string> = {
+  delivery: "Delivery",
+  pickup_or_store: "Pickup / store",
+  mixed: "Mixed",
+  unknown: "Unknown",
 };
 
 const SOURCE_LABEL: Record<string, string> = {
-  web:            "E-commerce",
-  pos:            "Brand store",
+  web: "E-commerce",
+  pos: "Brand store",
   "195189899265": "App",
 };
 
-const REGION_KA: Record<string, string> = {
-  tbilisi: "თბილისი",
-  regions: "რეგიონები",
-  unknown: "უცნობი",
+const CHANNEL_LABEL: Record<string, string> = {
+  online: "E-commerce",
+  in_store: "Brand store",
+  app: "App",
+  mixed: "Mixed",
 };
 
-export default function PortfolioDetail() {
-  const { t, i18n } = useTranslation();
-  const { id } = useParams();
-  const ka = i18n.language === "ka";
+const SEGMENT_TONE: Record<CustomerSegment, Tone> = {
+  loyalist: "green",
+  at_risk: "amber",
+  lapsed: "red",
+  new_machine: "blue",
+  active: "green",
+  prospect: "neutral",
+};
 
-  const [data,     setData]     = useState<PortfolioDetailData | null>(null);
-  const [loading,  setLoading]  = useState(true);
+const STATUS_TONE: Record<CustomerStatus, Tone> = {
+  new: "blue",
+  active: "green",
+  at_risk: "amber",
+  lost: "red",
+  prospect: "neutral",
+};
+
+function cx(...classes: Array<string | false | null | undefined>) {
+  return classes.filter(Boolean).join(" ");
+}
+
+function valueOrDash(value: ReactNode | null | undefined) {
+  if (value === null || value === undefined || value === "") return "—";
+  return value;
+}
+
+function dateOrDash(value: string | null | undefined) {
+  return value ? tbilisiDate(value) : "—";
+}
+
+function pct(value: number | null | undefined, digits = 0) {
+  if (value === null || value === undefined) return "—";
+  return `${(value * 100).toFixed(digits)}%`;
+}
+
+function numberOrDash(value: number | null | undefined, suffix = "") {
+  if (value === null || value === undefined || Number.isNaN(value)) return "—";
+  return `${formatNumber(value)}${suffix}`;
+}
+
+function regionLabel(region: string | null | undefined) {
+  if (region === "tbilisi") return "Tbilisi";
+  if (region === "regions") return "Regions";
+  return "Unknown";
+}
+
+function tagClass(tone: Tone = "neutral") {
+  const tones: Record<Tone, string> = {
+    green: "border-[#a8d9bf] bg-[#e9f6ef] text-[#147348]",
+    red: "border-[#efb7b1] bg-[#fff0ee] text-[#bb3a2f]",
+    amber: "border-[#e4c07f] bg-[#fff4df] text-[#a26a10]",
+    blue: "border-[#abc4ee] bg-[#edf3ff] text-[#214f90]",
+    purple: "border-[#c8b3f3] bg-[#f3efff] text-[#6b43b6]",
+    neutral: "border-[rgba(32,27,20,.095)] bg-[#f7f3ec] text-[#62594e]",
+  };
+  return tones[tone];
+}
+
+function toneTextClass(tone: Tone = "neutral") {
+  const tones: Record<Tone, string> = {
+    green: "text-[#147348]",
+    red: "text-[#bb3a2f]",
+    amber: "text-[#a26a10]",
+    blue: "text-[#214f90]",
+    purple: "text-[#6b43b6]",
+    neutral: "text-[#62594e]",
+  };
+  return tones[tone];
+}
+
+function healthTone(score: number): Tone {
+  if (score >= 70) return "green";
+  if (score >= 40) return "amber";
+  return "red";
+}
+
+function healthFill(score: number) {
+  if (score >= 70) return "bg-[#147348]";
+  if (score >= 40) return "bg-[#a26a10]";
+  return "bg-[#bb3a2f]";
+}
+
+function churnTone(reason: ChurnReason | null | undefined): Tone {
+  if (!reason || reason === "unknown") return "neutral";
+  if (reason === "healthy_active" || reason === "new_customer") return "green";
+  if (reason === "promo_dependent" || reason === "low_frequency" || reason === "single_category_dependency") return "amber";
+  return "red";
+}
+
+function topFlavor(data: PortfolioDetailData) {
+  return data.top_flavors?.[0] ?? data.top_item_title ?? null;
+}
+
+function machineStatus(data: PortfolioDetailData) {
+  if (data.has_machine) return data.machine_model ?? "Machine owned";
+  if (data.machine_to_capsule_conversion_status === "capsules_without_machine_purchase") return "Capsules only";
+  return "No machine";
+}
+
+function nextBestAction(data: PortfolioDetailData) {
+  if (data.churn_reason === "healthy_active") return "Keep cadence steady; surface a relevant capsule refill.";
+  if (data.churn_reason === "promo_dependent") return "Use value framing before discounts; protect full-price margin.";
+  if (data.churn_reason === "long_recency_gap") return "Prioritize a winback message tied to their known product profile.";
+  if (data.churn_reason === "machine_without_capsules") return "Trigger machine-owner capsule education and starter bundle.";
+  if (data.churn_reason === "low_frequency") return "Send reorder reminder near the expected return window.";
+  if (data.churn_reason === "single_category_dependency") return "Recommend an adjacent capsule category to broaden routine.";
+  if (data.recommended_next_machine) return `Recommend ${data.recommended_next_machine}.`;
+  if (data.expected_next_order_date) return "Prepare reorder outreach before expected next order.";
+  return "Review customer history before campaign selection.";
+}
+
+function Tag({ tone = "neutral", children }: { tone?: Tone; children: ReactNode }) {
+  return (
+    <span className={cx("inline-flex items-center rounded-md border px-1.5 py-0.5 font-mono text-[10px]", tagClass(tone))}>
+      {children}
+    </span>
+  );
+}
+
+function Section({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <section className="overflow-hidden rounded-2xl border border-[rgba(32,27,20,.095)] bg-white/75 shadow-[0_18px_50px_-34px_rgba(35,25,12,.55)]">
+      <div className="border-b border-[rgba(32,27,20,.095)] px-4 py-3">
+        <h3 className="text-[12.5px] font-semibold text-[#17120d]">{title}</h3>
+      </div>
+      <div className="p-4">{children}</div>
+    </section>
+  );
+}
+
+function FieldGrid({ children }: { children: ReactNode }) {
+  return <div className="grid grid-cols-2 gap-x-4 gap-y-3 md:grid-cols-4">{children}</div>;
+}
+
+function Field({ label, value }: { label: string; value: ReactNode }) {
+  return (
+    <div className="min-w-0">
+      <div className="mb-1 font-mono text-[8.5px] uppercase tracking-[.09em] text-[#9a9187]">{label}</div>
+      <div className="truncate text-[12.5px] font-medium text-[#17120d]">{valueOrDash(value)}</div>
+    </div>
+  );
+}
+
+function Stat({ label, value, tone = "neutral" }: { label: string; value: ReactNode; tone?: Tone }) {
+  return (
+    <div className="rounded-[18px] border border-[rgba(32,27,20,.095)] bg-white/75 p-3 shadow-[0_18px_50px_-34px_rgba(35,25,12,.55)]">
+      <div className="mb-1.5 font-mono text-[8.5px] uppercase tracking-[.09em] text-[#9a9187]">{label}</div>
+      <div className={cx("text-[21px] font-bold leading-none tracking-[-.045em]", toneTextClass(tone))}>
+        {valueOrDash(value)}
+      </div>
+    </div>
+  );
+}
+
+function ChipList({ values }: { values: string[] | null | undefined }) {
+  if (!values?.length) return <span className="text-[12px] text-[#9a9187]">—</span>;
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {values.map((value) => (
+        <span key={value} className="rounded-full border border-[rgba(42,34,24,.12)] bg-white/80 px-2.5 py-1 text-[11px] text-[#17120d]">
+          {value}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function ChannelSplit({ data }: { data: PortfolioDetailData }) {
+  const ecommerce = data.ecommerce_share ?? 0;
+  const store = data.brand_store_share ?? 0;
+  const other = Math.max(0, 1 - ecommerce - store);
+  const items = [
+    { label: "Ecommerce", value: ecommerce, color: "bg-[#214f90]" },
+    { label: "Brand store", value: store, color: "bg-[#147348]" },
+    { label: "Other", value: other, color: "bg-[#a26a10]" },
+  ].filter((item) => item.value > 0);
+
+  return (
+    <div>
+      <div className="mb-2 flex h-7 overflow-hidden rounded-md bg-[rgba(23,18,13,.095)]">
+        {items.length ? (
+          items.map((item) => (
+            <div key={item.label} className={cx("flex items-center justify-center font-mono text-[9.5px] text-white", item.color)} style={{ width: `${item.value * 100}%` }}>
+              {Math.round(item.value * 100)}%
+            </div>
+          ))
+        ) : (
+          <div className="flex w-full items-center justify-center font-mono text-[10px] text-[#9a9187]">No channel split</div>
+        )}
+      </div>
+      <div className="flex flex-wrap gap-3 text-[11px] text-[#62594e]">
+        <span>E-commerce {pct(data.ecommerce_share)}</span>
+        <span>Brand store {pct(data.brand_store_share)}</span>
+      </div>
+    </div>
+  );
+}
+
+function RecentOrders({ data }: { data: PortfolioDetailData }) {
+  if (!data.recent_orders.length) return <p className="text-[12px] text-[#9a9187]">No recent orders returned.</p>;
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full border-collapse text-[12px]">
+        <thead>
+          <tr className="border-b border-[rgba(32,27,20,.095)] bg-[#f7f3ec] font-mono text-[9px] uppercase tracking-[.07em] text-[#9a9187]">
+            <th className="px-3 py-2 text-left font-medium">Order</th>
+            <th className="px-3 py-2 text-left font-medium">Date</th>
+            <th className="px-3 py-2 text-left font-medium">Channel</th>
+            <th className="px-3 py-2 text-right font-medium">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          {data.recent_orders.slice(0, 12).map((order) => (
+            <tr key={order.shopify_order_id} className="border-b border-[rgba(32,27,20,.075)] last:border-b-0">
+              <td className="px-3 py-2 font-mono text-[10px] text-[#62594e]">#{order.shopify_order_id}</td>
+              <td className="px-3 py-2 text-[#62594e]">{dateOrDash(order.processed_at)}</td>
+              <td className="px-3 py-2 text-[#62594e]">{order.source ? SOURCE_LABEL[order.source] ?? order.source : "—"}</td>
+              <td className="px-3 py-2 text-right font-medium text-[#17120d]">{formatGEL(order.total)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+export default function PortfolioDetail() {
+  const { id } = useParams();
+  const [data, setData] = useState<PortfolioDetailData | null>(null);
+  const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
-  const [error,    setError]    = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -72,187 +321,179 @@ export default function PortfolioDetail() {
 
   if (!id || notFound) return <Navigate to="/portfolios" replace />;
 
-  const days      = data?.days_since_last_order ?? 0;
-  const daysTone: BadgeTone  = days >= 90 ? "red" : days >= 45 ? "gold" : "green";
-  const statusTone: BadgeTone = data ? (STATUS_TONE[data.status] ?? "blue") : "blue";
-
   return (
-    <div>
-      <Link
-        to="/portfolios"
-        className="mb-4 inline-block text-xs font-bold uppercase tracking-wider text-meama-gold hover:underline"
-      >
-        ← {t("pages.portfolioDetail.back")}
+    <div className="text-[#17120d]">
+      <Link to="/portfolios" className="mb-4 inline-block font-mono text-[10px] uppercase tracking-[.09em] text-[#62594e] hover:text-[#17120d]">
+        Back to portfolios
       </Link>
 
-      {/* Loading skeleton */}
       {loading && !data && (
-        <div className="space-y-5">
-          <Skeleton className="h-20 w-3/4 rounded-2xl" />
-          <div className="grid grid-cols-2 gap-5 lg:grid-cols-4">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <Skeleton key={i} className="h-28 rounded-2xl" />
+        <div className="space-y-4">
+          <Skeleton className="h-24 rounded-2xl" />
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <Skeleton key={index} className="h-24 rounded-2xl" />
             ))}
           </div>
           <Skeleton className="h-40 rounded-2xl" />
         </div>
       )}
 
-      {/* Error */}
       {error && (
-        <div className="rounded-xl border border-meama-red/30 bg-meama-red/10 px-5 py-4 text-sm text-meama-red">
-          {error}
+        <div className="rounded-2xl border border-[#efb7b1] bg-[#fff0ee] px-4 py-3 text-[13px] text-[#bb3a2f]">
+          Error: {error}
         </div>
       )}
 
       {data && (
-        <>
+        <div className="space-y-4">
           <PageHeader
             kicker={`#${data.shopify_customer_id}`}
-            title={
-              data.phone_only
-                ? `${data.initials} · Phone login`
-                : (data.full_name?.trim() || data.email || data.initials)
-            }
+            title={data.full_name?.trim() || `Customer ${data.shopify_customer_id}`}
+            subtitle="Customer 360"
           />
 
-          <div className="-mt-4 mb-6 flex flex-wrap gap-2">
-            <Badge tone={statusTone}>
-              {ka ? (STATUS_KA[data.status] ?? data.status) : data.status.replace("_", " ")}
-            </Badge>
-            <Badge tone="blue">
-              {ka ? (REGION_KA[data.region] ?? data.region) : data.region}
-            </Badge>
-            {data.has_machine && (
-              <Badge tone="blue">
-                {data.machine_model ?? (ka ? "მანქანის მფლობელი" : "Machine owner")}
-              </Badge>
-            )}
-            {data.phone_only  && <Badge tone="gold">Phone login</Badge>}
-          </div>
-
-          <div className="stagger space-y-5">
-            {/* KPI row */}
-            <div className="panel-dark grid grid-cols-2 gap-6 lg:grid-cols-4">
-              <StatCallout dark value={formatGEL0(data.total_spend)} tag="Total spend">
-                {formatNumber(data.order_count)}{" "}
-                {ka ? "შეკვეთა" : "orders"} · AOV {formatGEL(data.aov)}
-              </StatCallout>
-
-              <StatCallout dark value={formatNumber(data.order_count)} tag="Orders" tone="blue">
-                {ka ? "პირველი" : "First"}:{" "}
-                {data.first_order_at ? tbilisiDate(data.first_order_at) : "—"}
-              </StatCallout>
-
-              <StatCallout
-                dark
-                value={`${days}d`}
-                tag={ka ? "ბოლო შეკვეთიდან" : "Since last order"}
-                tone={daysTone}
-              >
-                {days >= 90
-                  ? (ka ? "დაკარგული — 90+ დღე" : "Lost — 90+ days silent")
-                  : days >= 45
-                  ? (ka ? "რისკის ქვეშ — 45-89 დღე" : "At-risk — 45–89 day window")
-                  : (ka ? "ნორმალური ციკლი" : "Inside normal reorder cadence")}
-              </StatCallout>
-
-              <StatCallout
-                dark
-                value={data.channel ? (CHANNEL_LABEL[data.channel] ?? data.channel) : "—"}
-                tag="Channel"
-                tone="gold"
-              >
-                {data.is_registered
-                  ? (ka ? "რეგისტრირებული" : "Registered customer")
-                  : (ka ? "სტუმარი" : "Guest checkout")}
-              </StatCallout>
-            </div>
-
-            {/* Top product categories */}
-            <div className="card-m">
-              <Kicker>{ka ? "ტოპ კატეგორიები · ბოლო შეკვეთები" : "Top categories · recent orders"}</Kicker>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {(data.top_product_types ?? []).length > 0 ? (
-                  data.top_product_types!.map((pt) => (
-                    <span
-                      key={pt}
-                      className="rounded-full bg-meama-gold/15 px-3 py-1 text-sm font-semibold text-meama-brown"
-                    >
-                      {pt}
-                    </span>
-                  ))
-                ) : (
-                  <span className="text-sm text-meama-muted">—</span>
-                )}
-                {data.has_machine && (
-                  <span className="rounded-full bg-meama-blue/10 px-3 py-1 text-sm font-semibold text-meama-blue">
-                    {ka ? "მანქანის მფლობელი" : "Machine owner"}
-                  </span>
-                )}
+          <div className="overflow-hidden rounded-[26px] border border-[rgba(42,34,24,.10)] bg-gradient-to-br from-white/95 to-[#fffaf2]/75 shadow-[0_18px_50px_-34px_rgba(35,25,12,.55)]">
+            <div className="flex flex-wrap items-start gap-4 p-5">
+              <div className={cx("flex h-[58px] w-[58px] shrink-0 items-center justify-center rounded-[20px] text-[18px] font-semibold text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,.22),0_18px_32px_-25px_rgba(0,0,0,.75)]", healthFill(data.health_score))}>
+                {data.initials || "?"}
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-[22px] font-extrabold leading-tight tracking-[-.045em] text-[#17120d]">
+                  {data.full_name?.trim() || `#${data.shopify_customer_id}`}
+                </div>
+                <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                  <Tag tone={SEGMENT_TONE[data.segment]}>{SEGMENT_LABEL[data.segment]}</Tag>
+                  <Tag tone={STATUS_TONE[data.status]}>{STATUS_LABEL[data.status]}</Tag>
+                  <Tag tone={churnTone(data.churn_reason)}>{data.churn_reason ? CHURN_LABEL[data.churn_reason] : "No risk label"}</Tag>
+                </div>
               </div>
             </div>
-
-            {/* Order timeline */}
-            <div className="card-m">
-              <Kicker>{ka ? "შეკვეთების ისტორია" : "Order history"}</Kicker>
-              {data.recent_orders.length === 0 ? (
-                <p className="mt-3 text-sm text-meama-muted">
-                  {ka ? "შეკვეთები ვერ მოიძებნა" : "No orders found"}
-                </p>
-              ) : (
-                <div className="mt-3 overflow-x-auto">
-                  <table className="tabular w-full text-sm">
-                    <thead>
-                      <tr className="border-b border-meama-brown/10 text-[11px] uppercase tracking-wider text-meama-muted">
-                        <th className="pb-2 text-left font-semibold">
-                          {ka ? "შეკვეთა" : "Order"}
-                        </th>
-                        <th className="pb-2 text-left font-semibold">
-                          {ka ? "თარიღი" : "Date"}
-                        </th>
-                        <th className="pb-2 text-left font-semibold">
-                          {ka ? "არხი" : "Channel"}
-                        </th>
-                        <th className="pb-2 text-right font-semibold">
-                          {ka ? "ჯამი" : "Total"}
-                        </th>
-                        <th className="pb-2 text-right font-semibold">
-                          {ka ? "ფასდაკლება" : "Discount"}
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-meama-brown/5">
-                      {data.recent_orders.map((o) => (
-                        <tr key={o.shopify_order_id} className="hover:bg-meama-brown/5">
-                          <td className="py-2 text-meama-cream/70">
-                            #{o.shopify_order_id}
-                          </td>
-                          <td className="py-2 text-meama-muted">
-                            {o.processed_at ? tbilisiDate(o.processed_at) : "—"}
-                          </td>
-                          <td className="py-2 text-meama-muted">
-                            {o.source
-                              ? (SOURCE_LABEL[o.source] ?? o.source)
-                              : "—"}
-                          </td>
-                          <td className="py-2 text-right font-semibold text-meama-brown">
-                            {formatGEL(o.total)}
-                          </td>
-                          <td className="py-2 text-right text-meama-muted">
-                            {o.discount_code
-                              ? `${o.discount_code} (${formatGEL(o.discount_amount)})`
-                              : "—"}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
           </div>
-        </>
+
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <Stat label="LTV" value={formatGEL0(data.total_spend)} />
+            <Stat label="Orders" value={formatNumber(data.order_count)} />
+            <Stat label="AOV" value={formatGEL(data.aov)} />
+            <Stat label="Health" value={`${data.health_score}`} tone={healthTone(data.health_score)} />
+          </div>
+
+          <Section title="Overview">
+            <FieldGrid>
+              <Field label="Name" value={data.full_name} />
+              <Field label="Email" value={data.email} />
+              <Field label="Phone" value={data.phone} />
+              <Field label="Region" value={regionLabel(data.region)} />
+              <Field label="Customer since" value={dateOrDash(data.customer_since)} />
+              <Field label="Tenure" value={data.tenure_months != null ? `${data.tenure_months} months` : null} />
+              <Field label="Active months" value={numberOrDash(data.active_months)} />
+              <Field label="Registered" value={data.is_registered ? "Yes" : "No"} />
+            </FieldGrid>
+          </Section>
+
+          <Section title="Commercial">
+            <FieldGrid>
+              <Field label="LTV" value={formatGEL(data.total_spend)} />
+              <Field label="Orders" value={formatNumber(data.order_count)} />
+              <Field label="AOV" value={formatGEL(data.aov)} />
+              <Field label="Health score" value={`${data.health_score}/100`} />
+              <Field label="Recency" value={numberOrDash(data.recency_score)} />
+              <Field label="Frequency" value={numberOrDash(data.frequency_score)} />
+              <Field label="Monetary" value={numberOrDash(data.monetary_score)} />
+              <Field label="RFM label" value={data.rfm_label} />
+            </FieldGrid>
+          </Section>
+
+          <Section title="Lifecycle">
+            <FieldGrid>
+              <Field label="Status" value={STATUS_LABEL[data.status]} />
+              <Field label="Segment" value={SEGMENT_LABEL[data.segment]} />
+              <Field label="Days since last order" value={numberOrDash(data.days_since_last_order, " days")} />
+              <Field label="Expected next order" value={dateOrDash(data.expected_next_order_date)} />
+              <Field label="Return period" value={data.return_period_label ? RETURN_LABEL[data.return_period_label] : null} />
+              <Field label="Last order" value={dateOrDash(data.last_order_at)} />
+            </FieldGrid>
+          </Section>
+
+          <Section title="Product DNA">
+            <div className="space-y-4">
+              <FieldGrid>
+                <Field label="Top flavor" value={topFlavor(data)} />
+                <Field label="Favorite intensity" value={data.favorite_intensity != null ? data.favorite_intensity.toFixed(2) : null} />
+                <Field label="Avg capsule price" value={data.avg_capsule_price != null ? formatGEL(data.avg_capsule_price) : null} />
+                <Field label="Capsule price range" value={data.capsule_price_range?.replace("_", " ")} />
+              </FieldGrid>
+              <div>
+                <div className="mb-2 font-mono text-[8.5px] uppercase tracking-[.09em] text-[#9a9187]">Top flavors</div>
+                <ChipList values={data.top_flavors} />
+              </div>
+              <div>
+                <div className="mb-2 font-mono text-[8.5px] uppercase tracking-[.09em] text-[#9a9187]">Format preferences</div>
+                <ChipList values={data.format_preferences} />
+              </div>
+              <div>
+                <div className="mb-2 font-mono text-[8.5px] uppercase tracking-[.09em] text-[#9a9187]">Bought categories</div>
+                <ChipList values={data.bought_capsule_categories} />
+              </div>
+              <div>
+                <div className="mb-2 font-mono text-[8.5px] uppercase tracking-[.09em] text-[#9a9187]">Never bought categories</div>
+                <ChipList values={data.never_bought_capsule_categories} />
+              </div>
+            </div>
+          </Section>
+
+          <Section title="Machine Journey">
+            <FieldGrid>
+              <Field label="Machine status" value={machineStatus(data)} />
+              <Field label="Model" value={data.machine_model} />
+              <Field label="Acquisition date" value={dateOrDash(data.machine_acquisition_date)} />
+              <Field label="Conversion status" value={data.machine_to_capsule_conversion_status?.replace(/_/g, " ")} />
+              <Field label="Recommended machine" value={data.recommended_next_machine} />
+              <Field label="Capsule packs / month" value={data.avg_capsule_packs_per_month != null ? data.avg_capsule_packs_per_month.toFixed(2) : null} />
+            </FieldGrid>
+          </Section>
+
+          <Section title="Behavior">
+            <div className="space-y-4">
+              <FieldGrid>
+                <Field label="Avg return interval" value={data.avg_return_interval_days != null ? `${data.avg_return_interval_days} days` : null} />
+                <Field label="Median return interval" value={data.median_return_interval_days != null ? `${data.median_return_interval_days} days` : null} />
+                <Field label="Return window start" value={dateOrDash(data.expected_return_window_start)} />
+                <Field label="Return window end" value={dateOrDash(data.expected_return_window_end)} />
+                <Field label="Delivery vs pickup" value={data.delivery_vs_pickup_preference ? DELIVERY_LABEL[data.delivery_vs_pickup_preference] : null} />
+                <Field label="Primary channel" value={data.channel ? CHANNEL_LABEL[data.channel] : null} />
+              </FieldGrid>
+              <ChannelSplit data={data} />
+            </div>
+          </Section>
+
+          <Section title="Marketing">
+            <FieldGrid>
+              <Field label="Email consent" value={data.accept_marketing_email ? "Yes" : "No"} />
+              <Field label="SMS consent" value={data.sms_marketing ? "Yes" : "No"} />
+              <Field label="Promo share" value={pct(data.promo_share)} />
+              <Field label="Promo spend" value={formatGEL(data.promo_spend)} />
+              <Field label="Full price spend" value={formatGEL(data.full_price_spend)} />
+              <Field label="Reachable" value={data.accept_marketing_email || data.sms_marketing ? "Yes" : "No"} />
+            </FieldGrid>
+          </Section>
+
+          <Section title="Risk & Opportunity">
+            <div className="space-y-3">
+              <FieldGrid>
+                <Field label="Churn reason" value={data.churn_reason ? CHURN_LABEL[data.churn_reason] : null} />
+                <Field label="Next best action" value={nextBestAction(data)} />
+              </FieldGrid>
+              <div className="rounded-xl border border-[#c8b3f3] bg-[#f3efff] p-3 text-[12px] leading-5 text-[#62594e]">
+                {nextBestAction(data)}
+              </div>
+            </div>
+          </Section>
+
+          <Section title="Recent Orders">
+            <RecentOrders data={data} />
+          </Section>
+        </div>
       )}
     </div>
   );

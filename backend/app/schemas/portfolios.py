@@ -6,9 +6,9 @@ from typing import Literal
 
 from pydantic import BaseModel
 
-CustomerStatus = Literal["new", "active", "at_risk", "lost"]
-CustomerSegment = Literal["loyalist", "at_risk", "lapsed", "new_machine", "active"]
-CustomerChannel = Literal["online", "in_store", "app", "mixed"]
+CustomerStatus = Literal["new", "active", "at_risk", "lost", "prospect"]
+CustomerSegment = Literal["loyalist", "at_risk", "lapsed", "new_machine", "active", "prospect"]
+CustomerChannel = Literal["online", "in_store", "app", "mixed", "none"]
 CustomerRegion = Literal["tbilisi", "regions", "unknown"]
 CapitalVsRegional = Literal["capital", "regional", "unknown"]
 MachineConversionStatus = Literal[
@@ -28,6 +28,7 @@ ChurnReason = Literal[
     "low_frequency",
     "single_category_dependency",
     "new_customer",
+    "never_ordered",
     "unknown",
 ]
 DeliveryVsPickupPreference = Literal[
@@ -78,6 +79,7 @@ class PortfolioSummary(BaseModel):
     format_preferences: list[str] | None = None
     never_bought_capsules_flag: bool | None = None
     favorite_intensity: float | None = None
+    intensity_bucket: str | None = None
     avg_capsule_price: float | None = None
     capsule_price_range: CapsulePriceRange | None = None
     bought_capsule_categories: list[str] | None = None
@@ -97,6 +99,9 @@ class PortfolioSummary(BaseModel):
     capital_vs_regional: CapitalVsRegional | None = None
     ecommerce_share: float | None = None
     brand_store_share: float | None = None
+    beverage_type_preference: str | None = None
+    bible_match_rate: float | None = None
+    never_ordered: bool = False
     is_registered: bool = False
     customer_created_at: datetime | None = None
 

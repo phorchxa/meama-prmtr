@@ -39,7 +39,7 @@ _LIST_COLS = (
     "top_product_types,top_item_title,capsule_aov,"
     "avg_capsule_packs_per_month,expected_next_order_date,"
     "top_flavors,format_preferences,never_bought_capsules_flag,"
-    "favorite_intensity,avg_capsule_price,capsule_price_range,"
+    "favorite_intensity,intensity_bucket,avg_capsule_price,capsule_price_range,"
     "bought_capsule_categories,never_bought_capsule_categories,"
     "avg_return_interval_days,median_return_interval_days,"
     "return_period_label,expected_return_window_start,"
@@ -47,7 +47,8 @@ _LIST_COLS = (
     "delivery_vs_pickup_preference,"
     "promo_orders,promo_spend,full_price_spend,promo_share,"
     "capital_vs_regional,ecommerce_share,brand_store_share,"
-    "is_registered,customer_created_at"
+    "beverage_type_preference,bible_match_rate,"
+    "never_ordered,is_registered,customer_created_at"
 )
 
 
@@ -64,6 +65,8 @@ async def list_portfolios(
     sms_consent: bool | None = None,
     any_consent: bool | None = None,
     promo_heavy: bool | None = None,
+    never_ordered: bool | None = None,
+    intensity_bucket: str | None = None,
     sort: str = "last_order_at",
     desc: bool = True,
     page: Annotated[int, Query(ge=1)] = 1,
@@ -74,6 +77,9 @@ async def list_portfolios(
     offset = (page - 1) * page_size
 
     query = sb.table("portfolio_customers").select(_LIST_COLS, count="exact")
+
+    if not never_ordered:
+        query = query.eq("never_ordered", False)
 
     if status:
         query = query.eq("status", status)
@@ -95,6 +101,10 @@ async def list_portfolios(
         query = query.or_("accept_marketing_email.eq.true,sms_marketing.eq.true")
     if promo_heavy is True:
         query = query.gte("promo_share", 0.6)
+    if never_ordered is True:
+        query = query.eq("never_ordered", True)
+    if intensity_bucket:
+        query = query.eq("intensity_bucket", intensity_bucket)
     if q and q.strip():
         # Strip SQL wildcards to prevent injection through ilike patterns
         safe = q.strip().replace("%", "").replace("_", "")
@@ -102,7 +112,7 @@ async def list_portfolios(
             f"full_name.ilike.%{safe}%,email.ilike.%{safe}%,phone.ilike.%{safe}%"
         )
 
-    query = query.order(sort_col, desc=desc).range(offset, offset + page_size - 1)
+    query = query.order(sort_col, desc=desc, nullsfirst=False).range(offset, offset + page_size - 1)
     result = query.execute()
 
     items = [PortfolioSummary(**row) for row in (result.data or [])]

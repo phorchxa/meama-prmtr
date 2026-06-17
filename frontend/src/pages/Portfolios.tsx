@@ -1,792 +1,1163 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-
-import { Badge, type BadgeTone } from "../components/Badge";
 import { Skeleton } from "../components/Skeleton";
 import { formatGEL, formatGEL0, formatNumber, tbilisiDate } from "../lib/format";
 import {
   fetchPortfolio,
   fetchPortfolios,
+  type ChurnReason,
   type CustomerSegment,
+  type CustomerStatus,
+  type DeliveryVsPickupPreference,
   type ListParams,
   type PortfolioDetail,
   type PortfolioSummary,
+  type ReturnPeriodLabel,
 } from "../lib/portfoliosApi";
 import { PageHeader } from "./PageHeader";
 
-// ─── Design-token helpers ───────────────────────────────────────────────────
+// ── Color tokens (from meama-crm.html) ──────────────────────────
+const CLR = {
+  g: "#1c7a4a", gb: "#ecf7f1", gbd: "#b0dcc4",
+  r: "#b83228", rb: "#fdf2f1", rbd: "#edb8b3",
+  a: "#8a5a0a", ab: "#fdf5e8", abd: "#e0c898",
+  b: "#1a4d8a", bb: "#edf2fc", bbd: "#afc8f0",
+  tl: "#0c6868", tlb: "#edf6f6", tlbd: "#98d0d0",
+  pu: "#5a3a9a", pub: "#f2eeff", pubd: "#c4a8f0",
+  text: "#161513", t2: "#666460", t3: "#9e9b96", t4: "#c4c1bc",
+  bg2: "#ffffff", bg3: "#f2f1ef", bg4: "#ebebea", bg5: "#e2e1de",
+  border: "#e4e3e0", border2: "#d4d3d0",
+};
 
-const SEGMENT_META: Record<
-  CustomerSegment,
-  { label: string; labelKa: string; tone: BadgeTone }
-> = {
-  loyalist:    { label: "Loyalist",    labelKa: "ლოიალური",    tone: "green" },
-  at_risk:     { label: "At Risk",     labelKa: "რისკის ქვეშ", tone: "gold"  },
-  lapsed:      { label: "Lapsed",      labelKa: "გათიშული",    tone: "red"   },
-  new_machine: { label: "New Machine", labelKa: "ახალი მანქ.", tone: "blue"  },
-  active:      { label: "Active",      labelKa: "აქტიური",     tone: "green" },
+type Variant = "green" | "red" | "amber" | "blue" | "teal" | "purple" | "neutral";
+
+const TAG_TOKEN: Record<Variant, { bg: string; color: string; border: string }> = {
+  green:   { bg: CLR.gb,  color: CLR.g,  border: CLR.gbd  },
+  red:     { bg: CLR.rb,  color: CLR.r,  border: CLR.rbd  },
+  amber:   { bg: CLR.ab,  color: CLR.a,  border: CLR.abd  },
+  blue:    { bg: CLR.bb,  color: CLR.b,  border: CLR.bbd  },
+  teal:    { bg: CLR.tlb, color: CLR.tl, border: CLR.tlbd },
+  purple:  { bg: CLR.pub, color: CLR.pu, border: CLR.pubd },
+  neutral: { bg: CLR.bg3, color: CLR.t2, border: CLR.border },
+};
+
+// ── Helpers ──────────────────────────────────────────────────────
+function segAccent(seg: CustomerSegment): string {
+  const m: Record<CustomerSegment, string> = {
+    loyalist: CLR.g, at_risk: CLR.r, lapsed: CLR.t3, new_machine: CLR.a, active: CLR.g, prospect: CLR.t3,
+  };
+  return m[seg] ?? CLR.g;
+}
+
+function segVariant(seg: CustomerSegment): Variant {
+  const m: Record<CustomerSegment, Variant> = {
+    loyalist: "green", at_risk: "red", lapsed: "neutral", new_machine: "amber", active: "green", prospect: "neutral",
+  };
+  return m[seg] ?? "neutral";
+}
+
+function segLabel(seg: CustomerSegment): string {
+  const m: Record<CustomerSegment, string> = {
+    loyalist: "Loyalist", at_risk: "At risk", lapsed: "Lapsed", new_machine: "New machine", active: "Active", prospect: "Prospect",
+  };
+  return m[seg] ?? seg;
+}
+
+function lifecycleLabel(s: CustomerStatus): string {
+  return s === "prospect" ? "Prospect" : s === "lost" ? "Lapsed" : s === "at_risk" ? "At-risk" : s === "new" ? "New" : "Active";
+}
+
+function lifecycleVariant(s: CustomerStatus): Variant {
+  return s === "prospect" ? "neutral" : s === "lost" ? "red" : s === "at_risk" ? "amber" : s === "new" ? "blue" : "green";
+}
+
+function healthColor(score: number): string {
+  return score >= 75 ? CLR.g : score >= 50 ? CLR.a : CLR.r;
+}
+
+function churnColor(risk: number): string {
+  return risk >= 70 ? CLR.r : risk >= 40 ? CLR.a : CLR.g;
+}
+
+function rfm5(data: PortfolioSummary) {
+  const r = data.recency_score ?? 0;
+  const f = data.frequency_score ?? 0;
+  const m = data.monetary_score ?? 0;
+  return {
+    R: r === 40 ? 5 : r >= 30 ? 4 : r >= 20 ? 3 : r >= 10 ? 2 : 1,
+    F: f === 35 ? 5 : f >= 28 ? 4 : f >= 18 ? 3 : f >= 8 ? 2 : 1,
+    M: m === 25 ? 5 : m >= 20 ? 4 : m >= 15 ? 3 : m >= 10 ? 2 : 1,
+  };
+}
+
+function rfmLabel(R: number, F: number, M: number): string {
+  const t = R + F + M;
+  return t >= 12 ? "Champion" : t >= 9 ? "Loyal" : t >= 7 ? "Potential loyalist" : t >= 5 ? "At risk" : "Hibernating";
+}
+
+function reorderText(data: PortfolioSummary): string {
+  const days = data.days_since_last_order;
+  const interval = data.avg_return_interval_days;
+  if (days == null) return "No order history";
+  if (!interval) return data.expected_next_order_date ? `Expected ${tbilisiDate(data.expected_next_order_date)}` : "No pattern yet";
+  const remaining = Math.round(interval - days);
+  if (remaining < 0) return `${Math.abs(remaining)} days overdue`;
+  if (remaining === 0) return "Due today";
+  return `Due in ${remaining} days`;
+}
+
+function reorderPct(data: PortfolioSummary): number {
+  const days = data.days_since_last_order;
+  const interval = data.avg_return_interval_days;
+  if (days == null || !interval) return 50;
+  const pct = Math.max(5, Math.min(100, ((interval - days) / interval) * 100));
+  return pct;
+}
+
+function reorderColor(data: PortfolioSummary): string {
+  const days = data.days_since_last_order;
+  const interval = data.avg_return_interval_days;
+  if (!days || !interval) return CLR.t3;
+  return days > interval ? CLR.r : days > interval * 0.8 ? CLR.a : CLR.g;
+}
+
+function joinedDate(iso: string | null | undefined): string {
+  if (!iso) return "—";
+  return new Date(iso).toLocaleDateString("en-US", { month: "short", year: "numeric" });
+}
+
+function da(v: string | null | undefined): string { return v ? tbilisiDate(v) : "—"; }
+
+
+function nextBestAction(data: PortfolioSummary): string {
+  if (data.churn_reason === "healthy_active") return "Keep cadence steady; surface a relevant capsule refill.";
+  if (data.churn_reason === "promo_dependent") return "Use value framing before discounts; protect full-price margin.";
+  if (data.churn_reason === "long_recency_gap") return "Prioritize a win-back message tied to their product profile.";
+  if (data.churn_reason === "machine_without_capsules") return "Trigger machine-owner capsule education and starter bundle.";
+  if (data.churn_reason === "low_frequency") return "Send reorder reminder near the expected return window.";
+  if (data.churn_reason === "single_category_dependency") return "Recommend an adjacent capsule category.";
+  if (data.recommended_next_machine) return `Recommend ${data.recommended_next_machine} machine upgrade.`;
+  if (data.expected_next_order_date) return "Prepare reorder outreach before expected next order.";
+  return "Review customer history before campaign selection.";
+}
+
+const CHURN_LABEL: Record<ChurnReason, string> = {
+  healthy_active: "Healthy active", promo_dependent: "Promo dependent",
+  long_recency_gap: "Long recency gap", machine_without_capsules: "Machine without capsules",
+  low_frequency: "Low frequency", single_category_dependency: "Single category dependency",
+  new_customer: "New customer", never_ordered: "Never ordered", unknown: "Unknown",
+};
+
+const RETURN_LABEL: Record<ReturnPeriodLabel, string> = {
+  frequent: "Frequent", regular: "Regular", slow: "Slow", lapsed_pattern: "Lapsed pattern",
+};
+
+const DELIVERY_LABEL: Record<DeliveryVsPickupPreference, string> = {
+  delivery: "Delivery", pickup_or_store: "Pickup / store", mixed: "Mixed", unknown: "Unknown",
+};
+
+const CONV_LABEL: Record<string, string> = {
+  no_machine: "No machine", machine_only_no_capsules: "Machine only",
+  machine_then_capsules: "Active buyer", capsules_without_machine_purchase: "Capsules only", unknown: "Unknown",
 };
 
 const SOURCE_LABEL: Record<string, string> = {
-  web:            "E-commerce",
-  pos:            "Brand store",
-  "195189899265": "App",
+  web: "E-commerce", pos: "Brand store", "195189899265": "App",
 };
 
-const CHANNEL_LABEL: Record<string, string> = {
-  online:   "E-com",
-  in_store: "Store",
-  app:      "App",
-  mixed:    "Mixed",
-};
+// ── Small reusable components ─────────────────────────────────────
 
-function healthColor(score: number): string {
-  if (score >= 70) return "bg-meama-green";
-  if (score >= 40) return "bg-meama-gold";
-  return "bg-meama-red";
-}
-
-function healthTextColor(score: number): string {
-  if (score >= 70) return "text-meama-green";
-  if (score >= 40) return "text-meama-gold";
-  return "text-meama-red";
-}
-
-function activityColor(days: number): string {
-  if (days < 20) return "bg-meama-green";
-  if (days < 45) return "bg-meama-gold";
-  return "bg-meama-red";
-}
-
-function rfmScore(days: number, orders: number, spend: number): { r: number; f: number; m: number } {
-  const r = days < 20 ? 5 : days < 45 ? 4 : days < 60 ? 3 : days < 90 ? 2 : 1;
-  const f = orders >= 15 ? 5 : orders >= 8 ? 4 : orders >= 4 ? 3 : orders >= 2 ? 2 : 1;
-  const m = spend >= 5000 ? 5 : spend >= 2000 ? 4 : spend >= 800 ? 3 : spend >= 200 ? 2 : 1;
-  return { r, f, m };
-}
-
-// ─── Pill filter ────────────────────────────────────────────────────────────
-
-function PillFilter({
-  active,
-  onClick,
-  children,
-  separator = false,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children?: React.ReactNode;
-  separator?: boolean;
-}) {
-  if (separator)
-    return <span className="mx-1 select-none text-meama-muted/30">─</span>;
+function Tag({ variant = "neutral", children }: { variant?: Variant; children: ReactNode }) {
+  const t = TAG_TOKEN[variant];
   return (
-    <button
-      onClick={onClick}
-      className={`whitespace-nowrap rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${
-        active
-          ? "border-meama-gold bg-meama-gold text-meama-espresso"
-          : "border-meama-gold/25 bg-transparent text-meama-cream/70 hover:border-meama-gold/60"
-      }`}
+    <span
+      style={{ background: t.bg, color: t.color, borderColor: t.border }}
+      className="inline-flex items-center border px-1.5 py-[1px] rounded-[3px] font-mono text-[10.5px] whitespace-nowrap"
     >
       {children}
-    </button>
+    </span>
   );
 }
 
-// ─── Health bar ─────────────────────────────────────────────────────────────
-
-function HealthBar({ score }: { score: number }) {
-  const pct = Math.min(100, Math.max(0, score));
+function PanelHeader({ title, sub }: { title: string; sub?: string }) {
   return (
-    <div className="flex items-center gap-2">
-      <div className="flex-1 overflow-hidden rounded-full bg-meama-brown/10 h-1.5">
-        <div
-          className={`h-full rounded-full transition-all ${healthColor(score)}`}
-          style={{ width: `${pct}%` }}
-        />
-      </div>
-      <span className={`tabular text-[11px] font-bold w-7 text-right ${healthTextColor(score)}`}>
-        {score}
+    <div
+      style={{ borderBottom: `1px solid ${CLR.border}`, background: CLR.bg2 }}
+      className="flex items-center gap-2 px-4 py-[11px]"
+    >
+      <span className="text-[12.5px] font-medium" style={{ color: CLR.text }}>{title}</span>
+      {sub && <span className="ml-auto font-mono text-[10px]" style={{ color: CLR.t3 }}>{sub}</span>}
+    </div>
+  );
+}
+
+function Panel({ title, sub, children }: { title: string; sub?: string; children: ReactNode }) {
+  return (
+    <div style={{ background: CLR.bg2, border: `1px solid ${CLR.border}`, borderRadius: 10, overflow: "hidden" }}>
+      <PanelHeader title={title} sub={sub} />
+      <div className="p-4">{children}</div>
+    </div>
+  );
+}
+
+function FieldLabel({ children }: { children: ReactNode }) {
+  return (
+    <div className="font-mono text-[8.5px] uppercase tracking-[.07em] mb-[3px]" style={{ color: CLR.t3 }}>
+      {children}
+    </div>
+  );
+}
+
+function FieldVal({ children, muted }: { children: ReactNode; muted?: boolean }) {
+  return (
+    <div className="text-[12px] font-medium leading-snug truncate" style={{ color: muted ? CLR.t3 : CLR.text }}>
+      {children ?? "—"}
+    </div>
+  );
+}
+
+function Grid2({ children }: { children: ReactNode }) {
+  return <div className="grid grid-cols-2 gap-x-3 gap-y-[10px]">{children}</div>;
+}
+
+function Fld({ label, value, muted }: { label: string; value: ReactNode; muted?: boolean }) {
+  return (
+    <div className="min-w-0">
+      <FieldLabel>{label}</FieldLabel>
+      <FieldVal muted={muted}>{value ?? "—"}</FieldVal>
+    </div>
+  );
+}
+
+function ConsentPills({ email, sms }: { email: boolean; sms: boolean }) {
+  return (
+    <div className="flex gap-1.5 mt-[3px]">
+      <span
+        style={email
+          ? { background: CLR.gb, color: CLR.g, borderColor: CLR.gbd }
+          : { background: CLR.bg3, color: CLR.t4, borderColor: CLR.border }}
+        className="font-mono text-[9.5px] px-[7px] py-[2px] rounded-full border"
+      >
+        ✉ {email ? "Email" : "Email ✕"}
+      </span>
+      <span
+        style={sms
+          ? { background: CLR.gb, color: CLR.g, borderColor: CLR.gbd }
+          : { background: CLR.bg3, color: CLR.t4, borderColor: CLR.border }}
+        className="font-mono text-[9.5px] px-[7px] py-[2px] rounded-full border"
+      >
+        💬 {sms ? "SMS" : "SMS ✕"}
       </span>
     </div>
   );
 }
 
-// ─── Promo bar ───────────────────────────────────────────────────────────────
+// ── CustomerCard ─────────────────────────────────────────────────
 
-function PromoBar({ fullPriceSpend, promoSpend, totalSpend }: {
-  fullPriceSpend: number;
-  promoSpend: number;
-  totalSpend: number;
-}) {
-  if (totalSpend <= 0) return null;
-  const fullPct  = Math.round((fullPriceSpend / totalSpend) * 100);
-  const promoPct = Math.round((promoSpend    / totalSpend) * 100);
-  return (
-    <div className="flex h-1.5 w-full overflow-hidden rounded-full bg-meama-brown/10">
-      <div className="bg-meama-green h-full" style={{ width: `${fullPct}%` }} />
-      <div className="bg-meama-gold  h-full" style={{ width: `${promoPct}%` }} />
-    </div>
-  );
-}
+function CustomerCard({ customer, onOpen }: { customer: PortfolioSummary; onOpen: (id: number) => void }) {
+  const promoSharePct = Math.round((customer.promo_share ?? 0) * 100);
+  const fullSharePct = 100 - promoSharePct;
+  const isDiscountLed = (customer.promo_share ?? 0) >= 0.6;
+  const accent = segAccent(customer.segment);
 
-// ─── Customer Card ───────────────────────────────────────────────────────────
-
-function CustomerCard({
-  c,
-  ka,
-  onOpen,
-}: {
-  c: PortfolioSummary;
-  ka: boolean;
-  onOpen: (id: number) => void;
-}) {
-  const seg  = SEGMENT_META[c.segment] ?? SEGMENT_META.active;
-  const days = c.days_since_last_order ?? 0;
-  const activityPct = Math.min(100, (days / 90) * 100);
-  const promoSharePct = Math.round(c.promo_share * 100);
-  const joinedDate = c.customer_created_at ? tbilisiDate(c.customer_created_at) : null;
+  const flavors = customer.top_flavors?.slice(0, 3) ?? [];
 
   return (
-    <div
+    <article
       role="button"
       tabIndex={0}
-      onClick={() => onOpen(c.shopify_customer_id)}
-      onKeyDown={(e) => e.key === "Enter" && onOpen(c.shopify_customer_id)}
-      className="card-m card-m-hover cursor-pointer select-none outline-none focus-visible:ring-2 focus-visible:ring-meama-gold"
+      onClick={() => onOpen(customer.shopify_customer_id)}
+      onKeyDown={(e) => e.key === "Enter" && onOpen(customer.shopify_customer_id)}
+      style={{ background: CLR.bg2, border: `1px solid ${CLR.border}`, borderRadius: 14 }}
+      className="cursor-pointer overflow-hidden transition-all duration-150 hover:-translate-y-0.5 hover:shadow-[0_6px_20px_-10px_rgba(0,0,0,.18)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1c7a4a]/40"
+      onMouseEnter={(e) => (e.currentTarget.style.borderColor = CLR.border2)}
+      onMouseLeave={(e) => (e.currentTarget.style.borderColor = CLR.border)}
     >
-      {/* pc-top: avatar + name + LTV */}
-      <div className="flex items-start gap-3">
-        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-meama-brown font-display text-sm font-bold text-meama-goldsoft">
-          {c.initials || "?"}
-        </span>
+      {/* Top: avatar + name + LTV */}
+      <div style={{ borderBottom: `1px solid ${CLR.border}` }} className="flex items-start gap-[11px] px-4 pb-3 pt-[14px]">
+        <div
+          style={{ background: accent, width: 42, height: 42, borderRadius: 12 }}
+          className="flex shrink-0 items-center justify-center text-[15px] font-semibold text-white"
+        >
+          {customer.initials || "?"}
+        </div>
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <h3 className="truncate font-display text-base font-semibold text-meama-brown leading-tight">
-              {c.full_name?.trim() || `#${c.shopify_customer_id}`}
-            </h3>
-            <span className="ml-auto shrink-0 tabular text-sm font-extrabold text-meama-brown">
-              {formatGEL0(c.total_spend)}
-            </span>
+          <div className="text-[14.5px] font-semibold leading-[1.1] tracking-[-0.01em] truncate" style={{ color: CLR.text }}>
+            {customer.full_name?.trim() || `#${customer.shopify_customer_id}`}
           </div>
-          <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-            <Badge tone={seg.tone}>{ka ? seg.labelKa : seg.label}</Badge>
-            {joinedDate && (
-              <span className="text-[10px] text-meama-muted">· joined {joinedDate}</span>
-            )}
+          <div className="mt-[3px] flex flex-wrap items-center gap-[5px] font-mono text-[10px]" style={{ color: CLR.t3 }}>
+            <Tag variant={segVariant(customer.segment)}>{segLabel(customer.segment)}</Tag>
+            <span>· joined {joinedDate(customer.customer_since)}</span>
+            {isDiscountLed && <Tag variant="red">Discount-led</Tag>}
           </div>
+        </div>
+        <div className="shrink-0 text-right">
+          <div className="text-[16px] font-light leading-none" style={{ color: CLR.text }}>
+            {formatGEL0(customer.total_spend)}
+          </div>
+          <div className="font-mono text-[8.5px] uppercase tracking-[.08em] mt-[3px]" style={{ color: CLR.t3 }}>Lifetime</div>
         </div>
       </div>
 
-      {/* health strip */}
-      <div className="mt-3 flex items-center gap-2 border-t border-meama-brown/10 pt-3">
-        <div className="flex-1">
-          <HealthBar score={c.health_score} />
-        </div>
-      </div>
-
-      {/* 2×2 info grid */}
-      <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-1 text-[11px] text-meama-muted">
-        <div className="truncate">
-          <span className="mr-1">📍</span>
-          {c.region === "tbilisi"
-            ? (ka ? "თბილისი" : "Tbilisi")
-            : c.region === "regions"
-            ? (ka ? "რეგიონები" : "Regions")
-            : "—"}
-        </div>
-        <div className="truncate">
-          <span className="mr-1">☕</span>
-          {c.has_machine ? (c.machine_model ?? (ka ? "მანქანა" : "Machine")) : (ka ? "მანქანა არ აქვს" : "No machine")}
-        </div>
-        <div className="truncate">
-          <span className="mr-1">🛒</span>
-          {days}d {ka ? "წინ" : "ago"}
-        </div>
-        <div className="truncate tabular">
-          <span className="mr-1">🔁</span>
-          {c.order_count} {ka ? "შეკ." : "orders"} · {CHANNEL_LABEL[c.channel ?? ""] ?? "—"}
-        </div>
-      </div>
-
-      {/* promo bar */}
-      {c.total_spend > 0 && (
-        <div className="mt-3">
-          <PromoBar
-            fullPriceSpend={c.full_price_spend}
-            promoSpend={c.promo_spend}
-            totalSpend={c.total_spend}
-          />
-          <div className="mt-1 flex items-center justify-between text-[10px] text-meama-muted">
-            <span>
-              <span className="text-meama-green font-semibold">{formatGEL0(c.full_price_spend)}</span>
-              {" full / "}
-              <span className="text-meama-gold font-semibold">{formatGEL0(c.promo_spend)}</span>
-              {" promo"}
-            </span>
-            <span>{promoSharePct}% on promo</span>
+      {/* Body */}
+      <div className="px-4 py-3">
+        {/* Health strip */}
+        <div
+          style={{ borderBottom: `1px dashed ${CLR.border2}` }}
+          className="flex items-center gap-2 mb-[11px] pb-[11px]"
+        >
+          <Tag variant={lifecycleVariant(customer.status)}>{lifecycleLabel(customer.status)}</Tag>
+          <span className="font-mono text-[8.5px] uppercase tracking-[.06em]" style={{ color: CLR.t3 }}>Health</span>
+          <div className="flex-1 h-[6px] rounded overflow-hidden" style={{ background: CLR.bg4 }}>
+            <div style={{ width: `${customer.health_score}%`, height: "100%", background: healthColor(customer.health_score), borderRadius: 4 }} />
           </div>
-        </div>
-      )}
-
-      {/* contact + consent */}
-      <div className="mt-3 space-y-1 border-t border-meama-brown/10 pt-3 text-[11px] text-meama-muted">
-        {!c.phone_only && c.email && (
-          <div className="truncate">✉ {c.email}</div>
-        )}
-        {c.phone && (
-          <div className="truncate">☎ {c.phone}</div>
-        )}
-        {c.phone_only && (
-          <div className="italic text-meama-muted/60">{ka ? "ტელეფონით შესვლა" : "Phone login"}</div>
-        )}
-        <div className="flex gap-1.5 flex-wrap mt-1">
-          {c.accept_marketing_email && (
-            <span className="rounded-full bg-meama-blue/10 px-2 py-0.5 text-[10px] font-semibold text-meama-blue">
-              📧 Email ✓
-            </span>
-          )}
-          {c.sms_marketing && (
-            <span className="rounded-full bg-meama-green/10 px-2 py-0.5 text-[10px] font-semibold text-meama-green">
-              💬 SMS ✓
-            </span>
-          )}
-        </div>
-      </div>
-
-      {/* pc-flav: top categories */}
-      {(c.top_product_types ?? []).length > 0 && (
-        <div className="mt-3 border-t border-meama-brown/10 pt-3">
-          <div className="mb-1.5 text-[10px] uppercase tracking-wider text-meama-muted">
-            {ka ? "ყიდულობს" : "Buys"}
-          </div>
-          <div className="flex flex-wrap gap-1.5">
-            {(c.top_product_types ?? []).map((pt) => (
-              <span
-                key={pt}
-                className="rounded-full bg-meama-gold/10 px-2 py-0.5 text-[10px] font-semibold text-meama-brown"
-              >
-                {pt}
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* pc-foot: reorder window */}
-      <div className="mt-3 border-t border-meama-brown/10 pt-3">
-        <div className="mb-1 flex justify-between text-[10px] uppercase tracking-wider text-meama-muted">
-          <span>{ka ? "აქტივობა" : "Activity"}</span>
-          <span className="tabular font-bold">
-            {days < 20
-              ? (ka ? "ახლახანს" : "Recent")
-              : days < 45
-              ? `${ka ? "ვადა" : "Due"} ~${Math.max(0, 30 - days)}d`
-              : (ka ? "ვადა გავიდა" : "Overdue")}
+          <span className="font-mono text-[13px] font-semibold w-[26px] text-right" style={{ color: healthColor(customer.health_score) }}>
+            {customer.health_score}
           </span>
         </div>
-        <div className="h-1.5 overflow-hidden rounded-full bg-meama-brown/10">
-          <div
-            className={`h-full rounded-full transition-all ${activityColor(days)}`}
-            style={{ width: `${activityPct}%` }}
-          />
+
+        {/* 2×2 grid */}
+        <div className="grid grid-cols-2 gap-x-[14px] gap-y-[10px]">
+          <div>
+            <FieldLabel>📍 Location</FieldLabel>
+            <FieldVal>{customer.capital_vs_regional === "capital" ? "Capital (Tbilisi)" : customer.capital_vs_regional === "regional" ? "Regional" : customer.region === "tbilisi" ? "Tbilisi" : customer.region === "regions" ? "Regions" : "—"}</FieldVal>
+          </div>
+          <div>
+            <FieldLabel>☕ Machine</FieldLabel>
+            <FieldVal muted={!customer.has_machine}>{customer.has_machine ? (customer.machine_model ?? "Machine owned") : "No machine"}</FieldVal>
+          </div>
+          <div>
+            <FieldLabel>📋 Last order</FieldLabel>
+            <FieldVal muted={!customer.last_order_at}>{customer.last_order_at ? da(customer.last_order_at) : "—"}</FieldVal>
+          </div>
+          <div>
+            <FieldLabel>📦 Orders / freq</FieldLabel>
+            <FieldVal>
+              {customer.order_count > 0
+                ? `${customer.order_count}${customer.avg_return_interval_days ? ` · every ${Math.round(customer.avg_return_interval_days)}d` : ""}`
+                : "—"}
+            </FieldVal>
+          </div>
+        </div>
+
+        {/* Promo vs full-price bar */}
+        {customer.order_count > 0 && (customer.promo_spend + customer.full_price_spend) > 0 && (
+          <div style={{ borderTop: `1px dashed ${CLR.border2}` }} className="mt-[11px] pt-[11px]">
+            <div className="flex justify-between items-center mb-[6px]">
+              <FieldLabel>₾ Promo vs full-price spend</FieldLabel>
+              <span className="font-mono text-[10px]" style={{ color: isDiscountLed ? CLR.r : CLR.t3 }}>
+                {promoSharePct}% on promo
+              </span>
+            </div>
+            <div className="flex h-[8px] rounded overflow-hidden" style={{ background: CLR.bg4 }}>
+              <div style={{ width: `${fullSharePct}%`, background: CLR.g, opacity: 0.8 }} title={`Full price ₾${customer.full_price_spend.toFixed(0)}`} />
+              <div style={{ width: `${promoSharePct}%`, background: CLR.a, opacity: 0.85 }} title={`Promo ₾${customer.promo_spend.toFixed(0)}`} />
+            </div>
+            <div className="flex justify-between font-mono text-[9.5px] mt-1" style={{ color: CLR.t3 }}>
+              <span style={{ color: CLR.g }}>Full ₾{formatNumber(customer.full_price_spend)}</span>
+              <span style={{ color: CLR.a }}>Promo ₾{formatNumber(customer.promo_spend)} · {customer.promo_orders} orders</span>
+            </div>
+          </div>
+        )}
+
+        {/* Contact */}
+        <div style={{ borderTop: `1px dashed ${CLR.border2}` }} className="mt-[11px] pt-[11px] flex flex-col gap-[5px]">
+          <div className="flex items-center gap-[7px] min-w-0">
+            <span className="text-[11px] w-[13px] text-center shrink-0" style={{ color: CLR.t3 }}>✉</span>
+            <span className="font-mono text-[10.5px] truncate" style={{ color: CLR.t2 }}>{customer.email ?? "[phone-only]"}</span>
+          </div>
+          {customer.phone && (
+            <div className="flex items-center gap-[7px] min-w-0">
+              <span className="text-[11px] w-[13px] text-center shrink-0" style={{ color: CLR.t3 }}>📞</span>
+              <span className="font-mono text-[10.5px] truncate" style={{ color: CLR.t2 }}>{customer.phone}</span>
+            </div>
+          )}
+          <ConsentPills email={customer.accept_marketing_email} sms={customer.sms_marketing} />
         </div>
       </div>
-    </div>
+
+      {/* Buys together / flavors section */}
+      <div style={{ borderTop: `1px solid ${CLR.border}`, background: CLR.bg3 }} className="px-4 pb-[13px] pt-[11px]">
+        <div className="font-mono text-[8.5px] uppercase tracking-[.07em] mb-[7px]" style={{ color: CLR.t3 }}>
+          {flavors.length ? "Top flavors" : "Product signal"}
+        </div>
+        <div className="flex flex-wrap gap-[5px]">
+          {flavors.length ? flavors.map((f, i) => (
+            <span
+              key={f}
+              style={i === 0
+                ? { background: CLR.text, color: "#fff", border: `1px solid ${CLR.text}` }
+                : { background: CLR.bg2, color: CLR.text, border: `1px solid ${CLR.border2}` }}
+              className="text-[11px] px-[9px] py-[3px] rounded-full inline-flex items-center gap-[5px]"
+            >
+              {f}
+            </span>
+          )) : (
+            <>
+              {customer.top_item_title && (
+                <span style={{ background: CLR.text, color: "#fff", border: `1px solid ${CLR.text}` }}
+                  className="text-[11px] px-[9px] py-[3px] rounded-full">{customer.top_item_title}</span>
+              )}
+              {customer.top_product_types?.[0] && (
+                <span style={{ background: CLR.bg2, color: CLR.text, border: `1px solid ${CLR.border2}` }}
+                  className="text-[11px] px-[9px] py-[3px] rounded-full">{customer.top_product_types[0]}</span>
+              )}
+              {!customer.top_item_title && !customer.top_product_types?.[0] && (
+                <span className="text-[11.5px]" style={{ color: CLR.t3 }}>No capsule history yet</span>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Reorder footer */}
+      <div style={{ borderTop: `1px solid ${CLR.border}` }} className="flex items-center gap-2 px-4 py-[10px]">
+        <div className="flex-1 min-w-0">
+          <div className="flex justify-between font-mono text-[9px] uppercase tracking-[.06em] mb-[5px]">
+            <span style={{ color: CLR.t3 }}>Reorder window</span>
+            <span style={{ color: reorderColor(customer) }}>{reorderText(customer)}</span>
+          </div>
+          <div className="h-[5px] rounded overflow-hidden" style={{ background: CLR.bg4 }}>
+            <div style={{ width: `${reorderPct(customer)}%`, height: "100%", background: reorderColor(customer), borderRadius: 3 }} />
+          </div>
+        </div>
+      </div>
+    </article>
   );
 }
 
-// ─── Drawer ─────────────────────────────────────────────────────────────────
+// ── Drawer loading / error ────────────────────────────────────────
 
-function DrawerLoadingState() {
+function DrawerSkeleton() {
   return (
-    <div className="p-6 space-y-4">
-      <Skeleton className="h-16 rounded-xl w-3/4" />
-      <div className="grid grid-cols-4 gap-3">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <Skeleton key={i} className="h-20 rounded-xl" />
-        ))}
+    <div className="p-5 space-y-4">
+      <Skeleton className="h-[76px] rounded-xl" />
+      <div className="grid grid-cols-4 gap-2">
+        {[0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-[68px] rounded-xl" />)}
       </div>
       <Skeleton className="h-32 rounded-xl" />
-      <Skeleton className="h-24 rounded-xl" />
+      <Skeleton className="h-40 rounded-xl" />
+      <Skeleton className="h-36 rounded-xl" />
     </div>
   );
 }
 
-function segmentAction(segment: CustomerSegment, ka: boolean): string {
-  if (segment === "lapsed")      return ka ? "დაბრუნების კამპანია →" : "Send win-back →";
-  if (segment === "at_risk")     return ka ? "რისკის გამოხმაურება →" : "Send re-engage →";
-  if (segment === "new_machine") return ka ? "სტარტ-კიტის გაგზავნა →" : "Send starter kit →";
-  if (segment === "loyalist")    return ka ? "პრემიუმ შეთავაზება →" : "Send premium offer →";
-  return ka ? "ინდივ. კამპანია →" : "Custom campaign →";
-}
+// ── CustomerDrawer ────────────────────────────────────────────────
 
-function Drawer({
-  customerId,
-  ka,
-  onClose,
-}: {
-  customerId: number | null;
-  ka: boolean;
-  onClose: () => void;
-}) {
-  const [data, setData]       = useState<PortfolioDetail | null>(null);
+function CustomerDrawer({ customerId, onClose }: { customerId: number | null; onClose: () => void }) {
+  const [data, setData] = useState<PortfolioDetail | null>(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError]     = useState<string | null>(null);
-  const drawerRef             = useRef<HTMLDivElement>(null);
-
+  const [error, setError] = useState<string | null>(null);
   const open = customerId !== null;
 
   useEffect(() => {
-    if (!open) {
-      setData(null);
-      setError(null);
-      return;
-    }
+    if (!open) { setData(null); setError(null); return; }
     setLoading(true);
     setError(null);
-    fetchPortfolio(customerId!)
+    fetchPortfolio(customerId)
       .then(setData)
       .catch((err: Error) => setError(err.message))
       .finally(() => setLoading(false));
   }, [customerId, open]);
 
-  // Close on ESC
   useEffect(() => {
     if (!open) return;
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
+    const h = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
   }, [open, onClose]);
-
-  const days = data?.days_since_last_order ?? 0;
-  const rfm  = data ? rfmScore(days, data.order_count, data.total_spend) : null;
-  const seg  = data ? (SEGMENT_META[data.segment] ?? SEGMENT_META.active) : null;
-  const promoSharePct = data ? Math.round(data.promo_share * 100) : 0;
 
   return (
     <>
       {/* Scrim */}
       <div
-        className={`fixed inset-0 z-40 bg-black/50 transition-opacity duration-300 ${
-          open ? "opacity-100" : "pointer-events-none opacity-0"
-        }`}
         onClick={onClose}
         aria-hidden="true"
+        style={{ background: "rgba(20,18,16,.32)", backdropFilter: "blur(2px)" }}
+        className={`fixed inset-0 z-40 transition-opacity duration-300 ${open ? "opacity-100" : "pointer-events-none opacity-0"}`}
       />
-
-      {/* Panel */}
-      <div
-        ref={drawerRef}
-        className={`fixed right-0 top-0 z-50 flex h-full w-[540px] max-w-[92vw] flex-col bg-meama-roast shadow-2xl transition-transform duration-300 ease-in-out ${
-          open ? "translate-x-0" : "translate-x-full"
-        }`}
+      {/* Drawer */}
+      <aside
         role="dialog"
         aria-modal="true"
-        aria-label={ka ? "მომხმარებლის დეტალები" : "Customer details"}
+        style={{
+          background: "#f7f6f4",
+          borderLeft: `1px solid ${CLR.border}`,
+          boxShadow: "-20px 0 50px -20px rgba(0,0,0,.25)",
+        }}
+        className={`fixed top-0 right-0 bottom-0 z-50 flex w-[540px] max-w-[92vw] flex-col transition-transform duration-300 ${open ? "translate-x-0" : "translate-x-full"}`}
       >
-        {/* Scrollable content */}
-        <div className="flex-1 overflow-y-auto">
-          {loading && !data && <DrawerLoadingState />}
+        {loading && !data && <DrawerSkeleton />}
+        {error && <div className="p-5 text-[13px]" style={{ color: CLR.r }}>Error: {error}</div>}
 
-          {error && (
-            <div className="p-6 text-sm text-meama-red">
-              {ka ? "შეცდომა: " : "Error: "}{error}
+        {data && <DrawerContent data={data} onClose={onClose} />}
+      </aside>
+    </>
+  );
+}
+
+function DrawerContent({ data, onClose }: { data: PortfolioDetail; onClose: () => void }) {
+
+  const accent = segAccent(data.segment);
+  const churnRiskStat = 100 - data.health_score;
+  const { R, F, M } = rfm5(data);
+  const rLabel = rfmLabel(R, F, M);
+  const promoSharePct = Math.round((data.promo_share ?? 0) * 100);
+  const fullSharePct = 100 - promoSharePct;
+  const isDiscountLed = (data.promo_share ?? 0) >= 0.6;
+  const spendTotal = (data.promo_spend ?? 0) + (data.full_price_spend ?? 0);
+  const hasSpendData = spendTotal > 0;
+
+  // Channel split
+  const eco = Math.round((data.ecommerce_share ?? 0) * 100);
+  const store = Math.round((data.brand_store_share ?? 0) * 100);
+  const appPct = Math.round(((data as PortfolioDetail & { app_share?: number | null }).app_share ?? 0) * 100);
+
+  // Under-consuming: machine owner buying capsules < half expected
+  const underConsuming =
+    data.has_machine &&
+    data.avg_capsule_packs_per_month != null &&
+    data.avg_capsule_packs_per_month < 1.5;
+
+  // Spend insight
+  const spendInsight = isDiscountLed
+    ? `${promoSharePct}% of spend is discount-led. Margin risk — they wait for sales. Pull from blanket promos and test value offers (free shipping, loyalty points, a free sample) to build a full-price habit.`
+    : promoSharePct <= 20
+    ? `Healthy — ${fullSharePct}% full-price. Protect this: reward with early access and loyalty, never train them to expect discounts.`
+    : `Mixed — ${promoSharePct}% on promo. Watch the trend; nudge toward full-price reorders with convenience, not price.`;
+
+  return (
+    <>
+      {/* Header */}
+      <div
+        style={{ background: CLR.bg2, borderBottom: `1px solid ${CLR.border}` }}
+        className="flex shrink-0 items-start gap-[13px] px-5 py-[18px]"
+      >
+        <div style={{ background: accent, width: 50, height: 50, borderRadius: 14 }}
+          className="flex shrink-0 items-center justify-center text-[18px] font-semibold text-white">
+          {data.initials || "?"}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="text-[18px] font-semibold tracking-[-0.01em]" style={{ color: CLR.text }}>
+            {data.full_name?.trim() || `#${data.shopify_customer_id}`}
+          </div>
+          <div className="font-mono text-[10px] mt-[4px] flex flex-wrap gap-[5px] items-center" style={{ color: CLR.t3 }}>
+            <Tag variant={segVariant(data.segment)}>{segLabel(data.segment)}</Tag>
+            {isDiscountLed && <Tag variant="red">Discount-led</Tag>}
+            <span>· {data.capital_vs_regional === "capital" ? "Capital" : data.capital_vs_regional === "regional" ? "Regional" : data.region === "tbilisi" ? "Tbilisi" : "Regions"}</span>
+            <span>· joined {joinedDate(data.customer_since)}</span>
+          </div>
+        </div>
+        <button
+          onClick={onClose}
+          style={{ border: `1px solid ${CLR.border}`, background: CLR.bg2, borderRadius: 7, color: CLR.t2 }}
+          className="flex h-[28px] w-[28px] shrink-0 items-center justify-center text-[13px] hover:bg-[#f2f1ef]"
+          aria-label="Close"
+        >
+          ✕
+        </button>
+      </div>
+
+      {/* Scrollable body */}
+      <div className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-[14px]">
+
+        {/* Stat row */}
+        <div className="grid grid-cols-4 gap-[9px]">
+          {[
+            { label: "LTV", value: formatGEL0(data.total_spend), color: CLR.text },
+            { label: "Orders", value: String(data.order_count), color: CLR.text },
+            { label: "AOV", value: formatGEL(data.aov), color: CLR.text },
+            { label: "Churn risk", value: `${churnRiskStat}%`, color: churnColor(churnRiskStat) },
+          ].map(({ label, value, color }) => (
+            <div key={label} style={{ background: CLR.bg2, border: `1px solid ${CLR.border}`, borderRadius: 10 }} className="p-3">
+              <div className="font-mono text-[8.5px] uppercase tracking-[.06em] mb-[5px]" style={{ color: CLR.t3 }}>{label}</div>
+              <div className="text-[17px] font-light leading-none" style={{ color }}>{value}</div>
             </div>
-          )}
+          ))}
+        </div>
 
-          {data && (
-            <div className="space-y-0">
-              {/* 1. Header */}
-              <div className="flex items-start gap-4 border-b border-meama-brown/20 px-6 py-5">
-                <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-meama-brown font-display text-xl font-bold text-meama-goldsoft">
-                  {data.initials || "?"}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <h2 className="font-display text-xl font-bold text-meama-cream leading-tight">
-                    {data.full_name?.trim() || `#${data.shopify_customer_id}`}
-                  </h2>
-                  <div className="mt-1 flex flex-wrap items-center gap-2">
-                    {seg && (
-                      <Badge tone={seg.tone}>{ka ? seg.labelKa : seg.label}</Badge>
-                    )}
-                    <span className="text-xs text-meama-muted">
-                      {data.region === "tbilisi" ? (ka ? "თბილისი" : "Tbilisi")
-                        : data.region === "regions" ? (ka ? "რეგიონები" : "Regions")
-                        : "—"}
-                    </span>
-                    {data.customer_created_at && (
-                      <span className="text-xs text-meama-muted">
-                        · {ka ? "შეუერთდა" : "joined"} {tbilisiDate(data.customer_created_at)}
-                      </span>
-                    )}
+        {/* 3. Account health */}
+        <Panel title="Account health" sub={rLabel}>
+          {/* Health ring + RFM blocks */}
+          <div className="flex items-center gap-4 mb-[13px]">
+            {/* Ring */}
+            <div style={{
+              width: 56, height: 56, borderRadius: "50%",
+              background: `conic-gradient(${healthColor(data.health_score)} ${data.health_score * 3.6}deg, ${CLR.bg4} 0)`,
+            }} className="flex shrink-0 items-center justify-center">
+              <div style={{ width: 43, height: 43, borderRadius: "50%", background: CLR.bg2 }}
+                className="flex flex-col items-center justify-center">
+                <div className="text-[16px] font-semibold leading-none" style={{ color: healthColor(data.health_score) }}>
+                  {data.health_score}
+                </div>
+                <div className="font-mono text-[7px] uppercase" style={{ color: CLR.t3 }}>health</div>
+              </div>
+            </div>
+            {/* R/F/M blocks */}
+            <div className="flex gap-[18px]">
+              {[["R", R], ["F", F], ["M", M]].map(([k, v]) => (
+                <div key={k as string} className="text-center">
+                  <div className="font-mono text-[9px]" style={{ color: CLR.t3 }}>{k as string}</div>
+                  <div className="text-[15px] font-light" style={{ color: (v as number) >= 4 ? CLR.g : (v as number) >= 3 ? CLR.a : CLR.r }}>
+                    {v as number}
                   </div>
                 </div>
-                <button
-                  onClick={onClose}
-                  className="shrink-0 rounded-full border border-meama-brown/30 p-1.5 text-meama-muted transition-colors hover:border-meama-gold hover:text-meama-gold"
-                  aria-label="Close"
-                >
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                    <path d="M1 1l12 12M13 1L1 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                  </svg>
-                </button>
-              </div>
+              ))}
+            </div>
+            <div className="ml-auto text-right">
+              <div className="font-mono text-[8.5px] uppercase tracking-[.06em] mb-1" style={{ color: CLR.t3 }}>Lifecycle</div>
+              <Tag variant={lifecycleVariant(data.status)}>{lifecycleLabel(data.status)}</Tag>
+            </div>
+          </div>
+          <Grid2>
+            <Fld label="Predicted next order" value={da(data.expected_next_order_date)} />
+            <Fld label="Days since last order" value={data.days_since_last_order != null ? `${data.days_since_last_order} days` : "—"} />
+            <Fld label="RFM label" value={rLabel} />
+            <Fld label="Categories bought" value={data.top_product_types?.join(" · ") ?? "—"} />
+          </Grid2>
+        </Panel>
 
-              {/* 2. Stat row — 4 cols */}
-              <div className="grid grid-cols-4 gap-0 border-b border-meama-brown/20">
-                {[
-                  { label: ka ? "სულ დახარჯა" : "Total spend", value: formatGEL0(data.total_spend), tone: "text-meama-gold" },
-                  { label: ka ? "შეკვეთები"   : "Orders",      value: formatNumber(data.order_count), tone: "text-meama-cream" },
-                  { label: "AOV",              value: formatGEL(data.aov),                     tone: "text-meama-cream" },
-                  { label: ka ? "დღე" : "Days silent", value: `${days}d`,                      tone: days >= 90 ? "text-meama-red" : days >= 45 ? "text-meama-gold" : "text-meama-green" },
-                ].map((s) => (
-                  <div key={s.label} className="border-r border-meama-brown/20 last:border-r-0 px-4 py-4 text-center">
-                    <div className={`tabular text-lg font-extrabold leading-none ${s.tone}`}>
-                      {s.value}
-                    </div>
-                    <div className="mt-1 text-[10px] uppercase tracking-wider text-meama-muted">
-                      {s.label}
-                    </div>
+        {/* 4. Identity & contact */}
+        <Panel title="Identity & contact">
+          <Grid2>
+            <div className="min-w-0">
+              <FieldLabel>✉ Email</FieldLabel>
+              <FieldVal muted={!data.email}>{data.email ?? (data.phone_only ? "[phone-only]" : "—")}</FieldVal>
+            </div>
+            <div className="min-w-0">
+              <FieldLabel>📞 Phone</FieldLabel>
+              <FieldVal muted={!data.phone}>{data.phone ?? "—"}</FieldVal>
+            </div>
+            <Fld label="📅 Registered" value={joinedDate(data.customer_since)} />
+            <Fld label="⏱ Tenure" value={data.tenure_months != null ? `${data.tenure_months} months` : "—"} />
+            <Fld label="📦 Active months" value={data.active_months != null ? `${data.active_months} of ${data.tenure_months ?? "?"}` : "—"} />
+            <div>
+              <FieldLabel>📍 Capital / regional</FieldLabel>
+              <div className="mt-[3px]">
+                <Tag variant={data.capital_vs_regional === "capital" ? "blue" : "neutral"}>
+                  {data.capital_vs_regional === "capital" ? "Capital" : data.capital_vs_regional === "regional" ? "Regional" : "Unknown"}
+                </Tag>
+              </div>
+            </div>
+          </Grid2>
+          <div className="mt-3">
+            <FieldLabel>Marketing consent</FieldLabel>
+            <ConsentPills email={data.accept_marketing_email} sms={data.sms_marketing} />
+          </div>
+        </Panel>
+
+        {/* 5. Channels & acquisition */}
+        <Panel title="Channels & acquisition">
+          <div className="font-mono text-[8.5px] uppercase tracking-[.09em] mb-2" style={{ color: CLR.t3 }}>Where they buy</div>
+          <div className="flex h-[26px] rounded overflow-hidden mb-[7px]" style={{ background: CLR.bg4 }}>
+            {eco > 0 && (
+              <div style={{ width: `${eco}%`, background: CLR.b, opacity: 0.82 }}
+                className="flex items-center justify-center text-white font-mono text-[9.5px]">{eco}%</div>
+            )}
+            {store > 0 && (
+              <div style={{ width: `${store}%`, background: CLR.a, opacity: 0.82 }}
+                className="flex items-center justify-center text-white font-mono text-[9.5px]">{store}%</div>
+            )}
+            {appPct > 0 && (
+              <div style={{ width: `${appPct}%`, background: CLR.tl, opacity: 0.82 }}
+                className="flex items-center justify-center text-white font-mono text-[9.5px]">{appPct}%</div>
+            )}
+          </div>
+          <div className="flex gap-[14px] mb-[13px]">
+            {[
+              { label: "Online", pct: eco, color: CLR.b },
+              { label: "In-store", pct: store, color: CLR.a },
+              { label: "App", pct: appPct, color: CLR.tl },
+            ].map(({ label, pct: p, color }) => (
+              <div key={label} className="flex items-center gap-[5px] text-[11px]" style={{ color: CLR.t2 }}>
+                <div style={{ width: 8, height: 8, borderRadius: 2, background: color }} />
+                {label} {p}%
+              </div>
+            ))}
+          </div>
+          <Grid2>
+            <Fld label="Primary channel" value={data.channel ? ({ online: "E-commerce", in_store: "Brand store", app: "App", mixed: "Mixed", none: "—" } as Record<string, string>)[data.channel] : "—"} />
+            <Fld label="Promo orders" value={data.promo_orders > 0 ? `${data.promo_orders} of ${data.order_count}` : "None"} />
+          </Grid2>
+          {/* Capsule consumption (machine owners only) */}
+          {data.has_machine && data.avg_capsule_packs_per_month != null && (
+            <div style={{ borderTop: `1px solid ${CLR.border}` }} className="mt-[13px] pt-3">
+              <div className="font-mono text-[8.5px] uppercase tracking-[.09em] mb-[7px]" style={{ color: CLR.t3 }}>
+                Capsule consumption vs machine
+              </div>
+              <div className="flex justify-between text-[12px] mb-[5px]" style={{ color: CLR.text }}>
+                <span>{data.avg_capsule_packs_per_month.toFixed(1)} packs/mo</span>
+                <span style={{ color: CLR.t3 }}>expected ~2.5/mo</span>
+              </div>
+              <div className="h-[9px] rounded overflow-hidden" style={{ background: CLR.bg4 }}>
+                <div style={{
+                  width: `${Math.min(100, (data.avg_capsule_packs_per_month / 2.5) * 100)}%`,
+                  height: "100%", background: underConsuming ? CLR.r : CLR.g, opacity: 0.8, borderRadius: 5
+                }} />
+              </div>
+              {underConsuming && (
+                <div style={{ background: CLR.rb, borderLeft: `2px solid ${CLR.r}`, borderRadius: 6, color: CLR.t2 }}
+                  className="mt-2 p-[9px_11px] text-[11.5px] leading-[1.5]">
+                  <strong>Under-consuming.</strong> Machine owner buying far fewer capsules than expected — a silent churn signal. Trigger a reorder nudge now.
+                </div>
+              )}
+            </div>
+          )}
+        </Panel>
+
+        {/* 6. Purchase & RFM */}
+        <Panel title="Purchase & RFM detail">
+          <Grid2>
+            <Fld label="📋 Last order" value={da(data.last_order_at)} />
+            <Fld label="🔄 Return interval" value={data.avg_return_interval_days != null ? `every ${Math.round(data.avg_return_interval_days)} days` : "—"} />
+            <Fld label="📦 AOV capsules" value={data.capsule_aov != null ? formatGEL(data.capsule_aov) : "—"} />
+            <Fld label="📦 Packs / month" value={data.avg_capsule_packs_per_month != null ? `${data.avg_capsule_packs_per_month.toFixed(1)}` : "—"} />
+            <Fld label="🔜 Next order" value={da(data.expected_next_order_date)} />
+            <div>
+              <FieldLabel>💰 Price range</FieldLabel>
+              <div className="mt-[3px]">
+                {data.capsule_price_range ? (
+                  <Tag variant={data.capsule_price_range === "premium" ? "purple" : data.capsule_price_range === "mid_range" ? "blue" : "neutral"}>
+                    {data.capsule_price_range.replace("_", " ")}
+                  </Tag>
+                ) : <span style={{ color: CLR.t3 }}>—</span>}
+              </div>
+            </div>
+          </Grid2>
+
+          {/* RFM blocks */}
+          <div style={{ borderTop: `1px solid ${CLR.border}` }} className="mt-3 pt-3">
+            <div className="font-mono text-[8.5px] uppercase tracking-[.09em] mb-[9px]" style={{ color: CLR.t3 }}>RFM breakdown</div>
+            <div className="flex gap-[14px] mb-[9px]">
+              {[["Recency", R], ["Frequency", F], ["Monetary", M]].map(([k, v]) => (
+                <div key={k as string} style={{ flex: 1, background: CLR.bg3, border: `1px solid ${CLR.border}`, borderRadius: 8 }}
+                  className="px-[11px] py-[9px] text-center">
+                  <div className="font-mono text-[9px] uppercase tracking-[.07em] mb-1" style={{ color: CLR.t3 }}>{k as string}</div>
+                  <div className="text-[22px] font-light" style={{ color: (v as number) >= 4 ? CLR.g : (v as number) >= 3 ? CLR.a : CLR.r }}>
+                    {v as number}
                   </div>
+                  <div className="font-mono text-[8.5px]" style={{ color: CLR.t3 }}>/ 5</div>
+                </div>
+              ))}
+            </div>
+            <div style={{ background: CLR.bg3, borderRadius: 6, color: CLR.t2 }} className="px-[10px] py-[7px] font-mono text-[10px]">
+              RFM label: <strong>{rLabel}</strong>
+            </div>
+          </div>
+        </Panel>
+
+        {/* 7. Flavor & product DNA */}
+        <Panel title="Flavor & product DNA">
+          {/* Intensity row */}
+          <div className="flex items-center gap-[10px] mb-[11px]">
+            <div>
+              <FieldLabel>🔥 Intensity</FieldLabel>
+              <div className="flex items-center gap-[7px] mt-[3px]">
+                {data.intensity_bucket ? (
+                  <Tag variant={
+                    data.intensity_bucket === "strong" ? "red"
+                    : data.intensity_bucket === "medium" ? "amber"
+                    : "blue"
+                  }>
+                    {data.intensity_bucket}
+                  </Tag>
+                ) : null}
+                <span className="font-mono text-[12px]" style={{ color: CLR.text }}>
+                  {data.favorite_intensity != null ? `${data.favorite_intensity.toFixed(1)} / 10` : "—"}
+                </span>
+              </div>
+              {data.bible_match_rate != null && data.bible_match_rate < 0.5 && (
+                <div className="font-mono text-[9px] mt-[4px]" style={{ color: CLR.t3 }}>
+                  Partial data ({Math.round(data.bible_match_rate * 100)}% matched)
+                </div>
+              )}
+            </div>
+            {/* Beverage type preference */}
+            {data.beverage_type_preference && (
+              <div className="ml-auto text-right">
+                <FieldLabel>Drink style</FieldLabel>
+                <div className="mt-[3px]">
+                  <Tag variant={
+                    data.beverage_type_preference === "espresso"      ? "red"
+                    : data.beverage_type_preference === "filter_coffee" ? "amber"
+                    : data.beverage_type_preference === "tea"           ? "green"
+                    : data.beverage_type_preference === "cold_mix"      ? "teal"
+                    : data.beverage_type_preference === "wellness"       ? "purple"
+                    : "neutral"
+                  }>
+                    {{
+                      espresso:      "Espresso",
+                      filter_coffee: "Filter coffee",
+                      tea:           "Tea",
+                      cold_mix:      "Cold mix",
+                      wellness:      "Wellness",
+                      other:         "Other",
+                    }[data.beverage_type_preference] ?? data.beverage_type_preference}
+                  </Tag>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Top flavors */}
+          {data.top_flavors?.length ? (
+            <div className="mt-[9px]">
+              <FieldLabel>Top flavors</FieldLabel>
+              <div className="flex flex-wrap gap-[5px] mt-[6px]">
+                {data.top_flavors.map((f, i) => (
+                  <span key={f}
+                    style={i === 0
+                      ? { background: CLR.text, color: "#fff", border: `1px solid ${CLR.text}` }
+                      : { background: CLR.bg2, color: CLR.text, border: `1px solid ${CLR.border2}` }}
+                    className="text-[11px] px-[9px] py-[3px] rounded-full">{f}</span>
                 ))}
               </div>
-
-              {/* 3. Account health */}
-              <div className="border-b border-meama-brown/20 px-6 py-5 space-y-3">
-                <div className="text-[10px] uppercase tracking-wider text-meama-muted font-bold">
-                  {ka ? "ჯანმრთელობის ქულა" : "Account health"}
-                </div>
-                <HealthBar score={data.health_score} />
-
-                {/* RFM */}
-                {rfm && (
-                  <div className="flex gap-4">
-                    {[
-                      { key: "R", value: rfm.r, label: ka ? "რეცენტ." : "Recency" },
-                      { key: "F", value: rfm.f, label: ka ? "სიხშ."   : "Frequency" },
-                      { key: "M", value: rfm.m, label: ka ? "მოთხ."   : "Monetary" },
-                    ].map((r) => (
-                      <div key={r.key} className="flex items-center gap-1.5">
-                        <span className="text-[10px] font-bold uppercase text-meama-muted">{r.key}</span>
-                        <div className="flex gap-0.5">
-                          {Array.from({ length: 5 }).map((_, i) => (
-                            <div
-                              key={i}
-                              className={`h-2 w-2 rounded-sm ${i < r.value ? "bg-meama-gold" : "bg-meama-brown/20"}`}
-                            />
-                          ))}
-                        </div>
-                        <span className="tabular text-[10px] text-meama-muted">{r.label}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* Segment + status + predicted next */}
-                <div className="flex flex-wrap items-center gap-2">
-                  {seg && <Badge tone={seg.tone}>{ka ? seg.labelKa : seg.label}</Badge>}
-                  <span className="text-xs text-meama-muted">
-                    {ka ? "შემდ. შეკ. ~" : "Next order ~"}
-                    {Math.max(0, 30 - days)}d
-                  </span>
-                </div>
+            </div>
+          ) : null}
+          {data.format_preferences?.length ? (
+            <div className="mt-[9px]">
+              <FieldLabel>Format preferences</FieldLabel>
+              <div className="flex flex-wrap gap-[5px] mt-[6px]">
+                {data.format_preferences.map((f) => (
+                  <span key={f} style={{ background: CLR.bg2, color: CLR.text, border: `1px solid ${CLR.border2}` }}
+                    className="text-[11px] px-[9px] py-[3px] rounded-full">{f}</span>
+                ))}
               </div>
-
-              {/* 4. Spend quality */}
-              <div className="border-b border-meama-brown/20 px-6 py-5 space-y-2">
-                <div className="text-[10px] uppercase tracking-wider text-meama-muted font-bold">
-                  {ka ? "ხარჯის ხარისხი" : "Spend quality"}
-                </div>
-                <PromoBar
-                  fullPriceSpend={data.full_price_spend}
-                  promoSpend={data.promo_spend}
-                  totalSpend={data.total_spend}
-                />
-                <div className="flex items-center justify-between text-xs">
-                  <span>
-                    <span className="text-meama-green font-semibold">{formatGEL0(data.full_price_spend)}</span>
-                    <span className="text-meama-muted"> full · </span>
-                    <span className="text-meama-gold font-semibold">{formatGEL0(data.promo_spend)}</span>
-                    <span className="text-meama-muted"> promo</span>
-                  </span>
-                  <span className="text-meama-muted tabular">
-                    {promoSharePct}% {ka ? "ფასდაკლებით" : "on promo"}
-                  </span>
-                </div>
-                {promoSharePct >= 60 && (
-                  <p className="text-xs text-meama-gold">
-                    ⚠ {ka ? "მაღალი პრომო-დამოკიდებულება" : "High promo dependency — margin sensitive"}
-                  </p>
-                )}
+            </div>
+          ) : null}
+          {data.bought_capsule_categories?.length ? (
+            <div className="mt-[9px]">
+              <FieldLabel>Categories bought</FieldLabel>
+              <div className="flex flex-wrap gap-[5px] mt-[6px]">
+                {data.bought_capsule_categories.map((c) => (
+                  <span key={c} style={{ background: CLR.gb, color: CLR.g, border: `1px solid ${CLR.gbd}` }}
+                    className="text-[11px] px-[9px] py-[3px] rounded-full">{c}</span>
+                ))}
               </div>
-
-              {/* 5. Profile section */}
-              <div className="border-b border-meama-brown/20 px-6 py-5 space-y-3">
-                <div className="text-[10px] uppercase tracking-wider text-meama-muted font-bold">
-                  {ka ? "პროფილი" : "Profile"}
-                </div>
-                <div className="grid grid-cols-2 gap-3 text-sm">
-                  <div>
-                    <div className="text-[10px] uppercase tracking-wider text-meama-muted mb-0.5">
-                      {ka ? "მანქანა" : "Machine"}
-                    </div>
-                    <div className="text-meama-cream font-semibold">
-                      {data.has_machine ? (data.machine_model ?? (ka ? "მანქანა" : "Machine")) : (ka ? "არ აქვს" : "None")}
-                    </div>
-                  </div>
-                  {data.top_item_title && (
-                    <div>
-                      <div className="text-[10px] uppercase tracking-wider text-meama-muted mb-0.5">
-                        {ka ? "ყველაზე ხშირი" : "Top flavor"}
-                      </div>
-                      <div className="text-meama-cream font-semibold truncate">{data.top_item_title}</div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Top categories */}
-                {(data.top_product_types ?? []).length > 0 && (
-                  <div>
-                    <div className="text-[10px] uppercase tracking-wider text-meama-muted mb-1.5">
-                      {ka ? "კატეგორიები" : "Categories"}
-                    </div>
-                    <div className="flex flex-wrap gap-1.5">
-                      {data.top_product_types!.map((pt) => (
-                        <span
-                          key={pt}
-                          className="rounded-full bg-meama-gold/15 px-2.5 py-0.5 text-xs font-semibold text-meama-brown"
-                        >
-                          {pt}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Contact */}
-                <div className="space-y-1 text-sm">
-                  {!data.phone_only && data.email && (
-                    <div className="flex items-center gap-2 text-meama-cream/80">
-                      <span className="text-meama-muted">✉</span>
-                      {data.email}
-                    </div>
-                  )}
-                  {data.phone && (
-                    <div className="flex items-center gap-2 text-meama-cream/80">
-                      <span className="text-meama-muted">☎</span>
-                      {data.phone}
-                    </div>
-                  )}
-                  {data.phone_only && (
-                    <div className="italic text-xs text-meama-muted/60">
-                      {ka ? "ტელეფონით შესვლა" : "Phone login only"}
-                    </div>
-                  )}
-                </div>
-
-                {/* Consent pills */}
-                <div className="flex gap-1.5 flex-wrap">
-                  {data.accept_marketing_email ? (
-                    <span className="rounded-full bg-meama-blue/10 px-2.5 py-0.5 text-xs font-semibold text-meama-blue">📧 Email ✓</span>
-                  ) : (
-                    <span className="rounded-full bg-meama-brown/15 px-2.5 py-0.5 text-xs font-semibold text-meama-muted">📧 Email ✗</span>
-                  )}
-                  {data.sms_marketing ? (
-                    <span className="rounded-full bg-meama-green/10 px-2.5 py-0.5 text-xs font-semibold text-meama-green">💬 SMS ✓</span>
-                  ) : (
-                    <span className="rounded-full bg-meama-brown/15 px-2.5 py-0.5 text-xs font-semibold text-meama-muted">💬 SMS ✗</span>
-                  )}
-                </div>
+            </div>
+          ) : null}
+          {data.never_bought_capsule_categories?.length ? (
+            <div className="mt-[9px]">
+              <FieldLabel>Has never tried 👇</FieldLabel>
+              <div className="flex flex-wrap gap-[5px] mt-[6px]">
+                {data.never_bought_capsule_categories.map((c) => (
+                  <span key={c} style={{ background: CLR.rb, color: CLR.r, border: `1px solid ${CLR.rbd}`, opacity: 0.8 }}
+                    className="text-[11px] px-[9px] py-[3px] rounded-full">{c}</span>
+                ))}
               </div>
+            </div>
+          ) : null}
+          {!data.top_flavors?.length && !data.bought_capsule_categories?.length && (
+            <p className="text-[11.5px] mt-2" style={{ color: CLR.t3 }}>No capsule purchase history yet.</p>
+          )}
+        </Panel>
 
-              {/* 6. Recent orders table */}
-              <div className="border-b border-meama-brown/20 px-6 py-5">
-                <div className="text-[10px] uppercase tracking-wider text-meama-muted font-bold mb-3">
-                  {ka ? "ბოლო შეკვეთები" : "Recent orders"}
-                </div>
-                {data.recent_orders.length === 0 ? (
-                  <p className="text-sm text-meama-muted">
-                    {ka ? "შეკვეთები ვერ მოიძებნა" : "No orders found"}
-                  </p>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <table className="tabular w-full text-xs">
-                      <thead>
-                        <tr className="border-b border-meama-brown/10 text-[10px] uppercase tracking-wider text-meama-muted">
-                          <th className="pb-2 text-left font-semibold">{ka ? "შეკ." : "Order"}</th>
-                          <th className="pb-2 text-left font-semibold">{ka ? "თარიღი" : "Date"}</th>
-                          <th className="pb-2 text-left font-semibold">{ka ? "არხი" : "Ch."}</th>
-                          <th className="pb-2 text-right font-semibold">{ka ? "ჯამი" : "Total"}</th>
-                          <th className="pb-2 text-right font-semibold">{ka ? "ფასდ." : "Disc."}</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-meama-brown/5">
-                        {data.recent_orders.map((o) => (
-                          <tr key={o.shopify_order_id} className="hover:bg-meama-brown/5">
-                            <td className="py-1.5 text-meama-cream/60">#{o.shopify_order_id}</td>
-                            <td className="py-1.5 text-meama-muted">{o.processed_at ? tbilisiDate(o.processed_at) : "—"}</td>
-                            <td className="py-1.5 text-meama-muted">{o.source ? (SOURCE_LABEL[o.source] ?? o.source) : "—"}</td>
-                            <td className="py-1.5 text-right font-semibold text-meama-cream">{formatGEL(o.total)}</td>
-                            <td className="py-1.5 text-right text-meama-muted">
-                              {o.discount_code ? `${o.discount_code} (${formatGEL(o.discount_amount)})` : "—"}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
+        {/* 8. Machine journey */}
+        <Panel title="Machine journey">
+          <Grid2>
+            <Fld label="☕ Machine" value={data.machine_model ?? (data.has_machine ? "Machine owned" : "No machine")} muted={!data.has_machine} />
+            <Fld label="📅 Acquired" value={da(data.machine_acquisition_date)} />
+            <div>
+              <FieldLabel>🔄 Conversion status</FieldLabel>
+              <div className="mt-[3px]">
+                <Tag variant={
+                  data.machine_to_capsule_conversion_status === "machine_then_capsules" ? "green"
+                    : data.machine_to_capsule_conversion_status === "no_machine" ? "neutral"
+                    : data.machine_to_capsule_conversion_status === "machine_only_no_capsules" ? "red"
+                    : "amber"
+                }>
+                  {CONV_LABEL[data.machine_to_capsule_conversion_status ?? "unknown"] ?? "—"}
+                </Tag>
               </div>
-
-              {/* 7. Action button */}
-              <div className="px-6 py-5">
-                <button className="w-full rounded-xl bg-meama-gold px-4 py-3 text-sm font-bold text-meama-espresso transition-opacity hover:opacity-90">
-                  {segmentAction(data.segment, ka)}
-                </button>
+            </div>
+            <Fld label="📦 Packs / month" value={data.avg_capsule_packs_per_month != null ? `${data.avg_capsule_packs_per_month.toFixed(1)}` : "—"} />
+          </Grid2>
+          {data.recommended_next_machine && (
+            <div style={{ background: CLR.ab, border: `1px solid ${CLR.abd}`, borderRadius: 7 }}
+              className="mt-[11px] flex items-center gap-[10px] p-[10px_12px]">
+              <div className="text-[18px]">🤖</div>
+              <div>
+                <FieldLabel>Recommended upgrade</FieldLabel>
+                <div className="text-[13px] font-semibold" style={{ color: CLR.a }}>{data.recommended_next_machine}</div>
               </div>
             </div>
           )}
-        </div>
+          {(data.machine_to_capsule_conversion_status === "machine_only_no_capsules") && (
+            <div style={{ background: CLR.rb, borderLeft: `2px solid ${CLR.r}`, borderRadius: 6, color: CLR.t2 }}
+              className="mt-[10px] p-[9px_11px] text-[11.5px] leading-[1.5]">
+              <strong>⚠ Under-consuming.</strong> Has a machine but {data.avg_capsule_packs_per_month ?? 0} packs/mo — well below potential. Trigger a capsule starter offer now.
+            </div>
+          )}
+        </Panel>
+
+        {/* 9. Lifecycle & return pattern */}
+        <Panel title="Lifecycle & return pattern">
+          <Grid2>
+            <div>
+              <FieldLabel>🔴 Status</FieldLabel>
+              <div className="mt-[3px]">
+                <Tag variant={lifecycleVariant(data.status)}>{lifecycleLabel(data.status)}</Tag>
+              </div>
+            </div>
+            <div>
+              <FieldLabel>🔬 Churn signal</FieldLabel>
+              <FieldVal>{data.churn_reason ? CHURN_LABEL[data.churn_reason] : "—"}</FieldVal>
+            </div>
+            <div>
+              <FieldLabel>🔄 Return pattern</FieldLabel>
+              <div className="mt-[3px]">
+                {data.return_period_label
+                  ? <Tag variant="neutral">{RETURN_LABEL[data.return_period_label]}</Tag>
+                  : <span style={{ color: CLR.t3 }}>—</span>}
+              </div>
+            </div>
+            <Fld label="🚚 Delivery pref" value={data.delivery_vs_pickup_preference ? DELIVERY_LABEL[data.delivery_vs_pickup_preference] : "—"} />
+            {data.avg_return_interval_days != null && (
+              <Fld label="↩ Avg return" value={`every ${Math.round(data.avg_return_interval_days)} days`} />
+            )}
+            {data.median_return_interval_days != null && (
+              <Fld label="↩ Median" value={`every ${Math.round(data.median_return_interval_days)} days`} />
+            )}
+          </Grid2>
+          {data.expected_return_window_start && data.expected_return_window_end && (
+            <div style={{ background: CLR.tlb, border: `1px solid ${CLR.tlbd}`, borderRadius: 7 }}
+              className="mt-[9px] px-3 py-[9px]">
+              <FieldLabel>Expected return window</FieldLabel>
+              <div className="text-[13px] font-medium mt-1" style={{ color: CLR.tl }}>
+                {da(data.expected_return_window_start)} – {da(data.expected_return_window_end)}
+              </div>
+            </div>
+          )}
+        </Panel>
+
+        {/* 10. Spend quality */}
+        {hasSpendData && (
+          <div style={{
+            background: CLR.bg2,
+            border: `1px solid ${isDiscountLed ? CLR.rbd : CLR.border}`,
+            borderRadius: 10,
+            overflow: "hidden",
+          }}>
+            <div style={{
+              borderBottom: `1px solid ${isDiscountLed ? CLR.rbd : CLR.border}`,
+              background: isDiscountLed ? CLR.rb : CLR.bg2,
+            }} className="flex items-center gap-2 px-4 py-[11px]">
+              <span className="text-[12.5px] font-medium" style={{ color: isDiscountLed ? CLR.r : CLR.text }}>
+                💰 Spend quality
+              </span>
+              <span className="ml-auto font-mono text-[10px]" style={{ color: CLR.t3 }}>
+                {promoSharePct}% promo · {data.promo_orders} promo orders
+              </span>
+            </div>
+            <div className="p-4">
+              <div className="flex h-[30px] rounded overflow-hidden mb-2">
+                <div style={{ width: `${fullSharePct}%`, background: CLR.g, opacity: 0.82 }}
+                  className="flex items-center justify-center text-white font-mono text-[10px]">
+                  {fullSharePct > 15 && `${fullSharePct}% full`}
+                </div>
+                <div style={{ width: `${promoSharePct}%`, background: CLR.a, opacity: 0.85 }}
+                  className="flex items-center justify-center text-white font-mono text-[10px]">
+                  {promoSharePct > 10 && `${promoSharePct}% promo`}
+                </div>
+              </div>
+              <div className="flex justify-between font-mono text-[10px] mb-[11px]" style={{ color: CLR.t3 }}>
+                <span style={{ color: CLR.g }}>Full price ₾{formatNumber(data.full_price_spend)}</span>
+                <span style={{ color: CLR.a }}>Promo ₾{formatNumber(data.promo_spend)}</span>
+              </div>
+              <div style={{
+                background: isDiscountLed ? CLR.rb : CLR.bg3,
+                borderLeft: `2px solid ${isDiscountLed ? CLR.r : CLR.g}`,
+                borderRadius: 6,
+              color: CLR.t2,
+              }} className="p-[9px_11px] text-[11.5px] leading-[1.5]">
+                {spendInsight}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 11. Next best action */}
+        <Panel title="Next best action">
+          <div className="font-mono text-[8.5px] uppercase tracking-[.09em] mb-[3px]" style={{ color: CLR.t3 }}>
+            Based on churn signal: {data.churn_reason ? CHURN_LABEL[data.churn_reason] : "—"}
+          </div>
+          <div style={{ background: CLR.bg3, borderRadius: 6, borderLeft: `2px solid ${CLR.border2}`, color: CLR.t2 }}
+            className="p-[9px_11px] text-[12px] leading-[1.5]">
+            {nextBestAction(data)}
+          </div>
+        </Panel>
+
+        {/* 12. Recent Orders */}
+        <Panel title="Recent orders" sub={`last ${Math.min(data.recent_orders.length, 6)}`}>
+          {!data.recent_orders.length
+            ? <p className="text-[12px]" style={{ color: CLR.t3 }}>No recent orders.</p>
+            : (
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse text-[12px]">
+                  <thead>
+                    <tr style={{ background: CLR.bg3, borderBottom: `1px solid ${CLR.border}` }}>
+                      {["Order", "Date", "Channel", "Total"].map((h) => (
+                        <th key={h} className={`px-3 py-2 font-mono text-[9px] uppercase tracking-[.07em] text-left font-medium`}
+                          style={{ color: CLR.t3 }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.recent_orders.slice(0, 6).map((o) => (
+                      <tr key={o.shopify_order_id} style={{ borderBottom: `1px solid ${CLR.border}` }}>
+                        <td className="px-3 py-2 font-mono text-[10px]" style={{ color: CLR.t2 }}>#{o.shopify_order_id}</td>
+                        <td className="px-3 py-2" style={{ color: CLR.t2 }}>{da(o.processed_at)}</td>
+                        <td className="px-3 py-2" style={{ color: CLR.t2 }}>{o.source ? SOURCE_LABEL[o.source] ?? o.source : "—"}</td>
+                        <td className="px-3 py-2 text-right font-medium" style={{ color: CLR.text }}>{formatGEL(o.total)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+        </Panel>
+
+        {/* 14. Action button */}
+        <button
+          style={{ background: CLR.text, color: "#fff", border: "none", borderRadius: 8 }}
+          className="w-full py-[10px] text-[12px] font-medium text-center hover:opacity-90 transition-opacity"
+        >
+          {nextBestAction(data)} →
+        </button>
+
       </div>
     </>
   );
 }
 
-// ─── Main page ───────────────────────────────────────────────────────────────
+// ── Main page ─────────────────────────────────────────────────────
 
 type FilterRow1 =
-  | "all"
-  | "no_machine"
-  | "never_ordered"
-  | "promo_heavy"
-  | "recommend"
-  | "loyalist"
-  | "at_risk"
-  | "new_machine"
-  | "active"
-  | "lapsed";
+  | "all" | "no_machine" | "never_ordered" | "promo_heavy" | "recommend"
+  | "loyalist" | "at_risk" | "new_machine" | "active" | "lapsed";
 
 type FilterRow2 = "all" | "email" | "sms" | "any" | "none";
 
 const SORT_OPTIONS = [
-  { value: "last_order_at",         label: "Last order"  },
-  { value: "total_spend",           label: "Total spend" },
-  { value: "order_count",           label: "Orders"      },
+  { value: "last_order_at", label: "Last order" },
+  { value: "total_spend", label: "Total spend" },
+  { value: "order_count", label: "Orders" },
   { value: "days_since_last_order", label: "Days silent" },
-  { value: "health_score",          label: "Health"      },
-  { value: "promo_share",           label: "Promo share" },
-  { value: "aov",                   label: "AOV"         },
+  { value: "health_score", label: "Health" },
+  { value: "promo_share", label: "Promo share" },
+  { value: "aov", label: "AOV" },
 ];
 
 export default function Portfolios() {
-  const { t, i18n } = useTranslation();
-  const ka = i18n.language === "ka";
+  const { t } = useTranslation();
 
-  const [query,    setQuery]    = useState("");
-  const [row1,     setRow1]     = useState<FilterRow1>("all");
-  const [row2,     setRow2]     = useState<FilterRow2>("all");
-  const [region,   setRegion]   = useState("");
-  const [channel,  setChannel]  = useState("");
-  const [sort,     setSort]     = useState("last_order_at");
-  const [descDir,  setDescDir]  = useState(true);
-  const [page,     setPage]     = useState(1);
+  const [query, setQuery]         = useState("");
+  const [row1, setRow1]           = useState<FilterRow1>("all");
+  const [row2, setRow2]           = useState<FilterRow2>("all");
+  const [intensity, setIntensity] = useState<"light" | "medium" | "strong" | "">("");
+  const [region, setRegion]       = useState("");
+  const [channel, setChannel]     = useState("");
+  const [sort, setSort]           = useState("last_order_at");
+  const [descDir, setDescDir]     = useState(true);
+  const [page, setPage]           = useState(1);
 
-  const [items,   setItems]   = useState<PortfolioSummary[]>([]);
-  const [total,   setTotal]   = useState(0);
+  const [items, setItems]   = useState<PortfolioSummary[]>([]);
+  const [total, setTotal]   = useState(0);
   const [loading, setLoading] = useState(true);
-  const [error,   setError]   = useState<string | null>(null);
+  const [error, setError]   = useState<string | null>(null);
   const [fetched, setFetched] = useState(false);
-
   const [drawerId, setDrawerId] = useState<number | null>(null);
 
   const debounce = useRef<ReturnType<typeof setTimeout>>();
-
-  const openDrawer  = useCallback((id: number) => setDrawerId(id),  []);
+  const openDrawer  = useCallback((id: number) => { setDrawerId(id); window.scrollTo({ top: 0, behavior: "smooth" }); }, []);
   const closeDrawer = useCallback(() => setDrawerId(null), []);
 
-  // Reset page on filter change
-  useEffect(() => { setPage(1); }, [query, row1, row2, region, channel, sort, descDir]);
+  useEffect(() => { setPage(1); }, [query, row1, row2, intensity, region, channel, sort, descDir]);
 
   useEffect(() => {
     clearTimeout(debounce.current);
     debounce.current = setTimeout(() => {
-      // Build params from filter state
       const params: ListParams = {
-        q:        query   || undefined,
-        region:   region  || undefined,
-        channel:  channel || undefined,
+        q: query || undefined,
+        region: region || undefined,
+        channel: channel || undefined,
         sort,
-        desc:     descDir,
+        desc: descDir,
         page,
         page_size: 48,
       };
 
-      // Row 1 filters
-      if (row1 === "no_machine")  params.no_machine  = true;
-      if (row1 === "promo_heavy") params.promo_heavy = true;
-      if (row1 === "loyalist")    params.segment     = "loyalist";
-      if (row1 === "at_risk")     params.segment     = "at_risk";
-      if (row1 === "new_machine") params.segment     = "new_machine";
-      if (row1 === "active")      params.segment     = "active";
-      if (row1 === "lapsed")      params.segment     = "lapsed";
-      // "never_ordered" and "recommend" are stubs — no server param, return empty
-      if (row1 === "never_ordered" || row1 === "recommend") {
-        setItems([]);
-        setTotal(0);
-        setFetched(true);
-        setLoading(false);
+      if (row1 === "no_machine")    params.no_machine    = true;
+      if (row1 === "never_ordered") params.never_ordered = true;
+      if (row1 === "promo_heavy")   params.promo_heavy   = true;
+      if (row1 === "loyalist")      params.segment = "loyalist";
+      if (row1 === "at_risk")       params.segment = "at_risk";
+      if (row1 === "new_machine")   params.segment = "new_machine";
+      if (row1 === "active")        params.segment = "active";
+      if (row1 === "lapsed")        params.segment = "lapsed";
+      if (row1 === "recommend") {
+        setItems([]); setTotal(0); setFetched(true); setLoading(false);
         return;
       }
 
-      // Row 2 consent filters
       if (row2 === "email") params.email_consent = true;
       if (row2 === "sms")   params.sms_consent   = true;
       if (row2 === "any")   params.any_consent   = true;
       if (row2 === "none")  { params.email_consent = false; params.sms_consent = false; }
 
+      if (intensity) params.intensity_bucket = intensity;
+
       setLoading(true);
       setError(null);
       fetchPortfolios(params)
-        .then((res) => {
-          setItems(res.items);
-          setTotal(res.total);
-          setFetched(true);
-        })
+        .then((res) => { setItems(res.items); setTotal(res.total); setFetched(true); })
         .catch((err: Error) => setError(err.message))
         .finally(() => setLoading(false));
     }, 280);
-
     return () => clearTimeout(debounce.current);
-  }, [query, row1, row2, region, channel, sort, descDir, page]);
+  }, [query, row1, row2, intensity, region, channel, sort, descDir, page]);
 
   const totalPages = Math.max(1, Math.ceil(total / 48));
 
-  const row1Options: { id: FilterRow1; label: string; labelKa: string; sep?: boolean }[] = [
-    { id: "all",           label: "All",            labelKa: "ყველა"       },
-    { id: "no_machine",    label: "No machine",     labelKa: "მანქ. გარეშე" },
-    { id: "never_ordered", label: "Never ordered",  labelKa: "შეკ. არ ჰქონია" },
-    { id: "promo_heavy",   label: "% Promo-driven", labelKa: "% პრომო"     },
-    { id: "recommend",     label: "✦ Recommend",    labelKa: "✦ სარეკომ."  },
-    { id: "loyalist",      label: "Loyalist",       labelKa: "ლოიალური",  sep: true },
-    { id: "at_risk",       label: "At risk",        labelKa: "რისკი"       },
-    { id: "new_machine",   label: "New machine",    labelKa: "ახ. მანქ."   },
-    { id: "active",        label: "Active",         labelKa: "აქტიური"    },
-    { id: "lapsed",        label: "Lapsed",         labelKa: "გათიშული"   },
+  const row1Opts: { id: FilterRow1; label: string; variant?: Variant; sep?: boolean }[] = [
+    { id: "all",          label: "All" },
+    { id: "no_machine",   label: "No machine" },
+    { id: "never_ordered",label: "Never ordered" },
+    { id: "promo_heavy",  label: "% Promo-driven", variant: "amber" },
+    { id: "recommend",    label: "✦ Recommend",    variant: "purple" },
+    { id: "loyalist",     label: "Loyalist",       variant: "green",  sep: true },
+    { id: "at_risk",      label: "At risk",        variant: "red" },
+    { id: "new_machine",  label: "New machine",    variant: "amber" },
+    { id: "active",       label: "Active",         variant: "green" },
+    { id: "lapsed",       label: "Lapsed",         variant: "neutral" },
   ];
 
-  const row2Options: { id: FilterRow2; label: string; labelKa: string }[] = [
-    { id: "all",   label: "All",           labelKa: "ყველა"        },
-    { id: "email", label: "📧 Email opt-in", labelKa: "📧 Email"   },
-    { id: "sms",   label: "💬 SMS opt-in",   labelKa: "💬 SMS"     },
-    { id: "any",   label: "Any channel",   labelKa: "ნებისმიერი"  },
-    { id: "none",  label: "No consent",    labelKa: "თანხმობა არ. " },
+  const row2Opts: { id: FilterRow2; label: string }[] = [
+    { id: "all",   label: "All" },
+    { id: "email", label: "✉ Email opt-in" },
+    { id: "sms",   label: "💬 SMS opt-in" },
+    { id: "any",   label: "Any channel" },
+    { id: "none",  label: "No consent" },
   ];
 
-  const isComingSoon = row1 === "never_ordered" || row1 === "recommend";
+  const isComingSoon = row1 === "recommend";
+
+  function FilterPill({ label, active, variant, onClick }: {
+    label: string; active: boolean; variant?: Variant; onClick: () => void;
+  }) {
+    const t = variant ? TAG_TOKEN[variant] : TAG_TOKEN.neutral;
+    return (
+      <button
+        onClick={onClick}
+        style={active
+          ? { background: t.bg, color: t.color, borderColor: t.border }
+          : { background: CLR.bg2 + "8c", color: CLR.t2, borderColor: CLR.border }}
+        className="inline-flex items-center border px-2 py-1 rounded-md font-mono text-[10px] transition-all"
+      >
+        {label}
+      </button>
+    );
+  }
 
   return (
     <div>
@@ -797,114 +1168,106 @@ export default function Portfolios() {
         subtitle={t("pages.portfolios.subtitle")}
       />
 
-      {/* Search + secondary filters */}
-      <div className="mb-4 flex flex-wrap items-center gap-2.5">
+      <p className="mb-4 text-[12px] leading-[1.5]" style={{ color: CLR.t2 }}>
+        One card per customer. Scan commercial value, reorder timing, machine context, product DNA, and the primary risk signal.
+        Open any card for the full Customer 360.
+      </p>
+
+      {/* Search + sort toolbar */}
+      <div style={{ background: CLR.bg2, border: `1px solid ${CLR.border}`, borderRadius: 10 }}
+        className="mb-3 flex flex-wrap items-center gap-2 p-2.5">
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder={`${t("common.search")} (name / email / phone)…`}
-          className="w-full max-w-xs rounded-full border border-meama-gold/40 bg-white/10 px-4 py-1.5 text-sm text-meama-cream outline-none transition-colors placeholder:text-meama-cream/40 focus:border-meama-gold"
+          placeholder="Search (name / email / phone)…"
+          style={{ background: CLR.bg3, border: `1px solid ${CLR.border}`, color: CLR.text }}
+          className="h-8 w-full max-w-[200px] rounded-md px-[10px] text-[12px] outline-none placeholder:text-[#9e9b96] focus:border-[#d4d3d0]"
         />
-
-        <select
-          value={region}
-          onChange={(e) => setRegion(e.target.value)}
-          className="rounded-full border border-meama-gold/40 bg-meama-espresso/60 px-3 py-1.5 text-xs font-semibold text-meama-cream/80 outline-none focus:border-meama-gold"
-          aria-label={ka ? "რეგიონი" : "Region"}
-        >
-          <option value="">{ka ? "რეგიონი" : "Region"}</option>
-          <option value="tbilisi">{ka ? "თბილისი" : "Tbilisi"}</option>
-          <option value="regions">{ka ? "რეგიონები" : "Regions"}</option>
+        <select value={region} onChange={(e) => setRegion(e.target.value)}
+          style={{ background: CLR.bg3, border: `1px solid ${CLR.border}`, color: CLR.t2 }}
+          className="h-8 rounded-md px-2 font-mono text-[11px] outline-none">
+          <option value="">Region</option>
+          <option value="tbilisi">Tbilisi</option>
+          <option value="regions">Regions</option>
         </select>
-
-        <select
-          value={channel}
-          onChange={(e) => setChannel(e.target.value)}
-          className="rounded-full border border-meama-gold/40 bg-meama-espresso/60 px-3 py-1.5 text-xs font-semibold text-meama-cream/80 outline-none focus:border-meama-gold"
-          aria-label={ka ? "არხი" : "Channel"}
-        >
-          <option value="">{ka ? "არხი" : "Channel"}</option>
+        <select value={channel} onChange={(e) => setChannel(e.target.value)}
+          style={{ background: CLR.bg3, border: `1px solid ${CLR.border}`, color: CLR.t2 }}
+          className="h-8 rounded-md px-2 font-mono text-[11px] outline-none">
+          <option value="">Channel</option>
           <option value="online">Online</option>
-          <option value="in_store">In Store</option>
+          <option value="in_store">Brand store</option>
           <option value="app">App</option>
           <option value="mixed">Mixed</option>
         </select>
-
-        <select
-          value={sort}
-          onChange={(e) => setSort(e.target.value)}
-          className="rounded-full border border-meama-gold/40 bg-meama-espresso/60 px-3 py-1.5 text-xs font-semibold text-meama-cream/80 outline-none focus:border-meama-gold"
-          aria-label={ka ? "სორტირება" : "Sort by"}
-        >
-          {SORT_OPTIONS.map((o) => (
-            <option key={o.value} value={o.value}>{o.label}</option>
-          ))}
+        <select value={sort} onChange={(e) => setSort(e.target.value)}
+          style={{ background: CLR.bg3, border: `1px solid ${CLR.border}`, color: CLR.t2 }}
+          className="h-8 rounded-md px-2 font-mono text-[11px] outline-none">
+          {SORT_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
-
-        <button
-          onClick={() => setDescDir((d) => !d)}
-          className="rounded-full border border-meama-gold/40 px-3 py-1.5 text-xs font-semibold text-meama-cream/80 transition-colors hover:border-meama-gold"
-          aria-label="toggle sort direction"
-        >
-          {descDir ? "↓" : "↑"}
+        <button onClick={() => setDescDir((d) => !d)}
+          style={{ background: CLR.bg3, border: `1px solid ${CLR.border}`, color: CLR.t2 }}
+          className="h-8 rounded-md px-2 font-mono text-[11px] hover:bg-white">
+          {descDir ? "↓ Desc" : "↑ Asc"}
         </button>
-
         {fetched && (
-          <span className="ml-auto tabular text-[11px] text-meama-muted">
-            {formatNumber(total)} {ka ? "მომხმარებელი" : "customers"}
+          <span className="ml-auto font-mono text-[10px]" style={{ color: CLR.t3 }}>
+            {formatNumber(total)} customers
           </span>
         )}
       </div>
 
       {/* Filter row 1 */}
-      <div className="mb-3 flex flex-wrap items-center gap-1.5">
-        {row1Options.map((o) => (
+      <div style={{ background: CLR.bg2 + "99", border: `1px solid ${CLR.border}`, borderRadius: 10 }}
+        className="mb-3 flex flex-wrap items-center gap-1.5 p-2.5">
+        <span className="mr-1 font-mono text-[10px] uppercase tracking-[.07em]" style={{ color: CLR.t3 }}>Filter</span>
+        {row1Opts.map((o) => (
           <span key={o.id} className="flex items-center gap-1.5">
-            {o.sep && <PillFilter active={false} onClick={() => {}} separator />}
-            <PillFilter active={row1 === o.id} onClick={() => setRow1(o.id)}>
-              {ka ? o.labelKa : o.label}
-            </PillFilter>
+            {o.sep && <span style={{ color: CLR.border2 }} className="mx-1">|</span>}
+            <FilterPill label={o.label} active={row1 === o.id} variant={o.variant} onClick={() => setRow1(o.id)} />
           </span>
         ))}
       </div>
 
-      {/* Filter row 2 — reachable */}
-      <div className="mb-6 flex flex-wrap items-center gap-1.5">
-        <span className="text-[10px] uppercase tracking-wider text-meama-muted mr-1">
-          {ka ? "მისაწვდომი:" : "Reachable:"}
-        </span>
-        {row2Options.map((o) => (
-          <PillFilter key={o.id} active={row2 === o.id} onClick={() => setRow2(o.id)}>
-            {ka ? o.labelKa : o.label}
-          </PillFilter>
+      {/* Filter row 2 — Reachable */}
+      <div style={{ background: CLR.bg2 + "99", border: `1px solid ${CLR.border}`, borderRadius: 10 }}
+        className="mb-3 flex flex-wrap items-center gap-1.5 p-2.5">
+        <span className="mr-1 font-mono text-[10px] uppercase tracking-[.07em]" style={{ color: CLR.t3 }}>Reachable</span>
+        {row2Opts.map((o) => (
+          <FilterPill key={o.id} label={o.label} active={row2 === o.id} onClick={() => setRow2(o.id)} />
         ))}
+      </div>
+
+      {/* Filter row 3 — Intensity */}
+      <div style={{ background: CLR.bg2 + "99", border: `1px solid ${CLR.border}`, borderRadius: 10 }}
+        className="mb-6 flex flex-wrap items-center gap-1.5 p-2.5">
+        <span className="mr-1 font-mono text-[10px] uppercase tracking-[.07em]" style={{ color: CLR.t3 }}>Intensity</span>
+        <FilterPill label="☕ All"    active={intensity === ""}       onClick={() => setIntensity("")} />
+        <FilterPill label="🌿 Light"  active={intensity === "light"}  variant="blue"   onClick={() => setIntensity("light")} />
+        <FilterPill label="☕ Medium" active={intensity === "medium"} variant="amber"  onClick={() => setIntensity("medium")} />
+        <FilterPill label="🔥 Strong" active={intensity === "strong"} variant="red"    onClick={() => setIntensity("strong")} />
       </div>
 
       {/* Error */}
       {error && (
-        <div className="mb-5 rounded-xl border border-meama-red/30 bg-meama-red/10 px-5 py-4 text-sm text-meama-red">
-          {ka ? "შეცდომა — " : "Error — "}{error}
-          <span className="ml-2 text-meama-muted">
-            {ka ? "(backend გაშვებულია?)" : "(is the backend running?)"}
-          </span>
+        <div style={{ background: CLR.rb, border: `1px solid ${CLR.rbd}`, borderRadius: 10, color: CLR.r }}
+          className="mb-5 px-4 py-3 text-[13px]">
+          Error: {error}
         </div>
       )}
 
-      {/* Coming-soon stub */}
-      {isComingSoon && fetched && (
-        <div className="mt-12 text-center space-y-2">
-          <p className="text-3xl">🔮</p>
-          <p className="text-sm font-semibold text-meama-muted">
-            {ka ? "მალე გამოჩნდება" : "Coming soon"}
-          </p>
+      {/* Coming soon placeholder */}
+      {isComingSoon && (
+        <div style={{ background: CLR.bg2, border: `1px solid ${CLR.border}`, borderRadius: 10, color: CLR.t3 }}
+          className="mt-12 p-8 text-center text-[13px]">
+          This view needs a dedicated endpoint before it can show real data.
         </div>
       )}
 
-      {/* Skeleton on initial load */}
+      {/* Loading skeletons */}
       {loading && !fetched && (
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {Array.from({ length: 9 }).map((_, i) => (
-            <Skeleton key={i} className="h-80 rounded-2xl" />
+            <Skeleton key={i} className="h-[420px] rounded-2xl" />
           ))}
         </div>
       )}
@@ -912,45 +1275,36 @@ export default function Portfolios() {
       {/* Grid */}
       {fetched && !isComingSoon && (
         <>
-          <div className="stagger grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {items.map((c) => (
-              <CustomerCard key={c.shopify_customer_id} c={c} ka={ka} onOpen={openDrawer} />
+              <CustomerCard key={c.shopify_customer_id} customer={c} onOpen={openDrawer} />
             ))}
           </div>
 
-          {items.length === 0 && !loading && (
-            <p className="mt-10 text-center text-sm text-meama-muted">
-              {ka ? "მომხმარებლები ვერ მოიძებნა" : "No customers found"}
-            </p>
+          {!items.length && !loading && (
+            <div style={{ background: CLR.bg2, border: `1px solid ${CLR.border}`, borderRadius: 10, color: CLR.t3 }}
+              className="mt-10 p-8 text-center text-[13px]">No customers match this filter.</div>
           )}
 
-          {/* Pagination */}
           {totalPages > 1 && (
             <div className="mt-8 flex items-center justify-center gap-3">
-              <button
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page === 1}
-                className="rounded-full border border-meama-gold/40 px-4 py-1.5 text-xs font-semibold text-meama-cream/80 disabled:opacity-30 hover:border-meama-gold"
-              >
-                ← {ka ? "წინა" : "Prev"}
+              <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}
+                style={{ background: CLR.bg2 + "b3", border: `1px solid ${CLR.border}`, color: CLR.t2 }}
+                className="rounded-lg px-3 py-1.5 font-mono text-[10px] disabled:opacity-40 hover:bg-white">
+                Prev
               </button>
-              <span className="tabular text-xs text-meama-muted">
-                {page} / {totalPages}
-              </span>
-              <button
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                disabled={page === totalPages}
-                className="rounded-full border border-meama-gold/40 px-4 py-1.5 text-xs font-semibold text-meama-cream/80 disabled:opacity-30 hover:border-meama-gold"
-              >
-                {ka ? "შემდეგი" : "Next"} →
+              <span className="font-mono text-[10px]" style={{ color: CLR.t3 }}>{page} / {totalPages}</span>
+              <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages}
+                style={{ background: CLR.bg2 + "b3", border: `1px solid ${CLR.border}`, color: CLR.t2 }}
+                className="rounded-lg px-3 py-1.5 font-mono text-[10px] disabled:opacity-40 hover:bg-white">
+                Next
               </button>
             </div>
           )}
         </>
       )}
 
-      {/* Drawer */}
-      <Drawer customerId={drawerId} ka={ka} onClose={closeDrawer} />
+      <CustomerDrawer customerId={drawerId} onClose={closeDrawer} />
     </div>
   );
 }

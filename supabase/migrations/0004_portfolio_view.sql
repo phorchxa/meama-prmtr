@@ -61,6 +61,7 @@ cust_agg AS (
     SELECT
         customer_id,
         COUNT(*)::int                                                              AS order_count,
+        COUNT(*) FILTER (WHERE total > 0)::int                                     AS paid_order_count,
         COALESCE(SUM(total) FILTER (WHERE total > 0), 0)                          AS total_spend,
         COUNT(*) FILTER (WHERE discount_amount > 0 OR (discount_code IS NOT NULL AND discount_code <> ''))::int
                                                                                    AS promo_orders,
@@ -427,7 +428,7 @@ fulfillment_counts AS (
         COUNT(*)::numeric AS fulfillment_order_count,
         SUM(
             CASE
-                WHEN shipping_method IS NOT NULL AND TRIM(shipping_method) <> '' THEN 1
+                WHEN source = 'web' THEN 1
                 ELSE 0
             END
         )::numeric AS delivery_orders,
@@ -459,10 +460,125 @@ rfm_scores AS (
             WHEN ca.order_count >= 2  THEN 8
             ELSE 0
         END AS frequency_score,
-        ROUND(
-            (1.0 - LEAST(1.0, CASE WHEN ca.total_spend > 0 THEN ca.promo_spend / ca.total_spend ELSE 0 END)) * 25
-        )::int AS monetary_score
+        CASE
+            WHEN ca.total_spend >= 1500 THEN 25
+            WHEN ca.total_spend >= 700  THEN 20
+            WHEN ca.total_spend >= 300  THEN 15
+            WHEN ca.total_spend >= 100  THEN 10
+            ELSE                             5
+        END                                                                        AS monetary_score
     FROM cust_agg ca
+),
+
+-- 13. Bible 3-tier direct join on raw order_items
+--     Tier 1: exact sku = "Fina Code"
+--     Tier 2: cap37-XX  → cap37-10XX   (e.g. cap37-09 → cap37-1009)
+--     Tier 3: cap51-XX  → cap51-12XX   (e.g. cap51-11 → cap51-1211)
+--     Vending/free title variants excluded to avoid noise.
+bible_items AS (
+    SELECT
+        ro.customer_id,
+        oi.sku,
+        oi.quantity,
+        COALESCE(b1."Intensity level", b2."Intensity level", b3."Intensity level")   AS intensity,
+        COALESCE(b1."Flavor Profile",  b2."Flavor Profile",  b3."Flavor Profile")    AS flavor_profile_text,
+        COALESCE(b1."Beverage Type",   b2."Beverage Type",   b3."Beverage Type")     AS beverage_type,
+        COALESCE(b1."Fina Code",       b2."Fina Code",       b3."Fina Code")         AS matched_fina_code
+    FROM retail_orders ro
+    JOIN meama_georgia_order_items oi
+        ON oi.shopify_order_id = ro.shopify_order_id
+    LEFT JOIN "Meama Products Bible" b1
+        ON oi.sku = b1."Fina Code"
+    LEFT JOIN "Meama Products Bible" b2
+        ON  b1."Fina Code" IS NULL
+        AND oi.sku ~ '^cap37-[0-9]{1,2}$'
+        AND REPLACE(oi.sku, 'cap37-', 'cap37-10') = b2."Fina Code"
+    LEFT JOIN "Meama Products Bible" b3
+        ON  b1."Fina Code" IS NULL
+        AND b2."Fina Code" IS NULL
+        AND oi.sku ~ '^cap51-[0-9]{1,2}$'
+        AND REPLACE(oi.sku, 'cap51-', 'cap51-12') = b3."Fina Code"
+    WHERE ro.customer_id IS NOT NULL
+      AND oi.sku IS NOT NULL
+      AND oi.sku <> ''
+      AND oi.title NOT ILIKE '% - Vending%'
+      AND oi.title NOT ILIKE '% - Free%'
+      AND COALESCE(oi.quantity, 0) > 0
+),
+
+-- 14. Weighted intensity average + Bible match rate, from 3-tier join
+bible_intensity_cte AS (
+    SELECT
+        customer_id,
+        ROUND(
+            (SUM(quantity * intensity)
+             / NULLIF(SUM(CASE WHEN intensity IS NOT NULL THEN quantity ELSE 0 END), 0)
+            )::numeric,
+            2
+        )                                                                             AS favorite_intensity,
+        ROUND(
+            (COUNT(matched_fina_code)::numeric
+             / NULLIF(COUNT(*)::numeric, 0)
+            ),
+            4
+        )                                                                             AS bible_match_rate
+    FROM bible_items
+    GROUP BY customer_id
+),
+
+-- 15. Top 3 flavors from Bible "Flavor Profile" text (comma-split, quantity-weighted)
+bible_flavor_tokens AS (
+    SELECT
+        bi.customer_id,
+        LOWER(TRIM(token))  AS token,
+        bi.quantity
+    FROM bible_items bi
+    CROSS JOIN LATERAL regexp_split_to_table(
+        COALESCE(bi.flavor_profile_text, ''), '\s*,\s*'
+    ) AS t(token)
+    WHERE bi.flavor_profile_text IS NOT NULL
+      AND TRIM(token) <> ''
+),
+
+bible_flavor_counts AS (
+    SELECT customer_id, token, SUM(quantity) AS qty
+    FROM bible_flavor_tokens
+    GROUP BY customer_id, token
+),
+
+bible_top_flavors_cte AS (
+    SELECT customer_id,
+           ARRAY_AGG(token ORDER BY qty DESC, token) AS top_flavors
+    FROM (
+        SELECT customer_id, token, qty,
+               ROW_NUMBER() OVER (PARTITION BY customer_id ORDER BY qty DESC, token) AS rn
+        FROM bible_flavor_counts
+    ) ranked
+    WHERE rn <= 3
+    GROUP BY customer_id
+),
+
+-- 16. Primary beverage type (most qty) → normalised English label
+bible_bev_qty AS (
+    SELECT customer_id, beverage_type, SUM(quantity) AS qty
+    FROM bible_items
+    WHERE beverage_type IS NOT NULL AND TRIM(beverage_type) <> ''
+    GROUP BY customer_id, beverage_type
+),
+
+bible_bev_type AS (
+    SELECT DISTINCT ON (customer_id)
+        customer_id,
+        CASE beverage_type
+            WHEN 'ესპრესო & ლუნგო' THEN 'espresso'
+            WHEN 'ფილტრის ყავა'    THEN 'filter_coffee'
+            WHEN 'ჩაი & ნაყენი'    THEN 'tea'
+            WHEN 'მიქსოლოგია'      THEN 'cold_mix'
+            WHEN 'საკვები დანამატი' THEN 'wellness'
+            ELSE                        'other'
+        END                             AS beverage_type_preference
+    FROM bible_bev_qty
+    ORDER BY customer_id, qty DESC
 )
 
 SELECT
@@ -499,11 +615,11 @@ SELECT
         ELSE 'unknown'
     END                                                                              AS region,
 
-    ca.order_count,
-    ca.total_spend,
+    COALESCE(ca.order_count, 0)                                                      AS order_count,
+    COALESCE(ca.total_spend, 0)                                                      AS total_spend,
     CASE
-        WHEN ca.order_count > 0
-        THEN ROUND((ca.total_spend / ca.order_count)::numeric, 2)
+        WHEN ca.paid_order_count > 0
+        THEN ROUND((ca.total_spend / ca.paid_order_count)::numeric, 2)
         ELSE 0
     END                                                                              AS aov,
     ca.first_order_at,
@@ -513,10 +629,11 @@ SELECT
     EXTRACT(DAY FROM NOW() - COALESCE(c.created_at, ca.first_order_at))::int        AS tenure_days,
     FLOOR(EXTRACT(DAY FROM NOW() - COALESCE(c.created_at, ca.first_order_at)) / 30)::int
                                                                                    AS tenure_months,
-    ca.active_months,
+    COALESCE(ca.active_months, 0)                                                    AS active_months,
 
     -- Status (legacy field kept for compatibility)
     CASE
+        WHEN ca.order_count IS NULL                            THEN 'prospect'
         WHEN ca.order_count = 1                                THEN 'new'
         WHEN EXTRACT(DAY FROM NOW() - ca.last_order_at) < 45  THEN 'active'
         WHEN EXTRACT(DAY FROM NOW() - ca.last_order_at) < 90  THEN 'at_risk'
@@ -525,6 +642,8 @@ SELECT
 
     -- Segment (richer classification)
     CASE
+        WHEN ca.order_count IS NULL
+             THEN 'prospect'
         WHEN (cm.customer_id IS NOT NULL) AND ca.order_count = 1
              THEN 'new_machine'
         WHEN ca.order_count >= 8
@@ -541,12 +660,12 @@ SELECT
     -- Recency 40pts: 0 / 10 / 20 / 30 / 40 at >90 / 60-89 / 45-59 / 20-44 / <20 days
     -- Frequency 35pts: 0 / 8 / 18 / 28 / 35 at 1 / 2-3 / 4-7 / 8-14 / 15+ orders
     -- Spend quality 25pts: (1 - min(1, promo_share)) * 25
-    (rs.recency_score + rs.frequency_score + rs.monetary_score)                     AS health_score,
+    COALESCE(rs.recency_score + rs.frequency_score + rs.monetary_score, 0)           AS health_score,
     rs.recency_score,
     rs.frequency_score,
     rs.monetary_score,
     CASE
-        WHEN ca.order_count <= 1 THEN 'New / Low history'
+        WHEN ca.order_count IS NULL OR ca.order_count <= 1 THEN 'New / Low history'
         WHEN rs.recency_score >= 30 AND rs.frequency_score >= 28 AND rs.monetary_score >= 20
              THEN 'Champions'
         WHEN rs.recency_score >= 30 AND rs.frequency_score >= 18
@@ -577,7 +696,7 @@ SELECT
         ELSE 'unknown'
     END                                                                              AS machine_to_capsule_conversion_status,
 
-    ca.channel,
+    COALESCE(ca.channel, 'none')                                                     AS channel,
     tc.top_product_types,
     ti.top_item_title,
     CASE
@@ -594,10 +713,16 @@ SELECT
         WHEN ca.order_count < 2 THEN NULL
         ELSE ca.last_order_at + ((ca.last_order_at - ca.first_order_at) / NULLIF(ca.order_count - 1, 0))
     END                                                                              AS expected_next_order_date,
-    tf.top_flavors,
+    btf.top_flavors,
     tfo.format_preferences,
     (COALESCE(cap.capsule_quantity, 0) = 0)                                          AS never_bought_capsules_flag,
-    ip.favorite_intensity,
+    bi_int.favorite_intensity,
+    CASE
+        WHEN bi_int.favorite_intensity < 4  THEN 'light'
+        WHEN bi_int.favorite_intensity < 7  THEN 'medium'
+        WHEN bi_int.favorite_intensity >= 7 THEN 'strong'
+        ELSE NULL
+    END                                                                              AS intensity_bucket,
     cap.avg_capsule_price,
     CASE cpr.price_bucket
         WHEN 1 THEN 'budget'
@@ -634,6 +759,8 @@ SELECT
              + ((COALESCE(rm.median_return_interval_days, rm.avg_return_interval_days) * 1.25)::double precision * INTERVAL '1 day')
     END                                                                              AS expected_return_window_end,
     CASE
+        WHEN ca.order_count IS NULL
+             THEN 'never_ordered'
         WHEN ca.order_count < 2
              THEN 'new_customer'
         WHEN EXTRACT(DAY FROM NOW() - ca.last_order_at) >= 90
@@ -648,7 +775,7 @@ SELECT
              THEN 'single_category_dependency'
         WHEN EXTRACT(DAY FROM NOW() - ca.last_order_at) < 45
              THEN 'healthy_active'
-        ELSE 'unknown'
+        ELSE 'healthy_active'
     END                                                                              AS churn_reason,
     CASE
         WHEN cm.customer_id IS NOT NULL OR COALESCE(c.machine_registered, false) = true THEN NULL
@@ -667,9 +794,9 @@ SELECT
     END                                                                              AS delivery_vs_pickup_preference,
 
     -- Promo metrics
-    ca.promo_orders,
-    ca.promo_spend,
-    ca.full_price_spend,
+    COALESCE(ca.promo_orders, 0)                                                     AS promo_orders,
+    COALESCE(ca.promo_spend, 0)                                                      AS promo_spend,
+    COALESCE(ca.full_price_spend, 0)                                                 AS full_price_spend,
     CASE
         WHEN ca.order_count > 0
         THEN ROUND((ca.promo_orders::numeric / ca.order_count), 4)
@@ -691,11 +818,15 @@ SELECT
         ELSE NULL
     END                                                                              AS brand_store_share,
 
+    bbt.beverage_type_preference,
+    ROUND(bi_int.bible_match_rate::numeric, 4)                                       AS bible_match_rate,
+
+    (ca.order_count IS NULL OR ca.order_count = 0)                                   AS never_ordered,
     (c.created_at IS NOT NULL)                                                       AS is_registered,
     c.created_at                                                                     AS customer_created_at
 
 FROM customers_georgia c
-INNER JOIN cust_agg ca          ON ca.customer_id   = c.shopify_customer_id
+LEFT  JOIN cust_agg ca          ON ca.customer_id   = c.shopify_customer_id
 LEFT  JOIN latest_city lc       ON lc.customer_id   = c.shopify_customer_id
 LEFT  JOIN customer_machine cm  ON cm.customer_id   = c.shopify_customer_id
 LEFT  JOIN machine_first mf     ON mf.customer_id   = c.shopify_customer_id
@@ -715,7 +846,12 @@ LEFT  JOIN machine_recommendation_signals mrs
                                 ON mrs.customer_id  = c.shopify_customer_id
 LEFT  JOIN fulfillment_counts fc
                                 ON fc.customer_id   = c.shopify_customer_id
-LEFT  JOIN rfm_scores rs        ON rs.customer_id   = c.shopify_customer_id;
+LEFT  JOIN rfm_scores rs        ON rs.customer_id   = c.shopify_customer_id
+LEFT  JOIN bible_intensity_cte bi_int
+                                ON bi_int.customer_id = c.shopify_customer_id
+LEFT  JOIN bible_top_flavors_cte btf
+                                ON btf.customer_id  = c.shopify_customer_id
+LEFT  JOIN bible_bev_type bbt   ON bbt.customer_id  = c.shopify_customer_id;
 
 -- ---- Indexes ----
 CREATE UNIQUE INDEX portfolio_customers_pk
