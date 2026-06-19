@@ -2,14 +2,12 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { NavLink, Navigate, Route, Routes, useLocation } from "react-router-dom";
 
-import { isSupabaseConfigured, supabase } from "./lib/supabase";
 import Actions from "./pages/Actions";
 import Alerts from "./pages/Alerts";
 import CommandCenter from "./pages/CommandCenter";
 import CustomerDetail from "./pages/CustomerDetail";
 import Customers from "./pages/Customers";
 import Campaigns from "./pages/Campaigns";
-import Login from "./pages/Login";
 import MoneyHunter from "./pages/MoneyHunter";
 import PortfolioDetail from "./pages/PortfolioDetail";
 import Portfolios from "./pages/Portfolios";
@@ -192,65 +190,28 @@ function Layout({ children }: { children: ReactNode }) {
   );
 }
 
-/* ── Auth guard ────────────────────────────────────────────────────── */
-function ProtectedRoute({ children }: { children: ReactNode }) {
-  const location = useLocation();
-  const [authed, setAuthed] = useState<boolean | null>(null);
-
-  useEffect(() => {
-    let active = true;
-    if (!isSupabaseConfigured) {
-      setAuthed(true);
-      return;
-    }
-    supabase.auth.getSession().then(({ data }) => {
-      if (active) setAuthed(Boolean(data.session));
-    });
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
-      if (active) setAuthed(Boolean(session));
-    });
-    return () => {
-      active = false;
-      sub.subscription.unsubscribe();
-    };
-  }, []);
-
-  if (authed === null) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-meama-espresso">
-        <div className="pulse-live h-2 w-2 rounded-full bg-meama-brown" />
-      </div>
-    );
-  }
-  if (!authed) {
-    return <Navigate to="/login" replace state={{ from: location }} />;
-  }
-  return <Layout>{children}</Layout>;
-}
-
 /* ── Root ────────────────────────────────────────────────────────── */
 export default function App() {
   return (
     <>
       <CursorFollower />
       <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="/" element={<ProtectedRoute><CommandCenter /></ProtectedRoute>} />
-        <Route path="/money-hunter" element={<ProtectedRoute><MoneyHunter /></ProtectedRoute>} />
+        <Route path="/" element={<Layout><CommandCenter /></Layout>} />
+        <Route path="/money-hunter" element={<Layout><MoneyHunter /></Layout>} />
         <Route path="/ads" element={<Navigate to="/campaigns" replace />} />
         <Route path="/discount-engine" element={<Navigate to="/campaigns" replace />} />
-        <Route path="/campaigns" element={<ProtectedRoute><Campaigns /></ProtectedRoute>} />
-        <Route path="/actions" element={<ProtectedRoute><Actions /></ProtectedRoute>} />
-        <Route path="/products" element={<ProtectedRoute><Products /></ProtectedRoute>} />
-        <Route path="/products/:sku" element={<ProtectedRoute><ProductDetail /></ProtectedRoute>} />
-        <Route path="/customers" element={<ProtectedRoute><Customers /></ProtectedRoute>} />
-        <Route path="/customers/:id" element={<ProtectedRoute><CustomerDetail /></ProtectedRoute>} />
-        <Route path="/portfolios" element={<ProtectedRoute><Portfolios /></ProtectedRoute>} />
-        <Route path="/sessions" element={<ProtectedRoute><Sessions /></ProtectedRoute>} />
-        <Route path="/portfolios/:id" element={<ProtectedRoute><PortfolioDetail /></ProtectedRoute>} />
-        <Route path="/stock" element={<ProtectedRoute><Stock /></ProtectedRoute>} />
-        <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
-        <Route path="/alerts" element={<ProtectedRoute><Alerts /></ProtectedRoute>} />
+        <Route path="/campaigns" element={<Layout><Campaigns /></Layout>} />
+        <Route path="/actions" element={<Layout><Actions /></Layout>} />
+        <Route path="/products" element={<Layout><Products /></Layout>} />
+        <Route path="/products/:sku" element={<Layout><ProductDetail /></Layout>} />
+        <Route path="/customers" element={<Layout><Customers /></Layout>} />
+        <Route path="/customers/:id" element={<Layout><CustomerDetail /></Layout>} />
+        <Route path="/portfolios" element={<Layout><Portfolios /></Layout>} />
+        <Route path="/sessions" element={<Layout><Sessions /></Layout>} />
+        <Route path="/portfolios/:id" element={<Layout><PortfolioDetail /></Layout>} />
+        <Route path="/stock" element={<Layout><Stock /></Layout>} />
+        <Route path="/reports" element={<Layout><Reports /></Layout>} />
+        <Route path="/alerts" element={<Layout><Alerts /></Layout>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </>
