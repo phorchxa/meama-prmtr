@@ -15,11 +15,11 @@ help:
 	@echo "  seed          print instructions to apply dev seed migration"
 
 install:
-	cd backend && python -m pip install -e ".[dev]"
+	cd backend && python3 -m pip install -e ".[dev]"
 	cd frontend && npm install
 
 dev-backend:
-	cd backend && uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+	cd backend && python3 -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
 dev-frontend:
 	cd frontend && npm run dev
@@ -34,7 +34,7 @@ test:
 	cd backend && pytest -q
 
 etl:
-	python pipeline/run_etl.py
+	python3 pipeline/run_etl.py
 
 seed:
 	@echo "Apply migrations in order via Supabase SQL editor or supabase CLI:"

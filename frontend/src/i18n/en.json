@@ -3,8 +3,7 @@
   "nav": {
     "command": "Command Center",
     "moneyHunter": "Money Hunter",
-    "ads": "Ad Intelligence",
-    "discount": "Discount Engine",
+    "campaigns": "Promotions",
     "actions": "Action Queue",
     "products": "Product Analytics",
     "customers": "Customer Analytics",
@@ -32,6 +31,7 @@
     "command": { "title": "Command Center", "subtitle": "Full business health. One screen. E-commerce + brand stores only." },
     "moneyHunter": { "title": "Money Hunter", "subtitle": "Ranked revenue opportunities sitting in the customer base right now." },
     "ads": { "title": "Ad Intelligence", "subtitle": "Meta campaigns — spend and ROAS in USD, never mixed with GEL." },
+    "campaigns": { "title": "Campaign Intelligence", "subtitle": "Every promotion — revenue, Meta spend and ROAS in one place." },
     "discount": { "title": "Discount Engine", "subtitle": "Margin-guarded promo calculator. 40% floor, 25% cap — enforced, not suggested." },
     "actions": { "title": "Action Queue", "subtitle": "AI-ranked daily task list for the commercial team." },
     "products": { "title": "Product Analytics", "subtitle": "Revenue, margin, retention — per category and per SKU." },

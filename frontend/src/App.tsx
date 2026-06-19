@@ -4,12 +4,11 @@ import { NavLink, Navigate, Route, Routes, useLocation } from "react-router-dom"
 
 import { isSupabaseConfigured, supabase } from "./lib/supabase";
 import Actions from "./pages/Actions";
-import Ads from "./pages/Ads";
 import Alerts from "./pages/Alerts";
 import CommandCenter from "./pages/CommandCenter";
 import CustomerDetail from "./pages/CustomerDetail";
 import Customers from "./pages/Customers";
-import DiscountEngine from "./pages/DiscountEngine";
+import Campaigns from "./pages/Campaigns";
 import Login from "./pages/Login";
 import MoneyHunter from "./pages/MoneyHunter";
 import PortfolioDetail from "./pages/PortfolioDetail";
@@ -22,8 +21,7 @@ import Stock from "./pages/Stock";
 const NAV_ITEMS = [
   { to: "/", key: "command", end: true },
   { to: "/money-hunter", key: "moneyHunter" },
-  { to: "/ads", key: "ads" },
-  { to: "/discount-engine", key: "discount" },
+  { to: "/campaigns", key: "campaigns" },
   { to: "/actions", key: "actions" },
   { to: "/products", key: "products" },
   { to: "/customers", key: "customers" },
@@ -32,19 +30,6 @@ const NAV_ITEMS = [
   { to: "/reports", key: "reports" },
   { to: "/alerts", key: "alerts" },
 ] as const;
-
-const TICKER_ITEMS = [
-  "MEAMA GEORGIA",
-  "RETAIL INTELLIGENCE PLATFORM",
-  "E-COMMERCE + BRAND STORES",
-  "AI-POWERED ANALYTICS",
-  "PRODUCT INTELLIGENCE",
-  "CUSTOMER 360",
-  "REVENUE · MARGIN · RETENTION",
-  "POWERED BY CLAUDE",
-  "NIGHTLY ETL SYNC",
-  "INVITE ONLY",
-];
 
 /* ── Custom cursor — plain 8px dot, no trailing ring ──────────── */
 function CursorFollower() {
@@ -59,29 +44,6 @@ function CursorFollower() {
   }, []);
 
   return <div ref={dotRef} className="cursor-dot" />;
-}
-
-/* ── Marquee ticker ──────────────────────────────────────────────── */
-function Ticker() {
-  const doubled = [...TICKER_ITEMS, ...TICKER_ITEMS];
-  return (
-    <div
-      className="overflow-hidden border-b border-meama-charcoal bg-meama-espresso py-2.5"
-      aria-hidden="true"
-    >
-      <div className="marquee-track">
-        {doubled.map((item, i) => (
-          <span
-            key={i}
-            className="shrink-0 px-6 font-mono text-[9.5px] uppercase tracking-[0.32em] text-meama-muted"
-          >
-            {item}
-            <span className="mx-5 text-meama-charcoal">·</span>
-          </span>
-        ))}
-      </div>
-    </div>
-  );
 }
 
 /* ── Language toggle ─────────────────────────────────────────────── */
@@ -190,9 +152,6 @@ function Header() {
           </NavLink>
         ))}
       </nav>
-
-      {/* Ticker */}
-      <Ticker />
     </header>
   );
 }
@@ -276,9 +235,9 @@ export default function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/" element={<ProtectedRoute><CommandCenter /></ProtectedRoute>} />
         <Route path="/money-hunter" element={<ProtectedRoute><MoneyHunter /></ProtectedRoute>} />
-        <Route path="/ads" element={<ProtectedRoute><Ads /></ProtectedRoute>} />
-        <Route path="/discount-engine" element={<ProtectedRoute><DiscountEngine /></ProtectedRoute>} />
-        <Route path="/campaigns" element={<Navigate to="/discount-engine" replace />} />
+        <Route path="/ads" element={<Navigate to="/campaigns" replace />} />
+        <Route path="/discount-engine" element={<Navigate to="/campaigns" replace />} />
+        <Route path="/campaigns" element={<ProtectedRoute><Campaigns /></ProtectedRoute>} />
         <Route path="/actions" element={<ProtectedRoute><Actions /></ProtectedRoute>} />
         <Route path="/products" element={<ProtectedRoute><Products /></ProtectedRoute>} />
         <Route path="/products/:sku" element={<ProtectedRoute><ProductDetail /></ProtectedRoute>} />

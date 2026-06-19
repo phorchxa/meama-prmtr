@@ -397,3 +397,116 @@ export async function fetchCustomerAnalytics(): Promise<CustomerAnalytics> {
   if (!res.ok) throw new Error(`customer analytics ${res.status}`);
   return res.json() as Promise<CustomerAnalytics>;
 }
+
+export interface CampaignSummary {
+  id: string;
+  name: string;
+  channel: string | null;
+  status: string | null;
+  promo_type: string | null;
+  discount_value: number | null;
+  shopify_code: string | null;
+  target_segment: string | null;
+  launched_at: string | null;
+  scheduled_at: string | null;
+  created_at: string | null;
+  // GEL results
+  revenue_total: number | null;
+  roi: number | null;
+  converted: number | null;
+  reached: number | null;
+  conversion_rate: number | null;
+  avg_order_value: number | null;
+  // Meta (USD)
+  meta_spend_usd: number;
+  meta_roas: number | null;
+  meta_impressions: number;
+  meta_clicks: number;
+}
+
+export async function fetchCampaigns(): Promise<CampaignSummary[]> {
+  const res = await fetch(`${BASE}/api/v1/campaigns`);
+  if (!res.ok) throw new Error(`campaigns ${res.status}`);
+  return res.json() as Promise<CampaignSummary[]>;
+}
+
+export interface CampaignCreateInput {
+  name: string;
+  channel: string;
+  promo_type?: string | null;
+  discount_value?: number | null;
+  target_segment?: string | null;
+  scheduled_at?: string | null;
+}
+
+export async function createCampaign(input: CampaignCreateInput): Promise<CampaignSummary> {
+  const res = await fetch(`${BASE}/api/v1/campaigns`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) {
+    const detail = await res.json().catch(() => null) as { detail?: string } | null;
+    throw new Error(detail?.detail ?? `create campaign ${res.status}`);
+  }
+  return res.json() as Promise<CampaignSummary>;
+}
+
+export interface CampaignProductRow {
+  sku: string | null;
+  title: string | null;
+  price: number | null;
+  compare_at_price: number | null;
+  cost_per_item: number | null;
+  units: number;
+  revenue: number;
+}
+
+export interface CampaignDetail extends CampaignSummary {
+  discount_type: string | null;
+  min_order_value: number | null;
+  valid_from: string | null;
+  valid_to: string | null;
+  tag_pattern: string | null;
+  excluded_segments: string[];
+  products: CampaignProductRow[];
+}
+
+export async function fetchCampaignDetail(id: string): Promise<CampaignDetail> {
+  const res = await fetch(`${BASE}/api/v1/campaigns/${encodeURIComponent(id)}`);
+  if (!res.ok) throw new Error(`campaign ${res.status}`);
+  return res.json() as Promise<CampaignDetail>;
+}
+
+export interface MetaCampaignRow {
+  meta_campaign_id: string;
+  meta_campaign_name: string | null;
+  meta_account_id: string | null;
+  spend_usd: number;
+  impressions: number;
+  clicks: number;
+  roas: number | null;
+}
+
+export interface MetaDailyPoint {
+  date: string;
+  spend_usd: number;
+}
+
+export interface MetaOverview {
+  period_days: number;
+  total_spend_usd: number;
+  blended_roas: number | null;
+  total_impressions: number;
+  total_clicks: number;
+  campaign_count: number;
+  below_threshold_count: number;
+  campaigns: MetaCampaignRow[];
+  daily_trend: MetaDailyPoint[];
+}
+
+export async function fetchMetaOverview(): Promise<MetaOverview> {
+  const res = await fetch(`${BASE}/api/v1/campaigns/meta-overview`);
+  if (!res.ok) throw new Error(`meta-overview ${res.status}`);
+  return res.json() as Promise<MetaOverview>;
+}

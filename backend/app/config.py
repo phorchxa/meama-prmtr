@@ -34,7 +34,10 @@ class Settings(BaseSettings):
     meta_app_id: str = ""
     meta_app_secret: str = ""
     meta_system_user_token: str = ""
+    meta_access_token: str = ""          # long-lived token (preferred over system user token)
     meta_ad_account_id: str = ""
+    # Accounts to sync — comma-separated act_IDs; defaults to the two active Meama accounts
+    meta_ad_account_ids: str = "act_338230624893406,act_1127266979207472"
 
     # Shopify
     shopify_shop_domain: str = ""
