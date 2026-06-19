@@ -4,7 +4,7 @@ from __future__ import annotations
 import time
 from typing import Any
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Response
 
 from ..business_rules import LOW_STOCK_WEEKS, REORDER_POINT_DAYS
 from ..deps import get_supabase
@@ -25,7 +25,7 @@ def _float0(v) -> float:
 
 
 @router.get("")
-async def get_stock(low_stock_only: bool = False, sb=Depends(get_supabase)):
+async def get_stock(low_stock_only: bool = False, sb=Depends(get_supabase), response: Response = None):
     """Stock levels: stock_quantity from products_master, velocity from get_product_stats RPC.
 
     velocity_per_day = units_30d (from RPC) / 30
@@ -125,7 +125,8 @@ async def get_stock(low_stock_only: bool = False, sb=Depends(get_supabase)):
     }
     _cache["ts"] = time.time()
     _cache["data"] = result
-
+    if response:
+        response.headers["Cache-Control"] = "s-maxage=300, stale-while-revalidate=60"
     if low_stock_only:
         return {**result, "items": [i for i in items if i["status"] in ("critical", "low")]}
     return result

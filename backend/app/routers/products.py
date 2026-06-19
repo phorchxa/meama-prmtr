@@ -1,10 +1,12 @@
 """03 Product Intelligence — merges all data sources into ProductSummary."""
 from __future__ import annotations
 
+import asyncio
 import re
 import time
+from concurrent.futures import ThreadPoolExecutor
 from datetime import date
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
 
 from pydantic import BaseModel
 
@@ -74,8 +76,10 @@ def _int0(v) -> int:
 
 
 @router.get("", response_model=ProductIntelligenceResponse)
-async def get_product_intelligence(sb=Depends(get_supabase)) -> ProductIntelligenceResponse:
+async def get_product_intelligence(sb=Depends(get_supabase), response: Response = None) -> ProductIntelligenceResponse:
     if _cache["data"] and (time.time() - float(_cache["ts"])) < _CACHE_TTL:
+        if response:
+            response.headers["Cache-Control"] = "s-maxage=300, stale-while-revalidate=60"
         return _cache["data"]  # type: ignore[return-value]
 
     # ── 1. Products master ──────────────────────────────────────────────────
@@ -154,40 +158,29 @@ async def get_product_intelligence(sb=Depends(get_supabase)) -> ProductIntellige
     except Exception:
         bible_map = {}
 
-    # ── 4. Sales stats (30d + monthly series + repeat rate) ────────────────
-    try:
-        stats_raw: list[dict] = sb.rpc("get_product_stats").execute().data or []
-    except Exception:
-        stats_raw = []
+    # ── 4–8. Run all 5 RPCs in parallel (independent queries) ──────────────
+    def _rpc(name: str) -> list[dict]:
+        try:
+            return sb.rpc(name).execute().data or []
+        except Exception:
+            return []
+
+    loop = asyncio.get_event_loop()
+    with ThreadPoolExecutor(max_workers=5) as pool:
+        stats_fut  = loop.run_in_executor(pool, _rpc, "get_product_stats")
+        ch_fut     = loop.run_in_executor(pool, _rpc, "get_product_channel_stats")
+        rr_fut     = loop.run_in_executor(pool, _rpc, "get_product_reorder_rates")
+        nm_fut     = loop.run_in_executor(pool, _rpc, "get_product_new_metrics")
+        tb_fut     = loop.run_in_executor(pool, _rpc, "get_product_top_bundles")
+        stats_raw, ch_raw, rr_raw, nm_raw, tb_raw = await asyncio.gather(
+            stats_fut, ch_fut, rr_fut, nm_fut, tb_fut
+        )
+
     stats_map = {row["sku"]: row for row in stats_raw}
-
-    # ── 5. Channel split ────────────────────────────────────────────────────
-    try:
-        ch_raw: list[dict] = sb.rpc("get_product_channel_stats").execute().data or []
-    except Exception:
-        ch_raw = []
-    ch_map = {row["sku"]: row for row in ch_raw}
-
-    # ── 6. Reorder + retention rates ───────────────────────────────────────
-    try:
-        rr_raw: list[dict] = sb.rpc("get_product_reorder_rates").execute().data or []
-    except Exception:
-        rr_raw = []
-    rr_map = {row["sku"]: row for row in rr_raw}
-
-    # ── 7. New metrics (totals, rankings, growth, margin, promo, consumption, refund)
-    try:
-        nm_raw: list[dict] = sb.rpc("get_product_new_metrics").execute().data or []
-    except Exception:
-        nm_raw = []
-    nm_map = {row["sku"]: row for row in nm_raw}
-
-    # ── 8. Top bundle partner ───────────────────────────────────────────────
-    try:
-        tb_raw: list[dict] = sb.rpc("get_product_top_bundles").execute().data or []
-    except Exception:
-        tb_raw = []
-    tb_map = {row["sku"]: row for row in tb_raw}
+    ch_map    = {row["sku"]: row for row in ch_raw}
+    rr_map    = {row["sku"]: row for row in rr_raw}
+    nm_map    = {row["sku"]: row for row in nm_raw}
+    tb_map    = {row["sku"]: row for row in tb_raw}
 
     # ── 9. Build response ───────────────────────────────────────────────────
     result: list[ProductSummary] = []
@@ -343,10 +336,12 @@ async def get_product_intelligence(sb=Depends(get_supabase)) -> ProductIntellige
         )
 
     result.sort(key=lambda x: x.revenue_30d, reverse=True)
-    response = ProductIntelligenceResponse(products=result, affinities=[])
+    built = ProductIntelligenceResponse(products=result, affinities=[])
     _cache["ts"] = time.time()
-    _cache["data"] = response
-    return response
+    _cache["data"] = built
+    if response:
+        response.headers["Cache-Control"] = "s-maxage=300, stale-while-revalidate=60"
+    return built
 
 
 @router.get("/affinity", response_model=list[AffinityPair])

@@ -5,7 +5,7 @@ import time
 from datetime import date, timedelta
 from typing import Any
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Response
 
 from ..business_rules import LOW_STOCK_WEEKS, REORDER_POINT_DAYS, RETAIL_CHANNELS
 from ..deps import get_supabase
@@ -33,7 +33,7 @@ def _int0(v) -> int:
 
 
 @router.get("")
-async def get_overview(sb=Depends(get_supabase)):
+async def get_overview(sb=Depends(get_supabase), response: Response = None):
     """Top-line KPIs from the same Supabase RPCs used by the products router.
 
     - revenue_30d / units_30d: from get_product_stats RPC
@@ -42,6 +42,8 @@ async def get_overview(sb=Depends(get_supabase)):
     - revenue_trend_30d / alerts: from orders_flat / alerts tables (empty if ETL not run)
     """
     if _cache["data"] and (time.time() - float(_cache["ts"])) < _CACHE_TTL:
+        if response:
+            response.headers["Cache-Control"] = "s-maxage=300, stale-while-revalidate=60"
         return _cache["data"]
 
     # ── 1. Base product info (stock_quantity + pricing) from products_master ──
@@ -229,4 +231,6 @@ async def get_overview(sb=Depends(get_supabase)):
 
     _cache["ts"] = time.time()
     _cache["data"] = result
+    if response:
+        response.headers["Cache-Control"] = "s-maxage=300, stale-while-revalidate=60"
     return result
