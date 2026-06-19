@@ -13,7 +13,7 @@ interface ReportsApiResponse {
   reports: ReportDef[];
 }
 
-const BASE = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
+const BASE = import.meta.env.VITE_API_BASE_URL ?? "";
 
 export default function Reports() {
   const { t } = useTranslation();

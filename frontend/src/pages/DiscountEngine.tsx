@@ -5,7 +5,7 @@ import { StatCallout } from "../components/StatCallout";
 import { formatGEL, formatPercent } from "../lib/format";
 import { PageHeader } from "./PageHeader";
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
+const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "";
 
 // Business rules — mirror backend/app/business_rules.py exactly.
 const MARGIN_FLOOR = 0.4;

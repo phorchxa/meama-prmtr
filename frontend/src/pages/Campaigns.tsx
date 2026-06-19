@@ -33,7 +33,7 @@ import { PageHeader } from "./PageHeader";
  *   • Approval Queue / AI ad copy               ← PLACEHOLDER (AI pipeline not built yet)
  */
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
+const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "";
 const ROAS_THRESHOLD = 2.0;
 const MARGIN_FLOOR = 0.4;
 const MIN_PRICE_MULTIPLIER = 1.6667;

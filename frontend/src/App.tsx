@@ -80,7 +80,7 @@ function Header() {
 
   // Fetch real alert count from API — non-blocking, fails silently
   useEffect(() => {
-    const BASE = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
+    const BASE = import.meta.env.VITE_API_BASE_URL ?? "";
     fetch(`${BASE}/api/v1/alerts`)
       .then((r) => r.ok ? r.json() : { items: [] })
       .then((data: { items: Array<{ severity: string }> }) => {

@@ -1,7 +1,7 @@
 // Portfolios API client — calls the FastAPI backend.
 // The service-role key never reaches the browser; the backend mediates all DB access.
 
-const API_BASE = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? "http://localhost:8000";
+const API_BASE = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? "";
 const BASE = `${API_BASE}/api/v1/portfolios`;
 
 export type CustomerStatus  = "new" | "active" | "at_risk" | "lost" | "prospect";
