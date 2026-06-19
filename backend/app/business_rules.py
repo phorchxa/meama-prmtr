@@ -9,6 +9,7 @@ from __future__ import annotations
 MARGIN_FLOOR = 0.40           # minimum gross margin allowed on any promo
 MIN_PRICE_MULTIPLIER = 1.6667  # min_safe_price = COGS * MIN_PRICE_MULTIPLIER
 MAX_DISCOUNT = 0.25           # hard cap across all campaign types
+GEO_VAT_RATE = 0.18           # Georgian VAT 18%; revenue / (1 + GEO_VAT_RATE) = ex-VAT revenue
 
 # ---- Customer lifecycle (calendar days since last order) ----
 CHURN_DAYS = 90               # lost: no order for >= 3 calendar months
@@ -27,8 +28,21 @@ REFUND_SHARE_ALERT = 0.05     # refunds > 5% of daily revenue
 CHURN_SCORE_ALERT = 0.7       # Claude-produced churn_score threshold
 
 # ---- Scope / metric filters ----
-RETAIL_CHANNELS = ("ecom", "brand_store")  # every retail metric filters to these
+# "ecom" covers: website orders, mobile app orders, AND call-centre orders
+#   (all arrive via Shopify web channel → source='web' in the DB).
+# "brand_store" covers: physical POS / retail store orders (source='pos').
+# Vending, B2B, and Collect are stored but excluded from every retail KPI.
+RETAIL_CHANNELS = ("ecom", "brand_store")
 NON_RETAIL_CHANNELS = ("vending", "b2b", "collect")
+
+# Raw Shopify source strings in meama_georgia_orders that map to retail channels.
+# Used in SQL RPCs and Python queries — keep in sync with every source IN (...) clause.
+# shopify_draft_order = admin/phone-created paid orders, counted as ecom.
+RETAIL_ORDER_SOURCES = (
+    "web", "online_store", "Online Store", "195189899265",  # ecom
+    "shopify_draft_order",                                  # ecom (admin/phone)
+    "pos",                                                  # brand_store
+)
 
 # Segments that NEVER receive discounts — early access only.
 NO_DISCOUNT_SEGMENTS = ("champion", "capsule_loyalist", "flavour_explorer")

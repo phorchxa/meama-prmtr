@@ -149,7 +149,7 @@ async def get_portfolio(
         .eq("customer_id", customer_id)
         .neq("financial_status", "voided")
         .is_("cancelled_at", "null")
-        .in_("source", ["web", "pos", "195189899265"])
+        .in_("source", ["web", "online_store", "Online Store", "195189899265", "shopify_draft_order", "pos"])
         .order("processed_at", desc=True)
         .limit(20)
         .execute()
