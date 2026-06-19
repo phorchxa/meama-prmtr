@@ -39,6 +39,22 @@ DeliveryVsPickupPreference = Literal[
 ]
 
 
+class SessionProduct(BaseModel):
+    sku: str
+    title: str
+
+
+class LatestSession(BaseModel):
+    session_id: str | None = None
+    products_viewed_sku: list[str] | None = None
+    products_carted_sku: list[str] | None = None
+    types_viewed: list[str] | None = None
+    viewed_products: list[SessionProduct] | None = None
+    cart_products: list[SessionProduct] | None = None
+    add_to_carts: int | None = None
+    converted: bool | None = None
+
+
 class PortfolioSummary(BaseModel):
     shopify_customer_id: int
     full_name: str
@@ -104,6 +120,27 @@ class PortfolioSummary(BaseModel):
     never_ordered: bool = False
     is_registered: bool = False
     customer_created_at: datetime | None = None
+    # On-site behavior (shopify_customer_behavior + latest shopify_session)
+    sessions_30d: int | None = None
+    last_session_at: datetime | None = None
+    days_since_last_session: int | None = None
+    last_funnel_stage: int | None = None
+    last_cart_value: float | None = None
+    last_viewed_sku: str | None = None
+    add_to_carts: int | None = None
+    converted: bool | None = None
+    viewed_products: list[SessionProduct] | None = None
+    cart_products: list[SessionProduct] | None = None
+    latest_session: LatestSession | None = None
+    checkout_abandons: int | None = None
+    session_warm: bool = False
+    top_browsed_category: str | None = None
+    last_viewed_products: list[str] | None = None
+    last_viewed_category: str | None = None
+    top_viewed_products: list[str] | None = None
+    last_session_channel: str | None = None
+    last_session_device: str | None = None
+    last_session_city: str | None = None
 
 
 class OrderRow(BaseModel):

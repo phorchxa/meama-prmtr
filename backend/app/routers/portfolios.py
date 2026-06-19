@@ -9,9 +9,188 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
+from datetime import UTC, datetime, timedelta
+from typing import TypeVar
+from zoneinfo import ZoneInfo
+
 from ..deps import get_supabase
 from ..schemas.common import Page
 from ..schemas.portfolios import OrderRow, PortfolioDetail, PortfolioSummary
+
+T = TypeVar("T", bound=PortfolioSummary)
+_TZ_TBS = ZoneInfo("Asia/Tbilisi")
+
+_FUNNEL_LABEL = {
+    1: "Browsing", 2: "Product view", 3: "Added to cart",
+    4: "Checkout started", 5: "Payment info", 6: "Purchase", 7: "Purchase",
+}
+
+
+def _unique_skus(values: list[str] | None) -> list[str]:
+    seen: set[str] = set()
+    skus: list[str] = []
+    for value in values or []:
+        sku = str(value).strip()
+        if sku and sku not in seen:
+            seen.add(sku)
+            skus.append(sku)
+    return skus
+
+
+def _session_products(skus: list[str] | None, product_map: dict[str, str]) -> list[dict[str, str]]:
+    return [
+        {"sku": sku, "title": product_map[sku]}
+        for sku in _unique_skus(skus)
+        if product_map.get(sku)
+    ]
+
+
+def _merge_behavior(sb, items: list[T]) -> list[T]:
+    """Batch-fetch shopify_customer_behavior and latest session; merge into items."""
+    cids = [str(it.shopify_customer_id) for it in items]
+    if not cids:
+        return items
+
+    beh_res = (
+        sb.table("shopify_customer_behavior")
+        .select(
+            "customer_id,sessions_30d,last_session_at,days_since_last_session,"
+            "checkout_abandons,top_skus_viewed"
+        )
+        .in_("customer_id", cids)
+        .execute()
+    )
+    beh_map = {r["customer_id"]: r for r in (beh_res.data or [])}
+
+    viewed_res = (
+        sb.table("customer_viewed_products")
+        .select("customer_id,last_viewed_products,last_viewed_category,top_viewed_products")
+        .in_("customer_id", cids)
+        .execute()
+    )
+    viewed_map = {r["customer_id"]: r for r in (viewed_res.data or [])}
+
+    # Fetch latest session for any customer who has session data (not just warm)
+    session_cids = [
+        cid for cid in cids
+        if (beh_map.get(cid, {}).get("sessions_30d") or 0) > 0
+    ]
+    last_session_map: dict = {}
+    if session_cids:
+        sess_res = (
+            sb.table("shopify_sessions")
+            .select(
+                "session_id,customer_id,started_at,funnel_stage,"
+                "converted,add_to_carts,cart_value_peak,"
+                "products_viewed_sku,products_carted_sku,"
+                "types_viewed,channel,device_type,geo_city"
+            )
+            .in_("customer_id", session_cids)
+            .order("started_at", desc=True)
+            .limit(max(len(session_cids) * 3, 20))
+            .execute()
+        )
+        for s in (sess_res.data or []):
+            cid = s["customer_id"]
+            if cid not in last_session_map:
+                last_session_map[cid] = s
+
+    session_skus: set[str] = set()
+    for s in last_session_map.values():
+        session_skus.update(_unique_skus(s.get("products_viewed_sku")))
+        session_skus.update(_unique_skus(s.get("products_carted_sku")))
+    session_product_map: dict[str, str] = {}
+    if session_skus:
+        pg = (
+            sb.table("products_georgia")
+            .select("variant_sku,title")
+            .in_("variant_sku", list(session_skus))
+            .not_.is_("variant_sku", "null")
+            .not_.ilike("title", "%Tier Point%")
+            .not_.ilike("title", "%POS%")
+            .execute()
+        )
+        for row in pg.data or []:
+            sku = row.get("variant_sku")
+            title = row.get("title")
+            if sku and title and sku not in session_product_map:
+                session_product_map[sku] = title
+
+    # Resolve top browsed SKU → category
+    sku_set: set[str] = set()
+    for cid in cids:
+        b = beh_map.get(cid, {})
+        skus = b.get("top_skus_viewed") or []
+        if skus:
+            sku_set.add(skus[0])
+    sku_cat_map: dict = {}
+    if sku_set:
+        pm = (
+            sb.table("products_master")
+            .select("sku,category")
+            .in_("sku", list(sku_set))
+            .execute()
+        )
+        sku_cat_map = {r["sku"]: r.get("category") for r in (pm.data or [])}
+
+    enriched: list[T] = []
+    now = datetime.now(UTC)
+    for it in items:
+        cid = str(it.shopify_customer_id)
+        b = beh_map.get(cid, {})
+        v = viewed_map.get(cid, {})
+        s = last_session_map.get(cid, {})
+
+        top_skus = b.get("top_skus_viewed") or []
+        top_cat = sku_cat_map.get(top_skus[0]) if top_skus else None
+
+        days_since = b.get("days_since_last_session")
+        days_order = it.days_since_last_order
+        warm = (
+            days_since is not None
+            and days_since <= 3
+            and (days_order is None or (days_order or 0) > 7 or it.never_ordered)
+        )
+
+        data = it.model_dump()
+        viewed_products = _session_products(s.get("products_viewed_sku"), session_product_map) if s else None
+        cart_products = _session_products(s.get("products_carted_sku"), session_product_map) if s else None
+        latest_session = None
+        if s:
+            latest_session = {
+                "session_id": s.get("session_id"),
+                "products_viewed_sku": s.get("products_viewed_sku"),
+                "products_carted_sku": s.get("products_carted_sku"),
+                "types_viewed": s.get("types_viewed"),
+                "viewed_products": viewed_products,
+                "cart_products": cart_products,
+                "add_to_carts": s.get("add_to_carts"),
+                "converted": s.get("converted"),
+            }
+        data.update(
+            sessions_30d=b.get("sessions_30d"),
+            last_session_at=b.get("last_session_at"),
+            days_since_last_session=days_since,
+            checkout_abandons=b.get("checkout_abandons"),
+            top_browsed_category=top_cat,
+            session_warm=warm,
+            last_funnel_stage=s.get("funnel_stage") if s else None,
+            last_cart_value=float(s["cart_value_peak"]) if s and s.get("cart_value_peak") else None,
+            last_viewed_sku=(s.get("products_carted_sku") or s.get("products_viewed_sku") or [None])[0] if s else None,
+            add_to_carts=s.get("add_to_carts") if s else None,
+            converted=s.get("converted") if s else None,
+            viewed_products=viewed_products,
+            cart_products=cart_products,
+            latest_session=latest_session,
+            last_viewed_products=v.get("last_viewed_products"),
+            last_viewed_category=v.get("last_viewed_category"),
+            top_viewed_products=v.get("top_viewed_products"),
+            last_session_channel=s.get("channel") if s else None,
+            last_session_device=s.get("device_type") if s else None,
+            last_session_city=s.get("geo_city") if s else None,
+        )
+        enriched.append(type(it)(**data))  # type: ignore[arg-type]
+    return enriched
 
 router = APIRouter(prefix="/portfolios", tags=["portfolios"])
 
@@ -67,12 +246,17 @@ async def list_portfolios(
     promo_heavy: bool | None = None,
     never_ordered: bool | None = None,
     intensity_bucket: str | None = None,
+    session_recency: str | None = None,   # "today"|"7d"|"30d"|"never"
+    warm: bool | None = None,
     sort: str = "last_order_at",
     desc: bool = True,
     page: Annotated[int, Query(ge=1)] = 1,
     page_size: Annotated[int, Query(ge=1, le=200)] = 50,
     sb=Depends(get_supabase),
 ) -> Page[PortfolioSummary]:
+    _VALID_RECENCY = {"today", "7d", "30d", "never"}
+    recency = session_recency if session_recency in _VALID_RECENCY else None
+    use_session_sort = (sort == "last_session")
     sort_col = sort if sort in _SORTABLE else "last_order_at"
     offset = (page - 1) * page_size
 
@@ -112,13 +296,92 @@ async def list_portfolios(
             f"full_name.ilike.%{safe}%,email.ilike.%{safe}%,phone.ilike.%{safe}%"
         )
 
-    query = query.order(sort_col, desc=desc, nullsfirst=False).range(offset, offset + page_size - 1)
-    result = query.execute()
+    # ── Session recency / warm pre-filter (two-pass via shopify_customer_behavior) ──
+    # The behavior table has ~60-70 rows so these pre-fetches are always fast.
+    if recency == "never":
+        # Return only customers with no session record at all.
+        all_beh = (
+            sb.table("shopify_customer_behavior")
+            .select("customer_id")
+            .execute()
+        )
+        has_session_cids = [int(r["customer_id"]) for r in (all_beh.data or [])]
+        if has_session_cids:
+            query = query.not_.in_("shopify_customer_id", has_session_cids)
+    elif recency or warm:
+        beh_q = sb.table("shopify_customer_behavior").select(
+            "customer_id,sessions_7d,sessions_30d,last_session_at,days_since_last_session"
+        )
+        if recency == "today":
+            today_str = (
+                datetime.now(_TZ_TBS)
+                .replace(hour=0, minute=0, second=0, microsecond=0)
+                .isoformat()
+            )
+            beh_q = beh_q.gte("last_session_at", today_str)
+        elif recency == "7d":
+            beh_q = beh_q.gt("sessions_7d", 0)
+        elif recency == "30d":
+            beh_q = beh_q.gt("sessions_30d", 0)
+        if warm:
+            beh_q = (
+                beh_q
+                .not_.is_("days_since_last_session", "null")
+                .lte("days_since_last_session", 3)
+            )
+        beh_res = beh_q.execute()
+        include_cids = [int(r["customer_id"]) for r in (beh_res.data or [])]
+        if not include_cids:
+            return Page[PortfolioSummary](items=[], total=0, page=page, page_size=page_size)
+        query = query.in_("shopify_customer_id", include_cids)
+        if warm:
+            # Apply the order-recency half of warm on the portfolio side (mirrors _merge_behavior).
+            query = query.or_(
+                "days_since_last_order.is.null,"
+                "days_since_last_order.gt.7,"
+                "never_ordered.eq.true"
+            )
 
-    items = [PortfolioSummary(**row) for row in (result.data or [])]
+    # ── Execute ────────────────────────────────────────────────────────
+    if use_session_sort:
+        # last_session_at lives in shopify_customer_behavior, not the matview, so we
+        # sort in Python after loading all matching rows (dataset is small enough).
+        beh_order_res = (
+            sb.table("shopify_customer_behavior")
+            .select("customer_id,last_session_at")
+            .execute()
+        )
+        beh_ts = {
+            int(r["customer_id"]): r["last_session_at"]
+            for r in (beh_order_res.data or [])
+        }
+        all_result = query.range(0, 9999).execute()
+        all_rows = all_result.data or []
+
+        def _sess_key(r: dict) -> tuple:
+            ts = beh_ts.get(r["shopify_customer_id"])
+            return (ts or "", bool(ts))
+
+        all_rows.sort(key=_sess_key, reverse=True)
+        page_rows = all_rows[offset : offset + page_size]
+        items = [PortfolioSummary(**row) for row in page_rows]
+        total = all_result.count or len(all_rows)
+    else:
+        result = (
+            query
+            .order(sort_col, desc=desc, nullsfirst=False)
+            .range(offset, offset + page_size - 1)
+            .execute()
+        )
+        items = [PortfolioSummary(**row) for row in (result.data or [])]
+        total = result.count or 0
+
+    if items:
+        items = _merge_behavior(sb, items)
+
     return Page[PortfolioSummary](
         items=items,
-        total=result.count or 0,
+        total=total,
         page=page,
         page_size=page_size,
     )
@@ -156,4 +419,6 @@ async def get_portfolio(
     )
 
     recent_orders = [OrderRow(**o) for o in (orders_res.data or [])]
-    return PortfolioDetail(**row, recent_orders=recent_orders)
+    detail = PortfolioDetail(**row, recent_orders=recent_orders)
+    enriched = _merge_behavior(sb, [detail])
+    return enriched[0]

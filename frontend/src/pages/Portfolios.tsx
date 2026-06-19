@@ -13,6 +13,7 @@ import {
   type PortfolioDetail,
   type PortfolioSummary,
   type ReturnPeriodLabel,
+  type SessionProduct,
 } from "../lib/portfoliosApi";
 import { PageHeader } from "./PageHeader";
 
@@ -128,6 +129,21 @@ function joinedDate(iso: string | null | undefined): string {
 
 function da(v: string | null | undefined): string { return v ? tbilisiDate(v) : "—"; }
 
+function relTimeSince(iso: string | null | undefined): string {
+  if (!iso) return "—";
+  const diff = Date.now() - new Date(iso).getTime();
+  const m = Math.floor(diff / 60000);
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  return `${Math.floor(h / 24)}d ago`;
+}
+
+const FUNNEL_STAGE_LABEL: Record<number, string> = {
+  1: "Browsing", 2: "Product view", 3: "Added to cart",
+  4: "Checkout started", 5: "Payment info", 6: "Purchase", 7: "Purchase",
+};
+
 
 function nextBestAction(data: PortfolioSummary): string {
   if (data.churn_reason === "healthy_active") return "Keep cadence steady; surface a relevant capsule refill.";
@@ -229,6 +245,57 @@ function Fld({ label, value, muted }: { label: string; value: ReactNode; muted?:
   );
 }
 
+function ChipList({ values }: { values: string[] | null | undefined }) {
+  if (!values?.length) return <span style={{ color: CLR.t3 }}>—</span>;
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {values.map((value) => (
+        <span
+          key={value}
+          style={{ background: CLR.bg3, borderColor: CLR.border, color: CLR.text }}
+          className="rounded-full border px-2 py-[3px] text-[11px] leading-tight"
+        >
+          {value}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function ProductList({ products }: { products: SessionProduct[] | null | undefined }) {
+  if (!products?.length) return <span style={{ color: CLR.t3 }}>—</span>;
+  return (
+    <div className="flex flex-col gap-1.5">
+      {products.map((product) => (
+        <div key={product.sku} className="min-w-0">
+          <div className="truncate text-[12px] font-medium leading-tight" style={{ color: CLR.text }}>
+            {product.title}
+          </div>
+          <div className="truncate font-mono text-[9px] leading-tight" style={{ color: CLR.t3 }}>
+            {product.sku}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function sessionViewedProducts(data: PortfolioSummary) {
+  return data.latest_session?.viewed_products ?? data.viewed_products ?? [];
+}
+
+function sessionCartProducts(data: PortfolioSummary) {
+  return data.latest_session?.cart_products ?? data.cart_products ?? [];
+}
+
+function sessionAddToCarts(data: PortfolioSummary) {
+  return data.latest_session?.add_to_carts ?? data.add_to_carts ?? null;
+}
+
+function sessionConverted(data: PortfolioSummary) {
+  return data.latest_session?.converted ?? data.converted ?? null;
+}
+
 function ConsentPills({ email, sms }: { email: boolean; sms: boolean }) {
   return (
     <div className="flex gap-1.5 mt-[3px]">
@@ -261,6 +328,13 @@ function CustomerCard({ customer, onOpen }: { customer: PortfolioSummary; onOpen
   const accent = segAccent(customer.segment);
 
   const flavors = customer.top_flavors?.slice(0, 3) ?? [];
+  const viewedProducts = sessionViewedProducts(customer);
+  const cartProducts = sessionCartProducts(customer);
+  const sessionProducts = cartProducts.length > 0 ? cartProducts : viewedProducts;
+  const lastViewedProducts = customer.last_viewed_products?.filter(Boolean) ?? [];
+  const lastViewedCategory = customer.last_viewed_category ?? customer.top_browsed_category;
+  const sessionProductCount = sessionProducts.length || lastViewedProducts.length;
+  const sessionProductTitle = sessionProducts[0]?.title ?? lastViewedProducts[0];
 
   return (
     <article
@@ -356,6 +430,53 @@ function CustomerCard({ customer, onOpen }: { customer: PortfolioSummary; onOpen
             <div className="flex justify-between font-mono text-[9.5px] mt-1" style={{ color: CLR.t3 }}>
               <span style={{ color: CLR.g }}>Full ₾{formatNumber(customer.full_price_spend)}</span>
               <span style={{ color: CLR.a }}>Promo ₾{formatNumber(customer.promo_spend)} · {customer.promo_orders} orders</span>
+            </div>
+          </div>
+        )}
+
+        {/* Session line (prototype A) — show whenever session data exists */}
+        {!!customer.last_session_at && (
+          <div
+            style={{
+              borderTop: `1px dashed ${customer.session_warm ? "#C8B090" : CLR.border2}`,
+              background: customer.session_warm ? "#FBF6EC" : CLR.bg3,
+              borderRadius: 7, padding: "10px 12px", marginTop: 11,
+            }}
+          >
+            <div className="flex justify-between items-center">
+              <span className="flex items-center gap-[6px] font-mono text-[10px] tracking-[.06em] uppercase"
+                style={{ color: customer.session_warm ? "#A9772F" : CLR.t3 }}>
+                {customer.session_warm && (
+                  <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#A9772F", boxShadow: "0 0 0 3px rgba(185,138,62,.2)", display: "inline-block" }} />
+                )}
+                {customer.session_warm ? "Warm · browsing" : "Last session"}
+              </span>
+              <span className="font-mono text-[9px] uppercase tracking-[.06em]" style={{ color: "#A39B89" }}>
+                {relTimeSince(customer.last_session_at)}
+              </span>
+            </div>
+            <div className="mt-[6px] text-[11.5px]" style={{ color: "#2B2823" }}>
+              {customer.last_funnel_stage != null && (
+                <span>Reached <b>{FUNNEL_STAGE_LABEL[customer.last_funnel_stage] ?? `Stage ${customer.last_funnel_stage}`}</b></span>
+              )}
+              {customer.last_cart_value != null && customer.last_cart_value > 0 && (
+                <span> · <b>₾{customer.last_cart_value.toFixed(0)}</b> cart</span>
+              )}
+              {sessionProductTitle && (
+                <span>
+                  {" "}· {cartProducts.length > 0 ? "carted" : "viewing"} <b>{sessionProductTitle}</b>
+                  {sessionProductCount > 1 ? ` +${sessionProductCount - 1}` : ""}
+                  {lastViewedCategory && <> <Tag variant="neutral">{lastViewedCategory}</Tag></>}
+                </span>
+              )}
+              {!sessionProductTitle && lastViewedCategory && (
+                <span> · viewing <b>{lastViewedCategory}</b></span>
+              )}
+              {!customer.last_funnel_stage && !lastViewedCategory && customer.sessions_30d != null && (
+                <span className="font-mono text-[10px]" style={{ color: CLR.t3 }}>
+                  {customer.sessions_30d} session{customer.sessions_30d !== 1 ? "s" : ""} · 30d
+                </span>
+              )}
             </div>
           </div>
         )}
@@ -559,7 +680,7 @@ function DrawerContent({ data, onClose }: { data: PortfolioDetail; onClose: () =
       </div>
 
       {/* Scrollable body */}
-      <div className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-[14px]">
+      <div className="flex-1 overflow-y-auto px-5 py-4 space-y-[14px]">
 
         {/* Stat row */}
         <div className="grid grid-cols-4 gap-[9px]">
@@ -575,6 +696,51 @@ function DrawerContent({ data, onClose }: { data: PortfolioDetail; onClose: () =
             </div>
           ))}
         </div>
+
+        {/* Sessions & on-site behavior — always rendered */}
+        <Panel
+          title="Sessions & on-site behavior"
+          sub={data.sessions_30d != null && data.sessions_30d > 0
+            ? `${data.sessions_30d} session${data.sessions_30d !== 1 ? "s" : ""} · 30d`
+            : undefined}
+        >
+          {!data.last_session_at ? (
+            <p className="text-[11.5px] leading-[1.55]" style={{ color: CLR.t3 }}>
+              No sessions recorded yet — fills in once this customer browses while logged in.
+            </p>
+          ) : (
+            <>
+              {data.session_warm && (
+                <div style={{ background: "#FBF6EC", border: `1px solid #C8B090`, borderRadius: 7, padding: "8px 11px", marginBottom: 11 }}>
+                  <span className="flex items-center gap-[6px] font-mono text-[10px] uppercase tracking-[.06em]" style={{ color: "#A9772F" }}>
+                    <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#A9772F", boxShadow: "0 0 0 3px rgba(185,138,62,.2)", display: "inline-block" }} />
+                    Warm · actively browsing, no recent order — win-back opportunity
+                  </span>
+                </div>
+              )}
+              {(sessionAddToCarts(data) ?? 0) > 0 && sessionConverted(data) === false && (
+                <div style={{ background: CLR.rb, border: `1px solid ${CLR.rbd}`, borderRadius: 7, padding: "8px 11px", marginBottom: 11 }}>
+                  <span className="font-mono text-[10px] uppercase tracking-[.06em]" style={{ color: CLR.r }}>
+                    Cart abandoner
+                  </span>
+                </div>
+              )}
+              <Grid2>
+                <Fld label="Sessions · 30d" value={data.sessions_30d ?? "—"} />
+                <Fld label="Last seen" value={relTimeSince(data.last_session_at)} />
+                <Fld label="Days since session" value={data.days_since_last_session != null ? `${data.days_since_last_session}d` : "—"} />
+                <Fld label="Checkout abandons" value={data.checkout_abandons ?? "—"} />
+                <Fld label="Last funnel stage" value={data.last_funnel_stage != null ? (FUNNEL_STAGE_LABEL[data.last_funnel_stage] ?? `Stage ${data.last_funnel_stage}`) : "—"} />
+                <Fld label="Last cart value" value={data.last_cart_value != null && data.last_cart_value > 0 ? `₾${data.last_cart_value.toFixed(0)}` : "—"} />
+                <Fld label="Viewed products" value={sessionViewedProducts(data).length ? <ProductList products={sessionViewedProducts(data)} /> : <ChipList values={data.last_viewed_products} />} />
+                <Fld label="Added to cart" value={<ProductList products={sessionCartProducts(data)} />} />
+                <Fld label="Format" value={data.last_viewed_category ?? data.top_browsed_category ?? "—"} />
+                <Fld label="Browsed over time" value={<ChipList values={data.top_viewed_products} />} />
+                <Fld label="Device" value={data.last_session_device ?? "—"} />
+              </Grid2>
+            </>
+          )}
+        </Panel>
 
         {/* 3. Account health */}
         <Panel title="Account health" sub={rLabel}>
@@ -1046,6 +1212,7 @@ const SORT_OPTIONS = [
   { value: "health_score", label: "Health" },
   { value: "promo_share", label: "Promo share" },
   { value: "aov", label: "AOV" },
+  { value: "last_session", label: "Last session" },
 ];
 
 export default function Portfolios() {
@@ -1060,6 +1227,8 @@ export default function Portfolios() {
   const [sort, setSort]           = useState("last_order_at");
   const [descDir, setDescDir]     = useState(true);
   const [page, setPage]           = useState(1);
+  const [sessionRecency, setSessionRecency] = useState<"today"|"7d"|"30d"|"never"|"">("");
+  const [warmFilter, setWarmFilter] = useState(false);
 
   const [items, setItems]   = useState<PortfolioSummary[]>([]);
   const [total, setTotal]   = useState(0);
@@ -1072,7 +1241,7 @@ export default function Portfolios() {
   const openDrawer  = useCallback((id: number) => { setDrawerId(id); window.scrollTo({ top: 0, behavior: "smooth" }); }, []);
   const closeDrawer = useCallback(() => setDrawerId(null), []);
 
-  useEffect(() => { setPage(1); }, [query, row1, row2, intensity, region, channel, sort, descDir]);
+  useEffect(() => { setPage(1); }, [query, row1, row2, intensity, region, channel, sort, descDir, sessionRecency, warmFilter]);
 
   useEffect(() => {
     clearTimeout(debounce.current);
@@ -1106,6 +1275,8 @@ export default function Portfolios() {
       if (row2 === "none")  { params.email_consent = false; params.sms_consent = false; }
 
       if (intensity) params.intensity_bucket = intensity;
+      if (sessionRecency) params.session_recency = sessionRecency as "today"|"7d"|"30d"|"never";
+      if (warmFilter) params.warm = true;
 
       setLoading(true);
       setError(null);
@@ -1115,7 +1286,7 @@ export default function Portfolios() {
         .finally(() => setLoading(false));
     }, 280);
     return () => clearTimeout(debounce.current);
-  }, [query, row1, row2, intensity, region, channel, sort, descDir, page]);
+  }, [query, row1, row2, intensity, region, channel, sort, descDir, page, sessionRecency, warmFilter]);
 
   const totalPages = Math.max(1, Math.ceil(total / 48));
 
@@ -1199,6 +1370,15 @@ export default function Portfolios() {
           <option value="app">App</option>
           <option value="mixed">Mixed</option>
         </select>
+        <select value={sessionRecency} onChange={(e) => setSessionRecency(e.target.value as "today"|"7d"|"30d"|"never"|"")}
+          style={{ background: CLR.bg3, border: `1px solid ${CLR.border}`, color: sessionRecency ? CLR.a : CLR.t2 }}
+          className="h-8 rounded-md px-2 font-mono text-[11px] outline-none">
+          <option value="">Session</option>
+          <option value="today">Browsed today</option>
+          <option value="7d">Last 7 days</option>
+          <option value="30d">Last 30 days</option>
+          <option value="never">Never visited</option>
+        </select>
         <select value={sort} onChange={(e) => setSort(e.target.value)}
           style={{ background: CLR.bg3, border: `1px solid ${CLR.border}`, color: CLR.t2 }}
           className="h-8 rounded-md px-2 font-mono text-[11px] outline-none">
@@ -1226,6 +1406,8 @@ export default function Portfolios() {
             <FilterPill label={o.label} active={row1 === o.id} variant={o.variant} onClick={() => setRow1(o.id)} />
           </span>
         ))}
+        <span style={{ color: CLR.border2 }} className="mx-1">|</span>
+        <FilterPill label="🔥 Warm" active={warmFilter} variant="amber" onClick={() => setWarmFilter((w) => !w)} />
       </div>
 
       {/* Filter row 2 — Reachable */}

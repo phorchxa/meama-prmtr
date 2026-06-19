@@ -15,6 +15,8 @@ dependencies = [
     "pandas>=2.2",
     "duckdb>=1.0",
     "python-dotenv>=1.0",
+    "apscheduler>=3.10",
+    "maxminddb>=2.0",
 ]
 
 # NOTE: deliberately NO scikit-learn / xgboost / hdbscan. See CLAUDE.md §NO-ML RULE.

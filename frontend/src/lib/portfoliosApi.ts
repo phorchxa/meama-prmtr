@@ -33,6 +33,22 @@ export type DeliveryVsPickupPreference =
   | "mixed"
   | "unknown";
 
+export interface SessionProduct {
+  sku: string;
+  title: string;
+}
+
+export interface LatestSession {
+  session_id?: string | null;
+  products_viewed_sku?: string[] | null;
+  products_carted_sku?: string[] | null;
+  types_viewed?: string[] | null;
+  viewed_products?: SessionProduct[] | null;
+  cart_products?: SessionProduct[] | null;
+  add_to_carts?: number | null;
+  converted?: boolean | null;
+}
+
 export interface PortfolioSummary {
   shopify_customer_id: number;
   full_name: string;
@@ -99,6 +115,27 @@ export interface PortfolioSummary {
   never_ordered?: boolean;
   is_registered: boolean;
   customer_created_at: string | null;
+  // Session behavior
+  sessions_30d?: number | null;
+  last_session_at?: string | null;
+  days_since_last_session?: number | null;
+  last_funnel_stage?: number | null;
+  last_cart_value?: number | null;
+  last_viewed_sku?: string | null;
+  add_to_carts?: number | null;
+  converted?: boolean | null;
+  viewed_products?: SessionProduct[] | null;
+  cart_products?: SessionProduct[] | null;
+  latest_session?: LatestSession | null;
+  checkout_abandons?: number | null;
+  session_warm?: boolean;
+  top_browsed_category?: string | null;
+  last_viewed_products?: string[] | null;
+  last_viewed_category?: string | null;
+  top_viewed_products?: string[] | null;
+  last_session_channel?: string | null;
+  last_session_device?: string | null;
+  last_session_city?: string | null;
 }
 
 export interface OrderRow {
@@ -136,6 +173,8 @@ export interface ListParams {
   promo_heavy?: boolean;
   never_ordered?: boolean;
   intensity_bucket?: "light" | "medium" | "strong";
+  session_recency?: "today" | "7d" | "30d" | "never";
+  warm?: boolean;
   sort?: string;
   desc?: boolean;
   page?: number;
@@ -157,6 +196,8 @@ export async function fetchPortfolios(params: ListParams = {}): Promise<Portfoli
   if (params.promo_heavy   !== undefined)    sp.set("promo_heavy",   String(params.promo_heavy));
   if (params.never_ordered !== undefined)    sp.set("never_ordered",    String(params.never_ordered));
   if (params.intensity_bucket)               sp.set("intensity_bucket", params.intensity_bucket);
+  if (params.session_recency)               sp.set("session_recency",  params.session_recency);
+  if (params.warm !== undefined)            sp.set("warm",             String(params.warm));
   if (params.sort)                           sp.set("sort",             params.sort);
   if (params.desc !== undefined)             sp.set("desc",          String(params.desc));
   sp.set("page",      String(params.page      ?? 1));

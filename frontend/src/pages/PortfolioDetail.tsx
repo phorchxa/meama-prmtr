@@ -11,6 +11,7 @@ import {
   type DeliveryVsPickupPreference,
   type PortfolioDetail as PortfolioDetailData,
   type ReturnPeriodLabel,
+  type SessionProduct,
 } from "../lib/portfoliosApi";
 import { PageHeader } from "./PageHeader";
 
@@ -183,6 +184,20 @@ function nextBestAction(data: PortfolioDetailData) {
   return "Review customer history before campaign selection.";
 }
 
+function relTimeDetailed(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const m = Math.floor(diff / 60000);
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  return `${Math.floor(h / 24)}d ago`;
+}
+
+const FUNNEL_STAGE_LABEL_D: Record<number, string> = {
+  1: "Browsing", 2: "Product view", 3: "Added to cart",
+  4: "Checkout started", 5: "Payment info", 6: "Purchase", 7: "Purchase",
+};
+
 function Tag({ tone = "neutral", children }: { tone?: Tone; children: ReactNode }) {
   return (
     <span className={cx("inline-flex items-center rounded-md border px-1.5 py-0.5 font-mono text-[10px]", tagClass(tone))}>
@@ -237,6 +252,36 @@ function ChipList({ values }: { values: string[] | null | undefined }) {
       ))}
     </div>
   );
+}
+
+function ProductList({ products }: { products: SessionProduct[] | null | undefined }) {
+  if (!products?.length) return <span className="text-[12px] text-[#9a9187]">—</span>;
+  return (
+    <div className="space-y-1.5">
+      {products.map((product) => (
+        <div key={product.sku} className="min-w-0">
+          <div className="truncate text-[12.5px] font-medium text-[#17120d]">{product.title}</div>
+          <div className="truncate font-mono text-[9.5px] text-[#9a9187]">{product.sku}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function sessionViewedProducts(data: PortfolioDetailData) {
+  return data.latest_session?.viewed_products ?? data.viewed_products ?? [];
+}
+
+function sessionCartProducts(data: PortfolioDetailData) {
+  return data.latest_session?.cart_products ?? data.cart_products ?? [];
+}
+
+function sessionAddToCarts(data: PortfolioDetailData) {
+  return data.latest_session?.add_to_carts ?? data.add_to_carts ?? null;
+}
+
+function sessionConverted(data: PortfolioDetailData) {
+  return data.latest_session?.converted ?? data.converted ?? null;
 }
 
 function ChannelSplit({ data }: { data: PortfolioDetailData }) {
@@ -477,6 +522,43 @@ export default function PortfolioDetail() {
               <Field label="Reachable" value={data.accept_marketing_email || data.sms_marketing ? "Yes" : "No"} />
             </FieldGrid>
           </Section>
+
+          {/* Sessions & on-site behavior (prototype B) */}
+          {(data.sessions_30d != null || data.last_session_at) && (
+            <Section title="Sessions & on-site behavior">
+              <div className="grid grid-cols-2 gap-x-4 gap-y-3 md:grid-cols-4">
+                <Field label="Sessions · 30d" value={data.sessions_30d ?? 0} />
+                <Field label="Last session" value={data.last_session_at ? relTimeDetailed(data.last_session_at) : null} />
+                <Field label="Days since session" value={data.days_since_last_session != null ? `${data.days_since_last_session}d` : null} />
+                <Field label="Checkout abandons" value={data.checkout_abandons ?? 0} />
+                <Field label="Last funnel stage" value={data.last_funnel_stage != null ? (FUNNEL_STAGE_LABEL_D[data.last_funnel_stage] ?? `Stage ${data.last_funnel_stage}`) : null} />
+                <Field label="Last cart value" value={data.last_cart_value != null ? `₾${data.last_cart_value.toFixed(0)}` : null} />
+                <Field label="Viewed products" value={sessionViewedProducts(data).length ? <ProductList products={sessionViewedProducts(data)} /> : <ChipList values={data.last_viewed_products} />} />
+                <Field label="Added to cart" value={<ProductList products={sessionCartProducts(data)} />} />
+                <Field label="Format" value={data.last_viewed_category ?? data.top_browsed_category} />
+                <Field label="Browsed over time" value={<ChipList values={data.top_viewed_products} />} />
+                <Field label="Session channel" value={data.last_session_channel} />
+                <Field label="Device" value={data.last_session_device} />
+                <Field label="City" value={data.last_session_city} />
+              </div>
+              {data.session_warm && (
+                <div className="mt-3 rounded-xl border border-[#c8b090] bg-[#fbf6ec] p-3 text-[12px] leading-5 text-[#6b5a3e]">
+                  <b style={{ color: "#a9772f" }}>Win-back ready.</b> Customer has a recent session with cart activity and no recent order — warm pool for re-engagement.
+                </div>
+              )}
+              {(sessionAddToCarts(data) ?? 0) > 0 && sessionConverted(data) === false && (
+                <div className="mt-3 rounded-xl border border-[#efb7b1] bg-[#fff0ee] p-3 text-[12px] leading-5 text-[#62594e]">
+                  <b className="text-[#bb3a2f]">Cart abandoner.</b> Customer added product(s) to cart but did not convert.
+                  {sessionCartProducts(data).length ? <div className="mt-2"><ProductList products={sessionCartProducts(data)} /></div> : null}
+                </div>
+              )}
+              {data.never_ordered && (
+                <p className="mt-2 text-[11px]" style={{ color: "#9a9187" }}>
+                  Never ordered — this section shows registration context, browse history, and the stage they stopped at.
+                </p>
+              )}
+            </Section>
+          )}
 
           <Section title="Risk & Opportunity">
             <div className="space-y-3">

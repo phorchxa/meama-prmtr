@@ -44,6 +44,19 @@ class Settings(BaseSettings):
     shopify_admin_api_token: str = ""
     shopify_webhook_secret: str = ""
 
+    # Omnisend
+    omnisend_api_key: str = ""
+
+    # Win-back trigger (all thresholds configurable via env)
+    winback_funnel_stage_min: int = 4        # checkout_started or deeper
+    winback_quiet_minutes: int = 15          # session must have been idle this long
+    winback_cooldown_hours: int = 24         # one message per customer per day
+    winback_target_statuses: str = "at_risk" # comma-separated lifecycle statuses
+
+    # Geo resolver (DB-IP Lite MMDB)
+    dbip_mmdb_path: str = ""   # absolute path to .mmdb file
+    drop_ip_after: bool = True  # null out ip_address after resolving (privacy)
+
     @property
     def cors_origin_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]

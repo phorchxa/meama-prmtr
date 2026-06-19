@@ -13,6 +13,7 @@ import Login from "./pages/Login";
 import MoneyHunter from "./pages/MoneyHunter";
 import PortfolioDetail from "./pages/PortfolioDetail";
 import Portfolios from "./pages/Portfolios";
+import Sessions from "./pages/Sessions";
 import ProductDetail from "./pages/ProductDetail";
 import Products from "./pages/Products";
 import Reports from "./pages/Reports";
@@ -26,6 +27,7 @@ const NAV_ITEMS = [
   { to: "/products", key: "products" },
   { to: "/customers", key: "customers" },
   { to: "/portfolios", key: "portfolios" },
+  { to: "/sessions", key: "sessions" },
   { to: "/stock", key: "stock" },
   { to: "/reports", key: "reports" },
   { to: "/alerts", key: "alerts" },
@@ -244,6 +246,7 @@ export default function App() {
         <Route path="/customers" element={<ProtectedRoute><Customers /></ProtectedRoute>} />
         <Route path="/customers/:id" element={<ProtectedRoute><CustomerDetail /></ProtectedRoute>} />
         <Route path="/portfolios" element={<ProtectedRoute><Portfolios /></ProtectedRoute>} />
+        <Route path="/sessions" element={<ProtectedRoute><Sessions /></ProtectedRoute>} />
         <Route path="/portfolios/:id" element={<ProtectedRoute><PortfolioDetail /></ProtectedRoute>} />
         <Route path="/stock" element={<ProtectedRoute><Stock /></ProtectedRoute>} />
         <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
