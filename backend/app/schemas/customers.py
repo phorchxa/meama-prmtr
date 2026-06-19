@@ -16,6 +16,11 @@ class CustomerSummary(BaseModel):
     rfm_segment: str | None = None
     ltv: float | None = None
     last_order_date: date | None = None
+    # Derived from customer_metrics
+    churn_score: float | None = None
+    cluster_tag: str | None = None
+    order_count: int | None = None
+    aov: float | None = None
 
 
 class CustomerMetrics(BaseModel):

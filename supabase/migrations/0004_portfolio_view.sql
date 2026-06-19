@@ -212,10 +212,10 @@ capsule_metrics AS (
         customer_id,
         COUNT(DISTINCT shopify_order_id)::int                              AS capsule_order_count,
         COALESCE(SUM(quantity), 0)::numeric                                AS capsule_quantity,
-        COALESCE(SUM(quantity * item_price), 0)::numeric                   AS capsule_spend,
+        COALESCE(SUM(item_price), 0)::numeric                              AS capsule_spend,
         CASE
             WHEN COALESCE(SUM(quantity), 0) > 0
-            THEN ROUND((SUM(quantity * item_price) / SUM(quantity))::numeric, 2)
+            THEN ROUND((SUM(item_price) / SUM(quantity))::numeric, 2)
             ELSE NULL
         END                                                                AS avg_capsule_price,
         MIN(processed_at)                                                  AS first_capsule_order_at,
