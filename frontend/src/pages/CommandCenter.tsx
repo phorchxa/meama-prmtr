@@ -156,9 +156,9 @@ export default function CommandCenter() {
             />
             <KpiCard
               label="Avg margin"
-              value={formatPercent(kpis.avg_margin_pct)}
-              sub={`Floor: 40%`}
-              tone={kpis.avg_margin_pct < 0.4 ? "red" : "green"}
+              value={kpis.avg_margin_pct == null ? "—" : formatPercent(kpis.avg_margin_pct)}
+              sub={kpis.avg_margin_pct == null ? "COGS not loaded" : `Floor: 40%`}
+              tone={kpis.avg_margin_pct != null && kpis.avg_margin_pct < 0.4 ? "red" : undefined}
             />
             <KpiCard
               label="Top category"

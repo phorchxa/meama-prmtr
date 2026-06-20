@@ -102,7 +102,7 @@ export default function Stock() {
                     No stock data
                   </div>
                   <div className="mt-1 text-[11px] text-meama-charcoal">
-                    products_master has no stock_quantity values yet
+                    products_georgia has no inventory_quantity values yet
                   </div>
                 </td>
               </tr>

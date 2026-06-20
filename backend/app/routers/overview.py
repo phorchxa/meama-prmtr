@@ -9,13 +9,12 @@ from fastapi import APIRouter, Depends, Response
 
 from ..business_rules import LOW_STOCK_WEEKS, REORDER_POINT_DAYS, RETAIL_CHANNELS
 from ..deps import get_supabase
+from ..services.catalog import clean_category, dedupe_geo
 
 router = APIRouter(prefix="/overview", tags=["overview"])
 
 _CACHE_TTL = 300  # 5 minutes
 _cache: dict[str, Any] = {"ts": 0.0, "data": None}
-
-_EXCLUDE_CATEGORIES = {"Shipping", "Test", "None", None}
 
 
 def _float0(v) -> float:
@@ -36,9 +35,8 @@ def _int0(v) -> int:
 async def get_overview(sb=Depends(get_supabase), response: Response = None):
     """Top-line KPIs from the same Supabase RPCs used by the products router.
 
-    - revenue_30d / units_30d: from get_product_stats RPC
-    - stock_quantity: from products_master (always populated)
-    - margin: from products_master (cogs + price)
+    - revenue_30d / units_30d: from get_product_stats RPC (order_items.sku)
+    - stock_quantity / cogs / price: from products_georgia (deduped by variant_sku)
     - revenue_trend_30d / alerts: from orders_flat / alerts tables (empty if ETL not run)
     """
     if _cache["data"] and (time.time() - float(_cache["ts"])) < _CACHE_TTL:
@@ -46,20 +44,18 @@ async def get_overview(sb=Depends(get_supabase), response: Response = None):
             response.headers["Cache-Control"] = "s-maxage=300, stale-while-revalidate=60"
         return _cache["data"]
 
-    # ── 1. Base product info (stock_quantity + pricing) from products_master ──
+    # ── 1. Catalog metadata from products_georgia (deduped by variant_sku) ────
     try:
-        products_raw: list[dict] = (
-            sb.table("products_master")
-            .select("sku, name, name_en, category, cogs, price_b2c, price_brand_shop, "
-                    "price_marketplace, stock_quantity")
+        geo_raw: list[dict] = (
+            sb.table("products_georgia")
+            .select("variant_sku, title, product_type, status, variant_price, "
+                    "cost_per_item, inventory_quantity")
             .execute()
             .data or []
         )
     except Exception:
-        products_raw = []
-
-    active = [p for p in products_raw if p.get("category") not in _EXCLUDE_CATEGORIES]
-    product_map = {p["sku"]: p for p in active}
+        geo_raw = []
+    geo_map = dedupe_geo(geo_raw)
 
     # ── 2. Sales stats from RPC (same as products router) ────────────────────
     try:
@@ -68,15 +64,15 @@ async def get_overview(sb=Depends(get_supabase), response: Response = None):
         stats_raw = []
     stats_map = {r["sku"]: r for r in stats_raw}
 
-    # ── 3. New metrics for avg_monthly_consumption (for stock cover calc) ────
+    # ── 3. New metrics: total_revenue (vending filter) + avg_monthly_consumption ─
     try:
         nm_raw: list[dict] = sb.rpc("get_product_new_metrics").execute().data or []
     except Exception:
         nm_raw = []
     nm_map = {r["sku"]: r for r in nm_raw}
 
-    # ── 4. Aggregate KPIs ─────────────────────────────────────────────────────
-    total_skus = len(active)
+    # ── 4. Aggregate KPIs — driven by SALES (every sku with retail revenue) ───
+    total_skus = 0
     revenue_30d = 0.0
     units_30d = 0
     critical_skus = 0
@@ -84,21 +80,27 @@ async def get_overview(sb=Depends(get_supabase), response: Response = None):
     cat_rev: dict[str, float] = {}
     margins: list[float] = []
 
-    for p in active:
-        sku = p["sku"]
+    for sku in stats_map:
         st = stats_map.get(sku, {})
         nm = nm_map.get(sku, {})
+
+        # Exclude ₾0-lifetime lines (vending dispenses / shipping / test).
+        if _float0(nm.get("total_revenue")) <= 0:
+            continue
+
+        geo = geo_map.get(sku, {})
+        total_skus += 1
 
         rev = _float0(st.get("revenue_30d"))
         units = _int0(st.get("units_30d"))
         revenue_30d += rev
         units_30d += units
 
-        cat = p.get("category") or "Other"
+        cat = clean_category(geo.get("product_type")) or "Other"
         cat_rev[cat] = cat_rev.get(cat, 0.0) + rev
 
         # Stock cover
-        sq = p.get("stock_quantity")
+        sq = geo.get("inventory_quantity")
         amc = _float0(nm.get("avg_monthly_consumption"))
         if sq is not None and amc > 0:
             months = float(sq) / amc
@@ -108,21 +110,15 @@ async def get_overview(sb=Depends(get_supabase), response: Response = None):
             elif weeks < LOW_STOCK_WEEKS * 2:
                 low_skus += 1
 
-        # Margin
-        cogs = _float0(p.get("cogs"))
-        price = None
-        for k in ("price_b2c", "price_brand_shop", "price_marketplace"):
-            v = p.get(k)
-            if v is not None:
-                try:
-                    price = float(v)
-                    break
-                except (TypeError, ValueError):
-                    pass
+        # Margin (cogs from products_georgia.cost_per_item)
+        cogs = _float0(geo.get("cost_per_item"))
+        price = _float0(geo.get("variant_price"))
         if cogs and price and price > 0:
             margins.append((price - cogs) / price)
 
-    avg_margin = sum(margins) / len(margins) if margins else 0.0
+    # None (not 0.0) when no COGS data — products_georgia.cost_per_item is
+    # currently unpopulated, so showing "0%" on a margin tile would mislead.
+    avg_margin = sum(margins) / len(margins) if margins else None
     top_cat = max(cat_rev, key=lambda k: cat_rev[k]) if cat_rev else None
     top_cat_pct = (cat_rev.get(top_cat, 0.0) / revenue_30d) if (top_cat and revenue_30d > 0) else 0.0
 
@@ -179,10 +175,12 @@ async def get_overview(sb=Depends(get_supabase), response: Response = None):
 
     # ── 7. Actions: reorder items with critical stock ─────────────────────────
     actions: list[dict] = []
-    for p in active:
-        sku = p["sku"]
+    for sku in stats_map:
         nm = nm_map.get(sku, {})
-        sq = p.get("stock_quantity")
+        if _float0(nm.get("total_revenue")) <= 0:
+            continue
+        geo = geo_map.get(sku, {})
+        sq = geo.get("inventory_quantity")
         amc = _float0(nm.get("avg_monthly_consumption"))
         if sq is None or amc <= 0:
             continue
@@ -191,16 +189,8 @@ async def get_overview(sb=Depends(get_supabase), response: Response = None):
         if weeks < LOW_STOCK_WEEKS:
             st = stats_map.get(sku, {})
             velocity_day = _float0(st.get("units_30d")) / 30.0
-            price = None
-            for k in ("price_b2c", "price_brand_shop", "price_marketplace"):
-                v = p.get(k)
-                if v:
-                    try:
-                        price = float(v)
-                        break
-                    except (TypeError, ValueError):
-                        pass
-            display_name = p.get("name_en") or p.get("name") or sku
+            price = _float0(geo.get("variant_price"))
+            display_name = (geo.get("title") or "").strip() or (st.get("last_title") or "").strip() or sku
             actions.append({
                 "type": "reorder",
                 "sku": sku,
@@ -219,7 +209,7 @@ async def get_overview(sb=Depends(get_supabase), response: Response = None):
             "units_30d": units_30d,
             "top_category": top_cat,
             "top_category_pct": round(top_cat_pct, 4),
-            "avg_margin_pct": round(avg_margin, 4),
+            "avg_margin_pct": round(avg_margin, 4) if avg_margin is not None else None,
             "critical_stock_skus": critical_skus,
             "low_stock_skus": low_skus,
             "ecom_pct": round(ecom_pct, 4),

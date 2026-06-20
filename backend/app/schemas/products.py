@@ -73,7 +73,7 @@ class ProductSummary(BaseModel):
     top_bundle_count: int = 0
 
     # ── Stock status (derived from avg_monthly_consumption + stock_quantity) ──
-    stock_quantity: int | None = None   # units on hand (products_master or geo fallback)
+    stock_quantity: int | None = None   # units on hand (products_georgia.inventory_quantity)
     stock_status: str | None = None     # 'understock' | 'in_stock' | 'overstock'
 
     ai_insight: str | None = None

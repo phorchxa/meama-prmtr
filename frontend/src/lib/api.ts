@@ -272,7 +272,7 @@ export interface OverviewKpis {
   units_30d: number;
   top_category: string | null;
   top_category_pct: number;
-  avg_margin_pct: number;
+  avg_margin_pct: number | null;
   critical_stock_skus: number;
   low_stock_skus: number;
   ecom_pct: number;

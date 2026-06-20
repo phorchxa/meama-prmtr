@@ -8,6 +8,7 @@ from zoneinfo import ZoneInfo
 from fastapi import APIRouter, Depends, Query
 
 from ..deps import get_supabase
+from ..services.catalog import clean_category, dedupe_geo
 from ..schemas.sessions import (
     AbandonmentByStage,
     AbandonmentKpis,
@@ -137,30 +138,28 @@ async def sessions_overview(
         for sku in (s.get("products_carted_sku") or []):
             sku_cart[sku] += 1
 
-    # Resolve SKU → name / category
+    # Resolve SKU → name / category from products_georgia (deduped by variant_sku)
     top_skus = [sku for sku, _ in sku_view.most_common(20)]
     product_map: dict = {}
     if top_skus:
-        pm = (
+        pg = (
             sb.table("products_georgia")
-            .select("variant_sku,title,product_type")
+            .select("variant_sku,title,product_type,status,variant_price")
             .in_("variant_sku", top_skus)
             .execute()
         )
-        product_map = {
-            r["variant_sku"]: {"sku": r["variant_sku"], "name": r.get("title"), "category": r.get("product_type")}
-            for r in (pm.data or [])
-        }
+        product_map = dedupe_geo(pg.data or [])
 
     def _prod(sku: str, count: int) -> TopProduct:
         info = product_map.get(sku, {})
-        return TopProduct(sku=sku, name=info.get("name") or sku, category=info.get("category"), count=count)
+        return TopProduct(sku=sku, name=info.get("title") or sku,
+                          category=clean_category(info.get("product_type")), count=count)
 
     top_products = [_prod(sku, cnt) for sku, cnt in sku_view.most_common(5)]
 
     cat_cnt: Counter = Counter()
     for sku, cnt in sku_view.items():
-        cat = (product_map.get(sku) or {}).get("category")
+        cat = clean_category((product_map.get(sku) or {}).get("product_type"))
         if cat:
             cat_cnt[cat] += cnt
     top_categories = [

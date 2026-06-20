@@ -17,6 +17,7 @@ from ..business_rules import RETAIL_ORDER_SOURCES
 from ..deps import get_supabase
 from ..schemas.common import Page
 from ..schemas.portfolios import OrderRow, PageJourneyEntry, PageJourneyResponse, PortfolioDetail, PortfolioSummary
+from ..services.catalog import clean_category, dedupe_geo
 
 T = TypeVar("T", bound=PortfolioSummary)
 _TZ_TBS = ZoneInfo("Asia/Tbilisi")
@@ -229,13 +230,16 @@ def _merge_behavior(sb, items: list[T]) -> list[T]:
             sku_set.add(skus[0])
     sku_cat_map: dict = {}
     if sku_set:
-        pm = (
+        pg = (
             sb.table("products_georgia")
-            .select("variant_sku,product_type")
+            .select("variant_sku,product_type,status,variant_price,title")
             .in_("variant_sku", list(sku_set))
             .execute()
         )
-        sku_cat_map = {r["variant_sku"]: r.get("product_type") for r in (pm.data or [])}
+        sku_cat_map = {
+            sku: clean_category(r.get("product_type"))
+            for sku, r in dedupe_geo(pg.data or []).items()
+        }
 
     enriched: list[T] = []
     now = datetime.now(UTC)
