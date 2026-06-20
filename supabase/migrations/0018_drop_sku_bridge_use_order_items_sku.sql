@@ -67,9 +67,13 @@ items AS (
     WHERE  i.sku IS NOT NULL AND i.quantity > 0
 ),
 monthly AS (
+    -- 30-day window = Shopify's "-30d until today": calendar days in shop tz
+    -- (Asia/Tbilisi), i.e. from local midnight 30 days ago. Matches Shopify
+    -- net_items_sold / sales reports; a rolling UTC NOW()-30d under-counts the
+    -- start-of-day boundary.
     SELECT sku,
-        SUM(CASE WHEN processed_at >= NOW() - INTERVAL '30 days' THEN qty   ELSE 0 END) AS units_30d,
-        SUM(CASE WHEN processed_at >= NOW() - INTERVAL '30 days' THEN price ELSE 0 END) AS revenue_30d,
+        SUM(CASE WHEN processed_at >= (date_trunc('day', NOW() AT TIME ZONE 'Asia/Tbilisi') - INTERVAL '30 days') AT TIME ZONE 'Asia/Tbilisi' THEN qty   ELSE 0 END) AS units_30d,
+        SUM(CASE WHEN processed_at >= (date_trunc('day', NOW() AT TIME ZONE 'Asia/Tbilisi') - INTERVAL '30 days') AT TIME ZONE 'Asia/Tbilisi' THEN price ELSE 0 END) AS revenue_30d,
         SUM(CASE WHEN date_trunc('month', processed_at) = date_trunc('month', NOW() - INTERVAL '11 months') THEN qty ELSE 0 END) AS m0,
         SUM(CASE WHEN date_trunc('month', processed_at) = date_trunc('month', NOW() - INTERVAL '10 months') THEN qty ELSE 0 END) AS m1,
         SUM(CASE WHEN date_trunc('month', processed_at) = date_trunc('month', NOW() - INTERVAL '9 months')  THEN qty ELSE 0 END) AS m2,
@@ -123,7 +127,8 @@ WITH retail AS (
     SELECT shopify_order_id, source
     FROM   meama_georgia_orders
     WHERE  source IN ('web', 'pos', '195189899265', 'online_store', 'Online Store', 'shopify_draft_order')
-      AND  processed_at >= NOW() - INTERVAL '30 days'
+      -- 30-day window = Shopify calendar days in shop tz (Asia/Tbilisi)
+      AND  processed_at >= (date_trunc('day', NOW() AT TIME ZONE 'Asia/Tbilisi') - INTERVAL '30 days') AT TIME ZONE 'Asia/Tbilisi'
       AND  financial_status IN ('paid', 'partially_paid', 'partially_refunded')
       AND  cancelled_at IS NULL
 ),
