@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Skeleton } from "../components/Skeleton";
 import { formatGEL, formatGEL0, formatNumber, tbilisiDate } from "../lib/format";
 import {
+  fetchPageJourney,
   fetchPortfolio,
   fetchPortfolios,
   type ChurnReason,
@@ -10,6 +11,8 @@ import {
   type CustomerStatus,
   type DeliveryVsPickupPreference,
   type ListParams,
+  type PageJourney,
+  type PageJourneyEntry,
   type PortfolioDetail,
   type PortfolioSummary,
   type ReturnPeriodLabel,
@@ -296,6 +299,31 @@ function sessionConverted(data: PortfolioSummary) {
   return data.latest_session?.converted ?? data.converted ?? null;
 }
 
+function sessionCartStatus(data: PortfolioSummary) {
+  if (data.latest_session?.cart_status) return data.latest_session.cart_status;
+  if (data.cart_status) return data.cart_status;
+  if (sessionConverted(data) === true) return "converted";
+  if ((sessionAddToCarts(data) ?? 0) > 0 && sessionConverted(data) === false) return "active_abandoner";
+  return sessionViewedProducts(data).length ? "browsing_only" : "no_cart_activity";
+}
+
+function recoveredOrderAt(data: PortfolioSummary) {
+  return data.latest_session?.recovered_order_at ?? data.recovered_order_at ?? null;
+}
+
+function daysToRecovery(data: PortfolioSummary) {
+  return data.latest_session?.days_to_recovery ?? data.days_to_recovery ?? null;
+}
+
+function cartStatusLabel(data: PortfolioSummary) {
+  const status = sessionCartStatus(data);
+  if (status === "active_abandoner") return "Cart abandoner";
+  if (status === "recovered_after_abandonment") return "Recovered after abandonment";
+  if (status === "converted") return "Converted session";
+  if (status === "browsing_only") return "Browsing only";
+  return "No cart activity";
+}
+
 function ConsentPills({ email, sms }: { email: boolean; sms: boolean }) {
   return (
     <div className="flex gap-1.5 mt-[3px]">
@@ -340,7 +368,7 @@ function CustomerCard({ customer, onOpen }: { customer: PortfolioSummary; onOpen
     <article
       role="button"
       tabIndex={0}
-      onClick={() => onOpen(customer.shopify_customer_id)}
+      onClick={(e) => { (e.currentTarget as HTMLElement).blur(); onOpen(customer.shopify_customer_id); }}
       onKeyDown={(e) => e.key === "Enter" && onOpen(customer.shopify_customer_id)}
       style={{ background: CLR.bg2, border: `1px solid ${CLR.border}`, borderRadius: 14 }}
       className="cursor-pointer overflow-hidden transition-all duration-150 hover:-translate-y-0.5 hover:shadow-[0_6px_20px_-10px_rgba(0,0,0,.18)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1c7a4a]/40"
@@ -459,6 +487,12 @@ function CustomerCard({ customer, onOpen }: { customer: PortfolioSummary; onOpen
               {customer.last_funnel_stage != null && (
                 <span>Reached <b>{FUNNEL_STAGE_LABEL[customer.last_funnel_stage] ?? `Stage ${customer.last_funnel_stage}`}</b></span>
               )}
+              {customer.last_cart_recovery_outcome === "recovered_same" && (
+                <> <Tag variant="green">Recovered ✓ same</Tag></>
+              )}
+              {customer.last_cart_recovery_outcome === "recovered_different" && (
+                <> <Tag variant="amber">Recovered · different</Tag></>
+              )}
               {customer.last_cart_value != null && customer.last_cart_value > 0 && (
                 <span> · <b>₾{customer.last_cart_value.toFixed(0)}</b> cart</span>
               )}
@@ -567,16 +601,20 @@ function DrawerSkeleton() {
 
 function CustomerDrawer({ customerId, onClose }: { customerId: number | null; onClose: () => void }) {
   const [data, setData] = useState<PortfolioDetail | null>(null);
+  const [pageJourney, setPageJourney] = useState<PageJourney | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const open = customerId !== null;
 
   useEffect(() => {
-    if (!open) { setData(null); setError(null); return; }
+    if (!open) { setData(null); setPageJourney(null); setError(null); return; }
     setLoading(true);
     setError(null);
-    fetchPortfolio(customerId)
-      .then(setData)
+    Promise.all([
+      fetchPortfolio(customerId),
+      fetchPageJourney(customerId).catch(() => null),
+    ])
+      .then(([portfolio, journey]) => { setData(portfolio); setPageJourney(journey); })
       .catch((err: Error) => setError(err.message))
       .finally(() => setLoading(false));
   }, [customerId, open]);
@@ -601,6 +639,7 @@ function CustomerDrawer({ customerId, onClose }: { customerId: number | null; on
       <aside
         role="dialog"
         aria-modal="true"
+        tabIndex={-1}
         style={{
           background: "#f7f6f4",
           borderLeft: `1px solid ${CLR.border}`,
@@ -611,13 +650,31 @@ function CustomerDrawer({ customerId, onClose }: { customerId: number | null; on
         {loading && !data && <DrawerSkeleton />}
         {error && <div className="p-5 text-[13px]" style={{ color: CLR.r }}>Error: {error}</div>}
 
-        {data && <DrawerContent data={data} onClose={onClose} />}
+        {data && <DrawerContent data={data} onClose={onClose} pageJourney={pageJourney} />}
       </aside>
     </>
   );
 }
 
-function DrawerContent({ data, onClose }: { data: PortfolioDetail; onClose: () => void }) {
+const CAT_EMOJI: Record<string, string> = {
+  home: "🏠", product: "📦", collection: "📚", cart: "🛒",
+  checkout: "💳", account: "👤", info: "📄", bundle: "🎁", search: "🔍",
+};
+function catEmoji(cat: string): string { return CAT_EMOJI[cat?.toLowerCase()] ?? "📄"; }
+function engColor(level: string): string {
+  if (level === "bounce") return CLR.r;
+  if (level === "quick")  return CLR.a;
+  if (level === "engaged" || level === "deep") return CLR.g;
+  return CLR.t3;
+}
+function engBg(level: string): string {
+  if (level === "bounce") return CLR.rb;
+  if (level === "quick")  return CLR.ab;
+  if (level === "engaged" || level === "deep") return CLR.gb;
+  return "#efefed";
+}
+
+function DrawerContent({ data, onClose, pageJourney }: { data: PortfolioDetail; onClose: () => void; pageJourney?: PageJourney | null }) {
 
   const accent = segAccent(data.segment);
   const churnRiskStat = 100 - data.health_score;
@@ -710,7 +767,7 @@ function DrawerContent({ data, onClose }: { data: PortfolioDetail; onClose: () =
             </p>
           ) : (
             <>
-              {data.session_warm && (
+              {data.session_warm && !["recovered_after_abandonment", "converted"].includes(sessionCartStatus(data)) && (
                 <div style={{ background: "#FBF6EC", border: `1px solid #C8B090`, borderRadius: 7, padding: "8px 11px", marginBottom: 11 }}>
                   <span className="flex items-center gap-[6px] font-mono text-[10px] uppercase tracking-[.06em]" style={{ color: "#A9772F" }}>
                     <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#A9772F", boxShadow: "0 0 0 3px rgba(185,138,62,.2)", display: "inline-block" }} />
@@ -718,14 +775,34 @@ function DrawerContent({ data, onClose }: { data: PortfolioDetail; onClose: () =
                   </span>
                 </div>
               )}
-              {(sessionAddToCarts(data) ?? 0) > 0 && sessionConverted(data) === false && (
+              {sessionCartStatus(data) === "active_abandoner" && (
                 <div style={{ background: CLR.rb, border: `1px solid ${CLR.rbd}`, borderRadius: 7, padding: "8px 11px", marginBottom: 11 }}>
-                  <span className="font-mono text-[10px] uppercase tracking-[.06em]" style={{ color: CLR.r }}>
+                  <div className="font-mono text-[10px] uppercase tracking-[.06em]" style={{ color: CLR.r }}>
                     Cart abandoner
+                  </div>
+                  {sessionCartProducts(data).length ? <div className="mt-2"><ProductList products={sessionCartProducts(data)} /></div> : null}
+                </div>
+              )}
+              {sessionCartStatus(data) === "recovered_after_abandonment" && (
+                <div style={{ background: CLR.gb, border: `1px solid ${CLR.gbd}`, borderRadius: 7, padding: "8px 11px", marginBottom: 11 }}>
+                  <div className="font-mono text-[10px] uppercase tracking-[.06em]" style={{ color: CLR.g }}>
+                    Recovered after abandonment
+                  </div>
+                  <div className="mt-1 text-[11px]" style={{ color: CLR.t2 }}>
+                    {recoveredOrderAt(data) ? da(recoveredOrderAt(data)) : "Recovered order date unavailable"}
+                    {daysToRecovery(data) != null ? ` · ${daysToRecovery(data)}d to recovery` : ""}
+                  </div>
+                </div>
+              )}
+              {sessionCartStatus(data) === "converted" && (
+                <div style={{ background: CLR.bb, border: `1px solid ${CLR.bbd}`, borderRadius: 7, padding: "8px 11px", marginBottom: 11 }}>
+                  <span className="font-mono text-[10px] uppercase tracking-[.06em]" style={{ color: CLR.b }}>
+                    Converted session
                   </span>
                 </div>
               )}
               <Grid2>
+                <Fld label="Cart status" value={cartStatusLabel(data)} />
                 <Fld label="Sessions · 30d" value={data.sessions_30d ?? "—"} />
                 <Fld label="Last seen" value={relTimeSince(data.last_session_at)} />
                 <Fld label="Days since session" value={data.days_since_last_session != null ? `${data.days_since_last_session}d` : "—"} />
@@ -737,10 +814,87 @@ function DrawerContent({ data, onClose }: { data: PortfolioDetail; onClose: () =
                 <Fld label="Format" value={data.last_viewed_category ?? data.top_browsed_category ?? "—"} />
                 <Fld label="Browsed over time" value={<ChipList values={data.top_viewed_products} />} />
                 <Fld label="Device" value={data.last_session_device ?? "—"} />
+                {data.last_cart_recovery_outcome && (
+                  <Fld
+                    label="Cart recovery"
+                    value={
+                      data.last_cart_recovery_outcome === "recovered_same"
+                        ? <span style={{ color: CLR.g }}>Bought what they carted</span>
+                        : data.last_cart_recovery_outcome === "recovered_different"
+                          ? <span style={{ color: CLR.a }}>Bought — different items</span>
+                          : (data.last_cart_value ?? 0) > 0
+                            ? <span style={{ color: CLR.t3 }}>Still a target</span>
+                            : "—"
+                    }
+                  />
+                )}
+                {(data.last_carted_products?.length ?? 0) > 0 && (
+                  <Fld label="Carted products" value={<ChipList values={data.last_carted_products} />} />
+                )}
+                {!data.session_warm && (data.last_funnel_stage ?? 0) >= 6 && (data.recent_orders?.length ?? 0) > 0 && (
+                  <Fld
+                    label="Last purchase"
+                    value={`${formatGEL(data.recent_orders[0].total)} · ${relTimeSince(data.recent_orders[0].processed_at)}`}
+                  />
+                )}
               </Grid2>
             </>
           )}
         </Panel>
+
+        {/* Page journey */}
+        {pageJourney && pageJourney.pages.length > 0 && (
+          <Panel title="Page journey" sub={`${pageJourney.total_pages_visited} pages · 30d`}>
+            <Grid2>
+              <Fld label="Total pages" value={pageJourney.total_pages_visited} />
+              <Fld
+                label="Most visited"
+                value={pageJourney.most_visited_category || "—"}
+              />
+              <Fld
+                label="Avg time on page"
+                value={pageJourney.avg_time_on_page_sec > 0 ? `${Math.round(pageJourney.avg_time_on_page_sec)}s` : "—"}
+              />
+              <Fld
+                label="Exit page"
+                value={pageJourney.exit_page
+                  ? <span className="font-mono text-[10px]" title={pageJourney.exit_page}>
+                      {pageJourney.exit_page_label
+                        ? pageJourney.exit_page_label
+                        : pageJourney.exit_page.length > 25
+                          ? pageJourney.exit_page.slice(0, 22) + "…"
+                          : pageJourney.exit_page}
+                    </span>
+                  : "—"}
+              />
+            </Grid2>
+            <div className="mt-[12px] space-y-[6px]">
+              {(pageJourney.pages as PageJourneyEntry[]).slice(0, 10).map((p, i) => (
+                <div key={i} className="flex items-center gap-[7px]">
+                  <span className="text-[13px] leading-none">{catEmoji(p.page_category)}</span>
+                  <span
+                    className="flex-1 truncate font-mono text-[10px]"
+                    style={{ color: CLR.text }}
+                    title={p.path}
+                  >
+                    {p.page_label || (p.path.length > 35 ? p.path.slice(0, 32) + "…" : p.path)}
+                  </span>
+                  {p.time_on_page_sec != null && (
+                    <span
+                      className="rounded px-[5px] py-[1px] text-[9px] font-medium whitespace-nowrap"
+                      style={{ background: engBg(p.engagement_level), color: engColor(p.engagement_level) }}
+                    >
+                      {Math.round(p.time_on_page_sec)}s
+                    </span>
+                  )}
+                  <span className="text-[10px] whitespace-nowrap" style={{ color: CLR.t3 }}>
+                    {relTimeSince(p.occurred_at)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </Panel>
+        )}
 
         {/* 3. Account health */}
         <Panel title="Account health" sub={rLabel}>
@@ -1183,6 +1337,24 @@ function DrawerContent({ data, onClose }: { data: PortfolioDetail; onClose: () =
             )}
         </Panel>
 
+        {/* 13. Behavior recording */}
+        {data.shopify_customer_id != null && (
+          <Panel title="Behavior recording">
+            <a
+              href={`https://clarity.microsoft.com/projects/view/s77hhg1bkm/impressions?CustomUserId=${data.shopify_customer_id}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ background: CLR.text, color: "#fff", borderRadius: 8, display: "block", textDecoration: "none" }}
+              className="w-full py-[10px] text-[12px] font-medium text-center hover:opacity-90 transition-opacity"
+            >
+              Open in Clarity →
+            </a>
+            <p className="mt-2 text-[11px] leading-[1.5]" style={{ color: CLR.t3 }}>
+              Opens Microsoft Clarity filtered to this customer's recorded sessions — heatmaps, scroll depth, clicks, and rage-click signals.
+            </p>
+          </Panel>
+        )}
+
         {/* 14. Action button */}
         <button
           style={{ background: CLR.text, color: "#fff", border: "none", borderRadius: 8 }}
@@ -1199,8 +1371,10 @@ function DrawerContent({ data, onClose }: { data: PortfolioDetail; onClose: () =
 // ── Main page ─────────────────────────────────────────────────────
 
 type FilterRow1 =
-  | "all" | "no_machine" | "never_ordered" | "promo_heavy" | "recommend"
+  | "all" | "no_machine" | "machine_no_capsules" | "never_ordered" | "promo_heavy" | "recommend"
   | "loyalist" | "at_risk" | "new_machine" | "active" | "lapsed";
+
+type SessionAction = "carted_never_bought" | "cart_abandoner" | "checkout_abandoner" | "converted" | "";
 
 type FilterRow2 = "all" | "email" | "sms" | "any" | "none";
 
@@ -1228,6 +1402,7 @@ export default function Portfolios() {
   const [descDir, setDescDir]     = useState(true);
   const [page, setPage]           = useState(1);
   const [sessionRecency, setSessionRecency] = useState<"today"|"7d"|"30d"|"never"|"">("");
+  const [sessionAction, setSessionAction] = useState<SessionAction>("");
   const [warmFilter, setWarmFilter] = useState(false);
 
   const [items, setItems]   = useState<PortfolioSummary[]>([]);
@@ -1238,10 +1413,10 @@ export default function Portfolios() {
   const [drawerId, setDrawerId] = useState<number | null>(null);
 
   const debounce = useRef<ReturnType<typeof setTimeout>>();
-  const openDrawer  = useCallback((id: number) => { setDrawerId(id); window.scrollTo({ top: 0, behavior: "smooth" }); }, []);
+  const openDrawer  = useCallback((id: number) => { const y = window.scrollY; setDrawerId(id); requestAnimationFrame(() => window.scrollTo(0, y)); }, []);
   const closeDrawer = useCallback(() => setDrawerId(null), []);
 
-  useEffect(() => { setPage(1); }, [query, row1, row2, intensity, region, channel, sort, descDir, sessionRecency, warmFilter]);
+  useEffect(() => { setPage(1); }, [query, row1, row2, intensity, region, channel, sort, descDir, sessionRecency, sessionAction, warmFilter]);
 
   useEffect(() => {
     clearTimeout(debounce.current);
@@ -1256,8 +1431,9 @@ export default function Portfolios() {
         page_size: 48,
       };
 
-      if (row1 === "no_machine")    params.no_machine    = true;
-      if (row1 === "never_ordered") params.never_ordered = true;
+      if (row1 === "no_machine")         params.no_machine         = true;
+      if (row1 === "machine_no_capsules") params.machine_no_capsules = true;
+      if (row1 === "never_ordered")      params.never_ordered       = true;
       if (row1 === "promo_heavy")   params.promo_heavy   = true;
       if (row1 === "loyalist")      params.segment = "loyalist";
       if (row1 === "at_risk")       params.segment = "at_risk";
@@ -1276,6 +1452,7 @@ export default function Portfolios() {
 
       if (intensity) params.intensity_bucket = intensity;
       if (sessionRecency) params.session_recency = sessionRecency as "today"|"7d"|"30d"|"never";
+      if (sessionAction) params.session_action = sessionAction as "carted_never_bought"|"cart_abandoner"|"checkout_abandoner"|"converted";
       if (warmFilter) params.warm = true;
 
       setLoading(true);
@@ -1286,14 +1463,15 @@ export default function Portfolios() {
         .finally(() => setLoading(false));
     }, 280);
     return () => clearTimeout(debounce.current);
-  }, [query, row1, row2, intensity, region, channel, sort, descDir, page, sessionRecency, warmFilter]);
+  }, [query, row1, row2, intensity, region, channel, sort, descDir, page, sessionRecency, sessionAction, warmFilter]);
 
   const totalPages = Math.max(1, Math.ceil(total / 48));
 
   const row1Opts: { id: FilterRow1; label: string; variant?: Variant; sep?: boolean }[] = [
-    { id: "all",          label: "All" },
-    { id: "no_machine",   label: "No machine" },
-    { id: "never_ordered",label: "Never ordered" },
+    { id: "all",                label: "All" },
+    { id: "no_machine",         label: "No machine" },
+    { id: "machine_no_capsules",label: "☕ No capsules", variant: "amber" },
+    { id: "never_ordered",      label: "Never ordered" },
     { id: "promo_heavy",  label: "% Promo-driven", variant: "amber" },
     { id: "recommend",    label: "✦ Recommend",    variant: "purple" },
     { id: "loyalist",     label: "Loyalist",       variant: "green",  sep: true },
@@ -1421,12 +1599,23 @@ export default function Portfolios() {
 
       {/* Filter row 3 — Intensity */}
       <div style={{ background: CLR.bg2 + "99", border: `1px solid ${CLR.border}`, borderRadius: 10 }}
-        className="mb-6 flex flex-wrap items-center gap-1.5 p-2.5">
+        className="mb-3 flex flex-wrap items-center gap-1.5 p-2.5">
         <span className="mr-1 font-mono text-[10px] uppercase tracking-[.07em]" style={{ color: CLR.t3 }}>Intensity</span>
         <FilterPill label="☕ All"    active={intensity === ""}       onClick={() => setIntensity("")} />
         <FilterPill label="🌿 Light"  active={intensity === "light"}  variant="blue"   onClick={() => setIntensity("light")} />
         <FilterPill label="☕ Medium" active={intensity === "medium"} variant="amber"  onClick={() => setIntensity("medium")} />
         <FilterPill label="🔥 Strong" active={intensity === "strong"} variant="red"    onClick={() => setIntensity("strong")} />
+      </div>
+
+      {/* Filter row 4 — Session */}
+      <div style={{ background: CLR.bg2 + "99", border: `1px solid ${CLR.border}`, borderRadius: 10 }}
+        className="mb-6 flex flex-wrap items-center gap-1.5 p-2.5">
+        <span className="mr-1 font-mono text-[10px] uppercase tracking-[.07em]" style={{ color: CLR.t3 }}>Session</span>
+        <FilterPill label="Any"                active={sessionAction === ""}                  onClick={() => setSessionAction("")} />
+        <FilterPill label="Carted, not bought" active={sessionAction === "carted_never_bought"} variant="amber" onClick={() => setSessionAction("carted_never_bought")} />
+        <FilterPill label="Cart abandoner"     active={sessionAction === "cart_abandoner"}      variant="amber" onClick={() => setSessionAction("cart_abandoner")} />
+        <FilterPill label="Checkout abandoner" active={sessionAction === "checkout_abandoner"}  variant="red"   onClick={() => setSessionAction("checkout_abandoner")} />
+        <FilterPill label="Converted session"  active={sessionAction === "converted"}           variant="green" onClick={() => setSessionAction("converted")} />
       </div>
 
       {/* Error */}

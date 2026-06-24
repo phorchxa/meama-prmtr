@@ -38,8 +38,16 @@ export interface SessionProduct {
   title: string;
 }
 
+export type CartStatus =
+  | "active_abandoner"
+  | "recovered_after_abandonment"
+  | "converted"
+  | "browsing_only"
+  | "no_cart_activity";
+
 export interface LatestSession {
   session_id?: string | null;
+  started_at?: string | null;
   products_viewed_sku?: string[] | null;
   products_carted_sku?: string[] | null;
   types_viewed?: string[] | null;
@@ -47,6 +55,10 @@ export interface LatestSession {
   cart_products?: SessionProduct[] | null;
   add_to_carts?: number | null;
   converted?: boolean | null;
+  cart_status?: CartStatus | null;
+  recovered_order_id?: number | null;
+  recovered_order_at?: string | null;
+  days_to_recovery?: number | null;
 }
 
 export interface PortfolioSummary {
@@ -127,6 +139,10 @@ export interface PortfolioSummary {
   viewed_products?: SessionProduct[] | null;
   cart_products?: SessionProduct[] | null;
   latest_session?: LatestSession | null;
+  cart_status?: CartStatus | null;
+  recovered_order_id?: number | null;
+  recovered_order_at?: string | null;
+  days_to_recovery?: number | null;
   checkout_abandons?: number | null;
   session_warm?: boolean;
   top_browsed_category?: string | null;
@@ -136,6 +152,8 @@ export interface PortfolioSummary {
   last_session_channel?: string | null;
   last_session_device?: string | null;
   last_session_city?: string | null;
+  last_cart_recovery_outcome?: "recovered_same" | "recovered_different" | "not_recovered" | null;
+  last_carted_products?: string[] | null;
 }
 
 export interface OrderRow {
@@ -167,6 +185,7 @@ export interface ListParams {
   channel?: string;
   has_machine?: boolean;
   no_machine?: boolean;
+  machine_no_capsules?: boolean;
   email_consent?: boolean;
   sms_consent?: boolean;
   any_consent?: boolean;
@@ -174,6 +193,7 @@ export interface ListParams {
   never_ordered?: boolean;
   intensity_bucket?: "light" | "medium" | "strong";
   session_recency?: "today" | "7d" | "30d" | "never";
+  session_action?: "carted_never_bought" | "cart_abandoner" | "checkout_abandoner" | "converted";
   warm?: boolean;
   sort?: string;
   desc?: boolean;
@@ -190,6 +210,7 @@ export async function fetchPortfolios(params: ListParams = {}): Promise<Portfoli
   if (params.channel)                        sp.set("channel",       params.channel);
   if (params.has_machine !== undefined)      sp.set("has_machine",   String(params.has_machine));
   if (params.no_machine  !== undefined)      sp.set("no_machine",    String(params.no_machine));
+  if (params.machine_no_capsules !== undefined) sp.set("machine_no_capsules", String(params.machine_no_capsules));
   if (params.email_consent !== undefined)    sp.set("email_consent", String(params.email_consent));
   if (params.sms_consent   !== undefined)    sp.set("sms_consent",   String(params.sms_consent));
   if (params.any_consent   !== undefined)    sp.set("any_consent",   String(params.any_consent));
@@ -197,6 +218,7 @@ export async function fetchPortfolios(params: ListParams = {}): Promise<Portfoli
   if (params.never_ordered !== undefined)    sp.set("never_ordered",    String(params.never_ordered));
   if (params.intensity_bucket)               sp.set("intensity_bucket", params.intensity_bucket);
   if (params.session_recency)               sp.set("session_recency",  params.session_recency);
+  if (params.session_action)               sp.set("session_action",   params.session_action);
   if (params.warm !== undefined)            sp.set("warm",             String(params.warm));
   if (params.sort)                           sp.set("sort",             params.sort);
   if (params.desc !== undefined)             sp.set("desc",          String(params.desc));
@@ -213,4 +235,28 @@ export async function fetchPortfolio(customerId: number): Promise<PortfolioDetai
   if (res.status === 404) throw new Error("not_found");
   if (!res.ok)            throw new Error(`Portfolio ${res.status}`);
   return res.json() as Promise<PortfolioDetail>;
+}
+
+export interface PageJourneyEntry {
+  path: string;
+  page_label: string;
+  page_category: string;
+  time_on_page_sec: number | null;
+  engagement_level: "bounce" | "quick" | "engaged" | "deep" | "exit";
+  occurred_at: string;
+}
+
+export interface PageJourney {
+  pages: PageJourneyEntry[];
+  total_pages_visited: number;
+  avg_time_on_page_sec: number;
+  most_visited_category: string;
+  exit_page: string | null;
+  exit_page_label?: string | null;
+}
+
+export async function fetchPageJourney(customerId: number): Promise<PageJourney> {
+  const res = await fetch(`${BASE}/${customerId}/page-journey`);
+  if (!res.ok) throw new Error(`PageJourney ${res.status}`);
+  return res.json() as Promise<PageJourney>;
 }

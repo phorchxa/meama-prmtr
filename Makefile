@@ -6,7 +6,7 @@
 help:
 	@echo "MEAMA PRMTR — make targets:"
 	@echo "  install       install backend + frontend deps"
-	@echo "  dev-backend   run FastAPI (uvicorn, reload) on :8000"
+	@echo "  dev-backend   run FastAPI (uvicorn, no-reload) on :8002"
 	@echo "  dev-frontend  run Vite dev server on :5173"
 	@echo "  lint          ruff check backend"
 	@echo "  fmt           ruff format backend"
@@ -19,7 +19,7 @@ install:
 	cd frontend && npm install
 
 dev-backend:
-	cd backend && python3 -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+	cd backend && python -m uvicorn app.main:app --host 0.0.0.0 --port 8002
 
 dev-frontend:
 	cd frontend && npm run dev

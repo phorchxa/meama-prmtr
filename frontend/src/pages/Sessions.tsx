@@ -238,13 +238,15 @@ export default function Sessions() {
       {!loading && overview && (
         <>
           {/* KPI strip */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(6,1fr)", background: C.line, border: `1px solid ${C.line}`, borderRadius: 11, overflow: "hidden", marginBottom: 20 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(8,1fr)", background: C.line, border: `1px solid ${C.line}`, borderRadius: 11, overflow: "hidden", marginBottom: 20 }}>
             <KpiBox label="Sessions" value={fmtNum(overview.kpis.sessions)} />
             <KpiBox label="Unique visitors" value={fmtNum(overview.kpis.unique_visitors)} />
             <KpiBox label="Registered share" value={Math.round(overview.kpis.registered_share * 100)} sub="%" />
             <KpiBox label="Conversion rate" value={(overview.kpis.conversion_rate * 100).toFixed(1)} sub="%" />
             <KpiBox label="Avg duration" value={fmtDur(overview.kpis.avg_duration_seconds)} />
             <KpiBox label="Engaged sessions" value={Math.round(overview.kpis.engaged_pct * 100)} sub="%" />
+            <KpiBox label="Bounce rate" value={overview.kpis.bounce_rate_pct.toFixed(1)} sub="%" />
+            <KpiBox label="New · Returning" value={`${fmtNum(overview.kpis.new_visitors)} · ${fmtNum(overview.kpis.returning_visitors)}`} />
           </div>
 
           {/* Row 1: funnel + who */}

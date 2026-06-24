@@ -13,9 +13,10 @@ from datetime import UTC, datetime, timedelta
 from typing import TypeVar
 from zoneinfo import ZoneInfo
 
+from ..business_rules import RETAIL_ORDER_SOURCES
 from ..deps import get_supabase
 from ..schemas.common import Page
-from ..schemas.portfolios import OrderRow, PortfolioDetail, PortfolioSummary
+from ..schemas.portfolios import OrderRow, PageJourneyEntry, PageJourneyResponse, PortfolioDetail, PortfolioSummary
 
 T = TypeVar("T", bound=PortfolioSummary)
 _TZ_TBS = ZoneInfo("Asia/Tbilisi")
@@ -45,6 +46,61 @@ def _session_products(skus: list[str] | None, product_map: dict[str, str]) -> li
     ]
 
 
+def _parse_dt(value: object) -> datetime | None:
+    if value is None:
+        return None
+    if isinstance(value, datetime):
+        dt = value
+    else:
+        try:
+            dt = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+        except ValueError:
+            return None
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=UTC)
+    return dt.astimezone(UTC)
+
+
+def _has_cart_activity(session: dict) -> bool:
+    return bool(_unique_skus(session.get("products_carted_sku"))) or (session.get("add_to_carts") or 0) > 0
+
+
+def _cart_status(session: dict | None, recovered_order: dict | None) -> dict[str, object]:
+    if not session:
+        return {
+            "cart_status": "no_cart_activity",
+            "recovered_order_id": None,
+            "recovered_order_at": None,
+            "days_to_recovery": None,
+        }
+
+    session_started_at = _parse_dt(session.get("started_at"))
+    status = "no_cart_activity"
+    if session.get("converted") is True:
+        status = "converted"
+    elif _has_cart_activity(session) and session.get("converted") is False:
+        status = "recovered_after_abandonment" if recovered_order else "active_abandoner"
+    elif (
+        session.get("funnel_stage")
+        or _unique_skus(session.get("products_viewed_sku"))
+        or session.get("types_viewed")
+    ):
+        status = "browsing_only"
+
+    include_recovery = status == "recovered_after_abandonment"
+    recovered_order_at = _parse_dt(recovered_order.get("processed_at")) if include_recovery and recovered_order else None
+    days_to_recovery = None
+    if session_started_at and recovered_order_at:
+        days_to_recovery = max(0, (recovered_order_at.date() - session_started_at.date()).days)
+
+    return {
+        "cart_status": status,
+        "recovered_order_id": recovered_order.get("shopify_order_id") if include_recovery and recovered_order else None,
+        "recovered_order_at": recovered_order.get("processed_at") if include_recovery and recovered_order else None,
+        "days_to_recovery": days_to_recovery,
+    }
+
+
 def _merge_behavior(sb, items: list[T]) -> list[T]:
     """Batch-fetch shopify_customer_behavior and latest session; merge into items."""
     cids = [str(it.shopify_customer_id) for it in items]
@@ -62,13 +118,8 @@ def _merge_behavior(sb, items: list[T]) -> list[T]:
     )
     beh_map = {r["customer_id"]: r for r in (beh_res.data or [])}
 
-    viewed_res = (
-        sb.table("customer_viewed_products")
-        .select("customer_id,last_viewed_products,last_viewed_category,top_viewed_products")
-        .in_("customer_id", cids)
-        .execute()
-    )
-    viewed_map = {r["customer_id"]: r for r in (viewed_res.data or [])}
+    # customer_viewed_products view not yet created — fields default to None
+    viewed_map: dict = {}
 
     # Fetch latest session for any customer who has session data (not just warm)
     session_cids = [
@@ -95,25 +146,78 @@ def _merge_behavior(sb, items: list[T]) -> list[T]:
             if cid not in last_session_map:
                 last_session_map[cid] = s
 
+    recovered_order_map: dict[str, dict] = {}
+    session_times = [
+        dt
+        for dt in (_parse_dt(s.get("started_at")) for s in last_session_map.values())
+        if dt is not None
+    ]
+    if last_session_map and session_times:
+        min_session_at = min(session_times).isoformat()
+        order_res = (
+            sb.table("meama_georgia_orders")
+            .select("customer_id,shopify_order_id,processed_at")
+            .in_("customer_id", [int(cid) for cid in last_session_map.keys()])
+            .neq("financial_status", "voided")
+            .is_("cancelled_at", "null")
+            .in_("source", list(RETAIL_ORDER_SOURCES))
+            .gte("processed_at", min_session_at)
+            .order("processed_at", desc=False)
+            .limit(1000)
+            .execute()
+        )
+        for order in order_res.data or []:
+            cid = str(order.get("customer_id"))
+            session = last_session_map.get(cid)
+            if cid in recovered_order_map or not session:
+                continue
+            session_started_at = _parse_dt(session.get("started_at"))
+            order_processed_at = _parse_dt(order.get("processed_at"))
+            if session_started_at and order_processed_at and order_processed_at > session_started_at:
+                recovered_order_map[cid] = order
+
+    # Batch fetch most-recent cart recovery outcome per customer.
+    # NOTE: do NOT chain .not_.is_() here — it causes a silent empty-result failure
+    # in supabase-py. Null-guard is applied in Python below instead.
+    cro_res = (
+        sb.table("cart_recovery_outcomes")
+        .select("customer_id,session_ended_at,carted_skus,recovery_outcome")
+        .in_("customer_id", cids)
+        .execute()
+    )
+    cro_map: dict[str, dict] = {}
+    for row in (cro_res.data or []):
+        if not row.get("recovery_outcome"):  # Python-side null guard
+            continue
+        cid_r = row["customer_id"]
+        ts = row.get("session_ended_at") or ""
+        if cid_r not in cro_map or ts > (cro_map[cid_r].get("session_ended_at") or ""):
+            cro_map[cid_r] = row
+
     session_skus: set[str] = set()
     for s in last_session_map.values():
         session_skus.update(_unique_skus(s.get("products_viewed_sku")))
         session_skus.update(_unique_skus(s.get("products_carted_sku")))
+    # Include CRO carted SKUs so they resolve in the same products_georgia batch
+    for row in cro_map.values():
+        session_skus.update(_unique_skus(row.get("carted_skus")))
     session_product_map: dict[str, str] = {}
     if session_skus:
         pg = (
             sb.table("products_georgia")
             .select("variant_sku,title")
             .in_("variant_sku", list(session_skus))
-            .not_.is_("variant_sku", "null")
-            .not_.ilike("title", "%Tier Point%")
-            .not_.ilike("title", "%POS%")
             .execute()
         )
         for row in pg.data or []:
             sku = row.get("variant_sku")
             title = row.get("title")
-            if sku and title and sku not in session_product_map:
+            if (
+                sku and title
+                and "Tier Point" not in title
+                and "POS" not in title
+                and sku not in session_product_map
+            ):
                 session_product_map[sku] = title
 
     # Resolve top browsed SKU → category
@@ -126,12 +230,12 @@ def _merge_behavior(sb, items: list[T]) -> list[T]:
     sku_cat_map: dict = {}
     if sku_set:
         pm = (
-            sb.table("products_master")
-            .select("sku,category")
-            .in_("sku", list(sku_set))
+            sb.table("products_georgia")
+            .select("variant_sku,product_type")
+            .in_("variant_sku", list(sku_set))
             .execute()
         )
-        sku_cat_map = {r["sku"]: r.get("category") for r in (pm.data or [])}
+        sku_cat_map = {r["variant_sku"]: r.get("product_type") for r in (pm.data or [])}
 
     enriched: list[T] = []
     now = datetime.now(UTC)
@@ -155,10 +259,12 @@ def _merge_behavior(sb, items: list[T]) -> list[T]:
         data = it.model_dump()
         viewed_products = _session_products(s.get("products_viewed_sku"), session_product_map) if s else None
         cart_products = _session_products(s.get("products_carted_sku"), session_product_map) if s else None
+        cart_state = _cart_status(s if s else None, recovered_order_map.get(cid))
         latest_session = None
         if s:
             latest_session = {
                 "session_id": s.get("session_id"),
+                "started_at": s.get("started_at"),
                 "products_viewed_sku": s.get("products_viewed_sku"),
                 "products_carted_sku": s.get("products_carted_sku"),
                 "types_viewed": s.get("types_viewed"),
@@ -166,6 +272,7 @@ def _merge_behavior(sb, items: list[T]) -> list[T]:
                 "cart_products": cart_products,
                 "add_to_carts": s.get("add_to_carts"),
                 "converted": s.get("converted"),
+                **cart_state,
             }
         data.update(
             sessions_30d=b.get("sessions_30d"),
@@ -182,12 +289,20 @@ def _merge_behavior(sb, items: list[T]) -> list[T]:
             viewed_products=viewed_products,
             cart_products=cart_products,
             latest_session=latest_session,
+            **cart_state,
             last_viewed_products=v.get("last_viewed_products"),
             last_viewed_category=v.get("last_viewed_category"),
             top_viewed_products=v.get("top_viewed_products"),
             last_session_channel=s.get("channel") if s else None,
             last_session_device=s.get("device_type") if s else None,
             last_session_city=s.get("geo_city") if s else None,
+        )
+        cro = cro_map.get(cid, {})
+        raw_carted = _unique_skus(cro.get("carted_skus"))
+        last_carted_products = [session_product_map.get(sku, sku) for sku in raw_carted] if raw_carted else None
+        data.update(
+            last_cart_recovery_outcome=cro.get("recovery_outcome") if cro else None,
+            last_carted_products=last_carted_products,
         )
         enriched.append(type(it)(**data))  # type: ignore[arg-type]
     return enriched
@@ -240,6 +355,7 @@ async def list_portfolios(
     channel: str | None = None,
     has_machine: bool | None = None,
     no_machine: bool | None = None,
+    machine_no_capsules: bool | None = None,
     email_consent: bool | None = None,
     sms_consent: bool | None = None,
     any_consent: bool | None = None,
@@ -247,6 +363,7 @@ async def list_portfolios(
     never_ordered: bool | None = None,
     intensity_bucket: str | None = None,
     session_recency: str | None = None,   # "today"|"7d"|"30d"|"never"
+    session_action: str | None = None,    # "carted_never_bought"|"cart_abandoner"|"checkout_abandoner"|"converted"
     warm: bool | None = None,
     sort: str = "last_order_at",
     desc: bool = True,
@@ -277,6 +394,8 @@ async def list_portfolios(
         query = query.eq("has_machine", has_machine)
     if no_machine is True:
         query = query.eq("has_machine", False)
+    if machine_no_capsules is True:
+        query = query.eq("has_machine", True).eq("machine_to_capsule_conversion_status", "machine_only_no_capsules")
     if email_consent is not None:
         query = query.eq("accept_marketing_email", email_consent)
     if sms_consent is not None:
@@ -341,6 +460,24 @@ async def list_portfolios(
                 "days_since_last_order.gt.7,"
                 "never_ordered.eq.true"
             )
+
+    # ── Session action filter (two-pass via shopify_customer_behavior) ──
+    _VALID_SESSION_ACTION = {"carted_never_bought", "cart_abandoner", "checkout_abandoner", "converted"}
+    if session_action and session_action in _VALID_SESSION_ACTION:
+        sa_q = sb.table("shopify_customer_behavior").select("customer_id")
+        if session_action == "carted_never_bought":
+            sa_q = sa_q.gt("sessions_with_cart", 0).eq("ever_paid_session", False)
+        elif session_action == "cart_abandoner":
+            sa_q = sa_q.gt("cart_or_checkout_abandons", 0)
+        elif session_action == "checkout_abandoner":
+            sa_q = sa_q.gt("checkout_abandons", 0)
+        elif session_action == "converted":
+            sa_q = sa_q.eq("ever_paid_session", True)
+        sa_res = sa_q.execute()
+        sa_cids = [int(r["customer_id"]) for r in (sa_res.data or [])]
+        if not sa_cids:
+            return Page[PortfolioSummary](items=[], total=0, page=page, page_size=page_size)
+        query = query.in_("shopify_customer_id", sa_cids)
 
     # ── Execute ────────────────────────────────────────────────────────
     if use_session_sort:
@@ -422,3 +559,54 @@ async def get_portfolio(
     detail = PortfolioDetail(**row, recent_orders=recent_orders)
     enriched = _merge_behavior(sb, [detail])
     return enriched[0]
+
+
+@router.get("/{customer_id}/page-journey", response_model=PageJourneyResponse)
+async def get_page_journey(
+    customer_id: int,
+    sb=Depends(get_supabase),
+) -> PageJourneyResponse:
+    from collections import Counter
+
+    cutoff = (datetime.now(UTC) - timedelta(days=30)).isoformat()
+    res = (
+        sb.table("customer_page_journey")
+        .select("path,page_label,page_category,time_on_page_sec,engagement_level,occurred_at")
+        .eq("customer_id", str(customer_id))
+        .gte("occurred_at", cutoff)
+        .order("occurred_at", desc=True)
+        .limit(50)
+        .execute()
+    )
+    rows = res.data or []
+
+    if not rows:
+        return PageJourneyResponse(
+            pages=[],
+            total_pages_visited=0,
+            avg_time_on_page_sec=0.0,
+            most_visited_category="",
+            exit_page=None,
+        )
+
+    total = len(rows)
+    timed = [float(r["time_on_page_sec"]) for r in rows if r.get("time_on_page_sec") is not None]
+    avg_time = sum(timed) / len(timed) if timed else 0.0
+
+    cat_counts: Counter[str] = Counter(r["page_category"] for r in rows if r.get("page_category"))
+    most_visited_cat = cat_counts.most_common(1)[0][0] if cat_counts else ""
+
+    exit_rows = [r for r in rows if r.get("engagement_level") == "exit"]
+    exit_page = exit_rows[0]["path"] if exit_rows else None
+    exit_page_label = exit_rows[0].get("page_label") or None if exit_rows else None
+
+    pages = [PageJourneyEntry(**r) for r in rows]
+
+    return PageJourneyResponse(
+        pages=pages,
+        total_pages_visited=total,
+        avg_time_on_page_sec=round(avg_time, 1),
+        most_visited_category=most_visited_cat,
+        exit_page=exit_page,
+        exit_page_label=exit_page_label,
+    )

@@ -284,6 +284,31 @@ function sessionConverted(data: PortfolioDetailData) {
   return data.latest_session?.converted ?? data.converted ?? null;
 }
 
+function sessionCartStatus(data: PortfolioDetailData) {
+  if (data.latest_session?.cart_status) return data.latest_session.cart_status;
+  if (data.cart_status) return data.cart_status;
+  if (sessionConverted(data) === true) return "converted";
+  if ((sessionAddToCarts(data) ?? 0) > 0 && sessionConverted(data) === false) return "active_abandoner";
+  return sessionViewedProducts(data).length ? "browsing_only" : "no_cart_activity";
+}
+
+function recoveredOrderAt(data: PortfolioDetailData) {
+  return data.latest_session?.recovered_order_at ?? data.recovered_order_at ?? null;
+}
+
+function daysToRecovery(data: PortfolioDetailData) {
+  return data.latest_session?.days_to_recovery ?? data.days_to_recovery ?? null;
+}
+
+function cartStatusLabel(data: PortfolioDetailData) {
+  const status = sessionCartStatus(data);
+  if (status === "active_abandoner") return "Cart abandoner";
+  if (status === "recovered_after_abandonment") return "Recovered after abandonment";
+  if (status === "converted") return "Converted session";
+  if (status === "browsing_only") return "Browsing only";
+  return "No cart activity";
+}
+
 function ChannelSplit({ data }: { data: PortfolioDetailData }) {
   const ecommerce = data.ecommerce_share ?? 0;
   const store = data.brand_store_share ?? 0;
@@ -527,6 +552,7 @@ export default function PortfolioDetail() {
           {(data.sessions_30d != null || data.last_session_at) && (
             <Section title="Sessions & on-site behavior">
               <div className="grid grid-cols-2 gap-x-4 gap-y-3 md:grid-cols-4">
+                <Field label="Cart status" value={cartStatusLabel(data)} />
                 <Field label="Sessions · 30d" value={data.sessions_30d ?? 0} />
                 <Field label="Last session" value={data.last_session_at ? relTimeDetailed(data.last_session_at) : null} />
                 <Field label="Days since session" value={data.days_since_last_session != null ? `${data.days_since_last_session}d` : null} />
@@ -541,15 +567,29 @@ export default function PortfolioDetail() {
                 <Field label="Device" value={data.last_session_device} />
                 <Field label="City" value={data.last_session_city} />
               </div>
-              {data.session_warm && (
+              {data.session_warm && !["recovered_after_abandonment", "converted"].includes(sessionCartStatus(data)) && (
                 <div className="mt-3 rounded-xl border border-[#c8b090] bg-[#fbf6ec] p-3 text-[12px] leading-5 text-[#6b5a3e]">
                   <b style={{ color: "#a9772f" }}>Win-back ready.</b> Customer has a recent session with cart activity and no recent order — warm pool for re-engagement.
                 </div>
               )}
-              {(sessionAddToCarts(data) ?? 0) > 0 && sessionConverted(data) === false && (
+              {sessionCartStatus(data) === "active_abandoner" && (
                 <div className="mt-3 rounded-xl border border-[#efb7b1] bg-[#fff0ee] p-3 text-[12px] leading-5 text-[#62594e]">
                   <b className="text-[#bb3a2f]">Cart abandoner.</b> Customer added product(s) to cart but did not convert.
                   {sessionCartProducts(data).length ? <div className="mt-2"><ProductList products={sessionCartProducts(data)} /></div> : null}
+                </div>
+              )}
+              {sessionCartStatus(data) === "recovered_after_abandonment" && (
+                <div className="mt-3 rounded-xl border border-[#a8d9bf] bg-[#e9f6ef] p-3 text-[12px] leading-5 text-[#62594e]">
+                  <b className="text-[#147348]">Recovered after abandonment.</b> Customer placed a later valid retail order.
+                  <div className="mt-1">
+                    {recoveredOrderAt(data) ? dateOrDash(recoveredOrderAt(data)) : "Recovered order date unavailable"}
+                    {daysToRecovery(data) != null ? ` · ${daysToRecovery(data)}d to recovery` : ""}
+                  </div>
+                </div>
+              )}
+              {sessionCartStatus(data) === "converted" && (
+                <div className="mt-3 rounded-xl border border-[#abc4ee] bg-[#edf3ff] p-3 text-[12px] leading-5 text-[#62594e]">
+                  <b className="text-[#214f90]">Converted session.</b> This session converted.
                 </div>
               )}
               {data.never_ordered && (

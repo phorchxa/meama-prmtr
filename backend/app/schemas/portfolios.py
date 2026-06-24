@@ -6,6 +6,14 @@ from typing import Literal
 
 from pydantic import BaseModel
 
+CartStatus = Literal[
+    "active_abandoner",
+    "recovered_after_abandonment",
+    "converted",
+    "browsing_only",
+    "no_cart_activity",
+]
+
 CustomerStatus = Literal["new", "active", "at_risk", "lost", "prospect"]
 CustomerSegment = Literal["loyalist", "at_risk", "lapsed", "new_machine", "active", "prospect"]
 CustomerChannel = Literal["online", "in_store", "app", "mixed", "none"]
@@ -46,6 +54,7 @@ class SessionProduct(BaseModel):
 
 class LatestSession(BaseModel):
     session_id: str | None = None
+    started_at: datetime | None = None
     products_viewed_sku: list[str] | None = None
     products_carted_sku: list[str] | None = None
     types_viewed: list[str] | None = None
@@ -53,6 +62,10 @@ class LatestSession(BaseModel):
     cart_products: list[SessionProduct] | None = None
     add_to_carts: int | None = None
     converted: bool | None = None
+    cart_status: CartStatus | None = None
+    recovered_order_id: int | None = None
+    recovered_order_at: datetime | None = None
+    days_to_recovery: int | None = None
 
 
 class PortfolioSummary(BaseModel):
@@ -132,6 +145,10 @@ class PortfolioSummary(BaseModel):
     viewed_products: list[SessionProduct] | None = None
     cart_products: list[SessionProduct] | None = None
     latest_session: LatestSession | None = None
+    cart_status: CartStatus | None = None
+    recovered_order_id: int | None = None
+    recovered_order_at: datetime | None = None
+    days_to_recovery: int | None = None
     checkout_abandons: int | None = None
     session_warm: bool = False
     top_browsed_category: str | None = None
@@ -141,6 +158,8 @@ class PortfolioSummary(BaseModel):
     last_session_channel: str | None = None
     last_session_device: str | None = None
     last_session_city: str | None = None
+    last_cart_recovery_outcome: str | None = None
+    last_carted_products: list[str] | None = None
 
 
 class OrderRow(BaseModel):
@@ -155,3 +174,21 @@ class OrderRow(BaseModel):
 class PortfolioDetail(PortfolioSummary):
     first_order_at: datetime | None = None
     recent_orders: list[OrderRow] = []
+
+
+class PageJourneyEntry(BaseModel):
+    path: str
+    page_label: str = ""
+    page_category: str
+    time_on_page_sec: float | None = None
+    engagement_level: str
+    occurred_at: datetime
+
+
+class PageJourneyResponse(BaseModel):
+    pages: list[PageJourneyEntry]
+    total_pages_visited: int
+    avg_time_on_page_sec: float
+    most_visited_category: str
+    exit_page: str | None = None
+    exit_page_label: str | None = None

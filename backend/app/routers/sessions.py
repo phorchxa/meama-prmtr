@@ -68,7 +68,8 @@ async def sessions_overview(
             "session_id,client_id,customer_id,started_at,duration_seconds,"
             "funnel_stage,converted,engaged,channel,device_type,"
             "geo_city,geo_region,geo_country,"
-            "products_viewed_sku,products_carted_sku"
+            "products_viewed_sku,products_carted_sku,"
+            "events_count,page_views,session_num"
         )
         .gte("started_at", cutoff_iso)
         .execute()
@@ -85,6 +86,26 @@ async def sessions_overview(
     engaged = sum(1 for s in sessions if s.get("engaged"))
     durations = [s["duration_seconds"] for s in sessions if s.get("duration_seconds")]
     avg_dur = int(sum(durations) / len(durations)) if durations else 0
+
+    # Bounce: funnel_stage == 1 AND (events_count <= 1 OR page_views <= 1)
+    bounced = sum(
+        1 for s in sessions
+        if (s.get("funnel_stage") or 0) == 1
+        and ((s.get("events_count") or 0) <= 1 or (s.get("page_views") or 0) <= 1)
+    )
+    bounce_rate_pct = round(bounced / total * 100, 1) if total else 0.0
+
+    # New = client first appeared in this window (session_num == 1 among their sessions here)
+    # Returning = client had sessions before this window (all their sessions here have session_num > 1)
+    client_min_snum: dict[str, int] = {}
+    for s in sessions:
+        cid = s.get("client_id")
+        snum = int(s.get("session_num") or 0)
+        if cid:
+            if cid not in client_min_snum or snum < client_min_snum[cid]:
+                client_min_snum[cid] = snum
+    new_visitors = sum(1 for v in client_min_snum.values() if v <= 1)
+    returning_visitors = sum(1 for v in client_min_snum.values() if v > 1)
 
     f_counts = [
         total,
@@ -121,12 +142,15 @@ async def sessions_overview(
     product_map: dict = {}
     if top_skus:
         pm = (
-            sb.table("products_master")
-            .select("sku,name,category")
-            .in_("sku", top_skus)
+            sb.table("products_georgia")
+            .select("variant_sku,title,product_type")
+            .in_("variant_sku", top_skus)
             .execute()
         )
-        product_map = {r["sku"]: r for r in (pm.data or [])}
+        product_map = {
+            r["variant_sku"]: {"sku": r["variant_sku"], "name": r.get("title"), "category": r.get("product_type")}
+            for r in (pm.data or [])
+        }
 
     def _prod(sku: str, count: int) -> TopProduct:
         info = product_map.get(sku, {})
@@ -184,6 +208,9 @@ async def sessions_overview(
             conversion_rate=round(converted / total, 4) if total else 0,
             avg_duration_seconds=avg_dur,
             engaged_pct=round(engaged / total, 4) if total else 0,
+            bounce_rate_pct=bounce_rate_pct,
+            new_visitors=new_visitors,
+            returning_visitors=returning_visitors,
         ),
         funnel=funnel,
         who=who,
@@ -224,6 +251,43 @@ async def sessions_abandonment(
     checkout_rate = round(aband_checkout / total_checkout, 4) if total_checkout else 0
 
     live_recoverable = [s for s in cart_sessions if not s.get("converted") and s.get("cart_value_peak")]
+
+    # Fetch recovery outcomes for live sessions
+    live_session_ids = [s["session_id"] for s in live_recoverable if s.get("session_id")]
+    cro_by_session: dict[str, str] = {}
+    if live_session_ids:
+        cro_res = (
+            sb.table("cart_recovery_outcomes")
+            .select("session_id,recovery_outcome")
+            .in_("session_id", live_session_ids)
+            .execute()
+        )
+        cro_by_session = {r["session_id"]: r["recovery_outcome"] for r in (cro_res.data or [])}
+
+    # Resolve carted SKUs → product names for live sessions
+    all_live_skus: set[str] = set()
+    for s in live_recoverable:
+        for sku in (s.get("products_carted_sku") or []):
+            if sku:
+                all_live_skus.add(sku)
+    live_sku_name: dict[str, str] = {}
+    if all_live_skus:
+        pg = (
+            sb.table("products_georgia")
+            .select("variant_sku,title")
+            .in_("variant_sku", list(all_live_skus))
+            .execute()
+        )
+        for row in pg.data or []:
+            sku = row.get("variant_sku")
+            title = row.get("title")
+            if (
+                sku and title
+                and "Tier Point" not in title
+                and "POS" not in title
+                and sku not in live_sku_name
+            ):
+                live_sku_name[sku] = title
 
     shopify_res = (
         sb.table("georgia_abandoned_carts")
@@ -290,7 +354,12 @@ async def sessions_abandonment(
             stage_num=sn,
             cart_value=float(s.get("cart_value_peak") or 0),
             last_seen=s.get("ended_at") or s.get("started_at") or "",
-            products=s.get("products_carted_sku") or [],
+            products=[
+                live_sku_name.get(sku, sku)
+                for sku in (s.get("products_carted_sku") or [])
+                if sku
+            ],
+            recovery_outcome=cro_by_session.get(s.get("session_id") or ""),
         ))
 
     for c in top_shopify:
@@ -328,7 +397,8 @@ def _empty_overview(range_param: str) -> SessionsOverviewResponse:
     return SessionsOverviewResponse(
         range=range_param,
         kpis=SessionsKpis(sessions=0, unique_visitors=0, registered_share=0,
-                          conversion_rate=0, avg_duration_seconds=0, engaged_pct=0),
+                          conversion_rate=0, avg_duration_seconds=0, engaged_pct=0,
+                          bounce_rate_pct=0.0, new_visitors=0, returning_visitors=0),
         funnel=[FunnelRow(label=l, count=0, pct=0) for l in _FUNNEL_LABELS],
         who=WhoIsBrowsing(registered=0, anonymous=0, warm=0),
         top_products=[], top_categories=[], viewed_not_bought=[],

@@ -15,6 +15,9 @@ class SessionsKpis(BaseModel):
     conversion_rate: float
     avg_duration_seconds: int
     engaged_pct: float
+    bounce_rate_pct: float = 0.0
+    new_visitors: int = 0
+    returning_visitors: int = 0
 
 
 class FunnelRow(BaseModel):
@@ -77,6 +80,7 @@ class RecoverableCart(BaseModel):
     cart_value: float
     last_seen: str
     products: list[str] = []
+    recovery_outcome: str | None = None
 
 
 class AbandonmentKpis(BaseModel):

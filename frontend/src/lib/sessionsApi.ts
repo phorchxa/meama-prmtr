@@ -9,6 +9,9 @@ export interface SessionsKpis {
   conversion_rate: number;
   avg_duration_seconds: number;
   engaged_pct: number;
+  bounce_rate_pct: number;
+  new_visitors: number;
+  returning_visitors: number;
 }
 
 export interface FunnelRow {
@@ -71,6 +74,7 @@ export interface RecoverableCart {
   cart_value: number;
   last_seen: string;
   products: string[];
+  recovery_outcome: "recovered_same" | "recovered_different" | "not_recovered" | null;
 }
 
 export interface AbandonmentKpis {
