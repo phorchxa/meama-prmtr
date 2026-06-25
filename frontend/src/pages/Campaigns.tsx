@@ -37,7 +37,15 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "";
 const ROAS_THRESHOLD = 2.0;
 const MARGIN_FLOOR = 0.4;
 const MIN_PRICE_MULTIPLIER = 1.6667;
-const MAX_DISCOUNT = 0.25;
+const GEO_VAT = 0.18;
+
+function calcNetMargin(grossPrice: number, cogs: number): number {
+  const net = grossPrice / (1 + GEO_VAT);
+  return net > 0 ? (net - cogs) / net : 0;
+}
+function calcMinSafePrice(cogs: number): number {
+  return cogs * MIN_PRICE_MULTIPLIER * (1 + GEO_VAT);
+}
 
 type Tab = "overview" | "promotions" | "ads" | "queue";
 type PromoTab = "calculator" | "calendar" | "plan";
@@ -174,8 +182,8 @@ function CampaignDrawer({ c, onClose }: { c: CampaignSummary; onClose: () => voi
     else if (detail.discount_value && detail.discount_type) offer = `${formatGEL0(detail.discount_value)} ${detail.discount_type}`;
   }
 
-  const runWindow = detail?.valid_from || detail?.valid_to
-    ? `${fmtDate(detail?.valid_from)} → ${fmtDate(detail?.valid_to)}` : null;
+  const runWindow = (detail?.valid_from || detail?.valid_to || c.valid_to)
+    ? `${fmtDate(detail?.valid_from)} → ${fmtDate(detail?.valid_to ?? c.valid_to)}` : null;
 
   const terms: { label: string; value: React.ReactNode }[] = [];
   const push = (label: string, value: React.ReactNode | null | undefined) => { if (value) terms.push({ label, value }); };
@@ -184,6 +192,12 @@ function CampaignDrawer({ c, onClose }: { c: CampaignSummary; onClose: () => voi
   push("Segment", c.target_segment);
   push("Offer", offer);
   push("Code", c.shopify_code ? <span className="font-mono text-[12px]">{c.shopify_code}</span> : null);
+  if (c.shopify_usage_count !== null) {
+    const usageStr = c.shopify_usage_limit
+      ? `${formatNumber(c.shopify_usage_count)} / ${formatNumber(c.shopify_usage_limit)}`
+      : `${formatNumber(c.shopify_usage_count)} used`;
+    push("Usage", usageStr);
+  }
   push("Bundle tag", detail?.tag_pattern ? <span className="font-mono text-[11px]">{detail.tag_pattern}</span> : null);
   push("Run window", runWindow);
   push("Launched", c.launched_at ? fmtDate(c.launched_at) : null);
@@ -209,6 +223,14 @@ function CampaignDrawer({ c, onClose }: { c: CampaignSummary; onClose: () => voi
             {c.channel && <Badge tone="blue">{channelLabel(c.channel)}</Badge>}
             {c.promo_type && <Badge tone="muted">{c.promo_type.toUpperCase()}</Badge>}
             {offer && <Badge tone="gold">{offer.toUpperCase()}</Badge>}
+            {c.shopify_discount_status && (
+              <Badge tone={
+                c.shopify_discount_status === "ACTIVE" ? "green" :
+                c.shopify_discount_status === "EXPIRED" ? "red" : "muted"
+              }>
+                {`SHOPIFY ${c.shopify_discount_status}`}
+              </Badge>
+            )}
           </div>
           <h2 className="pr-8 font-display text-[26px] uppercase leading-none tracking-[0.03em] text-meama-brown">{c.name}</h2>
           {c.shopify_code && <p className="mt-1.5 font-mono text-[10px] uppercase tracking-wider text-meama-muted">{c.shopify_code}</p>}
@@ -323,13 +345,43 @@ function ListRow({ c, onSelect }: { c: CampaignSummary; onSelect: (c: CampaignSu
       <span className={`tabular w-11 text-right font-mono text-[11px] ${disc ? "text-meama-brown" : "text-meama-muted"}`}>{disc ?? "—"}</span>
       <span className="tabular w-12 text-right font-mono text-[11px] text-meama-green" title="Revenue ÷ discount given">{c.roi !== null ? `${c.roi.toFixed(1)}×` : "—"}</span>
       <span className="tabular w-20 text-right font-mono text-[12px] font-medium text-meama-brown">{c.revenue_total !== null ? formatGEL0(c.revenue_total) : "—"}</span>
-      <span className="hidden w-24 justify-end sm:flex"><Badge tone={statusTone(c.status)}>{(c.status ?? "—").toUpperCase()}</Badge></span>
+      <span className="flex w-24 justify-end">
+        {(() => {
+          const eff = effectiveStatus(c);
+          const tone: BadgeTone =
+            eff === "ACTIVE"    ? "green" :
+            eff === "EXPIRED"   ? "red"   :
+            eff === "SCHEDULED" ? "muted" :
+            statusTone(c.status);
+          return <Badge tone={tone}>{eff.toUpperCase()}</Badge>;
+        })()}
+      </span>
       <svg className="shrink-0 text-meama-charcoal" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m9 18 6-6-6-6"/></svg>
     </button>
   );
 }
 
+type ShopifyFilter = "all" | "ACTIVE" | "EXPIRED" | "SCHEDULED" | "unlinked";
+type SortKey = "revenue" | "ending_date";
+
+function effectiveStatus(c: CampaignSummary): string {
+  // Hard date block — always wins regardless of DB or Shopify status
+  if (c.valid_to && new Date(c.valid_to) < new Date()) return "EXPIRED";
+  // Explicit DB active — our manual truth; overrides historical Shopify CSV snapshot
+  // (CSV backfill can mark codes EXPIRED even when the underlying offer is still live)
+  if (c.status === "active") return "ACTIVE";
+  // Shopify discount status for non-explicitly-active campaigns
+  if (c.shopify_discount_status) return c.shopify_discount_status;
+  // Future end date → live
+  if (c.valid_to) return "ACTIVE";
+  // Fallback: surface DB status uppercase
+  return c.status?.toUpperCase() ?? "—";
+}
+
 function OverviewTab({ campaigns, onSelect }: { campaigns: CampaignSummary[]; onSelect: (c: CampaignSummary) => void }) {
+  const [filter, setFilter] = useState<ShopifyFilter>("all");
+  const [sort, setSort] = useState<SortKey>("revenue");
+
   const byChannel = useMemo(() => {
     const map = new Map<string, { count: number; revenue: number }>();
     for (const c of campaigns) {
@@ -341,14 +393,83 @@ function OverviewTab({ campaigns, onSelect }: { campaigns: CampaignSummary[]; on
     return [...map.entries()].sort((a, b) => b[1].revenue - a[1].revenue);
   }, [campaigns]);
 
+  const counts = useMemo(() => ({
+    all: campaigns.length,
+    ACTIVE:    campaigns.filter((c) => effectiveStatus(c) === "ACTIVE").length,
+    EXPIRED:   campaigns.filter((c) => effectiveStatus(c) === "EXPIRED").length,
+    SCHEDULED: campaigns.filter((c) => effectiveStatus(c) === "SCHEDULED").length,
+    unlinked:  campaigns.filter((c) => !["ACTIVE","EXPIRED","SCHEDULED"].includes(effectiveStatus(c))).length,
+  }), [campaigns]);
+
+  const filtered = useMemo(() => {
+    const compareFn = sort === "ending_date"
+      ? (a: CampaignSummary, b: CampaignSummary) => {
+          const now = Date.now();
+          const aEnd = a.valid_to ? new Date(a.valid_to).getTime() : null;
+          const bEnd = b.valid_to ? new Date(b.valid_to).getTime() : null;
+          const aExpired = aEnd !== null && aEnd < now;
+          const bExpired = bEnd !== null && bEnd < now;
+          if (aExpired && bExpired) return bEnd! - aEnd!;
+          if (aExpired) return -1;
+          if (bExpired) return 1;
+          return 0;
+        }
+      : (a: CampaignSummary, b: CampaignSummary) => (b.revenue_total ?? 0) - (a.revenue_total ?? 0);
+    const base = [...campaigns].sort(compareFn);
+    if (filter === "all") return base;
+    if (filter === "unlinked") return base.filter((c) => !["ACTIVE","EXPIRED","SCHEDULED"].includes(effectiveStatus(c)));
+    return base.filter((c) => effectiveStatus(c) === filter);
+  }, [campaigns, filter, sort]);
+
   const pending = campaigns.filter((c) => c.status === "draft" || c.status === "pending_approval");
-  const sorted = [...campaigns].sort((a, b) => (b.revenue_total ?? 0) - (a.revenue_total ?? 0));
+
+  const FILTERS: { id: ShopifyFilter; label: string; tone: string }[] = [
+    { id: "all",       label: "All",       tone: "text-meama-brown" },
+    { id: "ACTIVE",    label: "Active",    tone: "text-meama-green" },
+    { id: "EXPIRED",   label: "Expired",   tone: "text-meama-red" },
+    { id: "SCHEDULED", label: "Scheduled", tone: "text-meama-muted" },
+    { id: "unlinked",  label: "No code",   tone: "text-meama-muted" },
+  ];
 
   return (
     <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1.4fr_1fr]">
-      <Panel title="All campaigns" sub={`${campaigns.length} total`}>
-        {sorted.length === 0 && <p className="px-5 py-4 text-sm text-meama-muted">No campaigns yet.</p>}
-        {sorted.map((c) => <ListRow key={c.id} c={c} onSelect={onSelect} />)}
+      <Panel title="All campaigns" sub={`${filtered.length} of ${campaigns.length}`}>
+        {/* Shopify status filter strip */}
+        <div className="flex gap-0 border-b border-meama-charcoal">
+          {FILTERS.map((f) => (
+            <button
+              key={f.id}
+              onClick={() => setFilter(f.id)}
+              className={`flex items-center gap-1.5 border-r border-meama-charcoal px-4 py-2 font-mono text-[10px] uppercase tracking-wider transition-colors last:border-r-0 ${
+                filter === f.id
+                  ? "bg-meama-espresso " + f.tone
+                  : "text-meama-muted hover:text-meama-brown"
+              }`}
+            >
+              {f.label}
+              <span className={`font-mono text-[9px] ${filter === f.id ? f.tone : "text-meama-muted/60"}`}>
+                {counts[f.id]}
+              </span>
+            </button>
+          ))}
+        </div>
+        {/* Sort controls */}
+        <div className="flex items-center gap-0 border-b border-meama-charcoal bg-meama-roast">
+          <span className="px-4 font-mono text-[9px] uppercase tracking-[0.2em] text-meama-muted/60">Sort</span>
+          {(["revenue", "ending_date"] as SortKey[]).map((s) => (
+            <button
+              key={s}
+              onClick={() => setSort(s)}
+              className={`border-l border-meama-charcoal px-4 py-1.5 font-mono text-[10px] uppercase tracking-wider transition-colors ${
+                sort === s ? "bg-meama-espresso text-meama-brown" : "text-meama-muted hover:text-meama-brown"
+              }`}
+            >
+              {s === "revenue" ? "Revenue" : "Ending date"}
+            </button>
+          ))}
+        </div>
+        {filtered.length === 0 && <p className="px-5 py-4 text-sm text-meama-muted">No campaigns match this filter.</p>}
+        {filtered.map((c) => <ListRow key={c.id} c={c} onSelect={onSelect} />)}
       </Panel>
 
       <div className="flex flex-col gap-5">
@@ -405,12 +526,11 @@ interface PromoResponse { discount_pct: number; blocked: boolean; lines: PromoLi
 
 function computeLocally(sku: string, fullPrice: number, cogs: number, discountPct: number): PromoResponse {
   const discountedPrice = fullPrice * (1 - discountPct);
-  const minSafePrice = cogs * MIN_PRICE_MULTIPLIER;
+  const minSafePrice = calcMinSafePrice(cogs);
   const maxSafeDiscount = Math.max(0, 1 - minSafePrice / fullPrice);
-  const effectiveMargin = discountedPrice > 0 ? (discountedPrice - cogs) / discountedPrice : 0;
+  const effectiveMargin = calcNetMargin(discountedPrice, cogs);
   const reasons: string[] = [];
-  if (discountPct > MAX_DISCOUNT) reasons.push(`Discount exceeds the hard ${MAX_DISCOUNT * 100}% cap`);
-  if (effectiveMargin < MARGIN_FLOOR) reasons.push(`Margin ${(effectiveMargin * 100).toFixed(1)}% is below the ${MARGIN_FLOOR * 100}% floor`);
+  if (effectiveMargin < MARGIN_FLOOR) reasons.push(`Net margin ${(effectiveMargin * 100).toFixed(1)}% is below the 40% floor`);
   if (discountedPrice < minSafePrice) reasons.push(`Price ₾${discountedPrice.toFixed(2)} below min safe ₾${minSafePrice.toFixed(2)}`);
   return {
     discount_pct: discountPct, blocked: reasons.length > 0,
@@ -428,11 +548,220 @@ function Field({ label, value, onChange, type = "number" }: { label: string; val
   );
 }
 
+// ── STATIC DATA (from MEAMA_Commercial_Master_2026.xlsx) ─────────────────────
+
+const ACCESSORIES = [
+  { name: "Milk Frother",         fullPrice: 80,  cogs: 43.80 },
+  { name: "Metal Cup 280ml",      fullPrice: 35,  cogs: 16.22 },
+  { name: "Metal Cup 160ml",      fullPrice: 30,  cogs: 13.86 },
+  { name: "Holder Round 18cm",    fullPrice: 20,  cogs:  9.17 },
+  { name: "Holder AcryCube 15cm", fullPrice: 25,  cogs: 14.26 },
+  { name: "Holder AcryCube 13cm", fullPrice: 25,  cogs: 12.86 },
+  { name: "Candle",               fullPrice: 30,  cogs: 29.85 },
+  { name: "Skelaris (Cleaner)",   fullPrice:  5,  cogs:  0.10 },
+] as const;
+
+// Per-category data from MEAMA_Commercial_Master_2026.xlsx
+// packPrice & boxCogs are per-box (pack) averages. maxDiscount from Inputs col J.
+const CATEGORY_LIMITS = [
+  { category: "Espresso & Lungo", sub: "Classic",            maxDiscount: 0.30, packPrice: 15.0, boxCogs:  3.85, capsPerPack: 10 },
+  { category: "Espresso & Lungo", sub: "Flavoured",          maxDiscount: 0.30, packPrice: 16.0, boxCogs:  4.15, capsPerPack: 10 },
+  { category: "Filtered Coffee",  sub: "Classic",            maxDiscount: 0.20, packPrice: 20.5, boxCogs:  6.16, capsPerPack: 12 },
+  { category: "Filtered Coffee",  sub: "Classic — Flagship", maxDiscount: 0.33, packPrice: 24.0, boxCogs:  7.85, capsPerPack: 12 },
+  { category: "Filtered Coffee",  sub: "Flavoured",          maxDiscount: 0.30, packPrice: 21.0, boxCogs:  7.36, capsPerPack: 12 },
+  { category: "Filtered Coffee",  sub: "Latte",              maxDiscount: 0.20, packPrice: 22.0, boxCogs:  8.75, capsPerPack: 12 },
+  { category: "Tea & Infusions",  sub: "Classic",            maxDiscount: 0.40, packPrice: 18.0, boxCogs:  5.07, capsPerPack: 12 },
+  { category: "Tea & Infusions",  sub: "Specialty",          maxDiscount: 0.30, packPrice: 22.0, boxCogs:  6.06, capsPerPack: 12 },
+  { category: "Tea & Infusions",  sub: "Latte",              maxDiscount: 0.20, packPrice: 20.0, boxCogs:  6.27, capsPerPack: 12 },
+  { category: "Juices & Cold",    sub: "Cold",               maxDiscount: 0.50, packPrice: 20.0, boxCogs:  4.96, capsPerPack: 12 },
+  { category: "Juices & Cold",    sub: "Fresh Juice",        maxDiscount: 0.00, packPrice: 24.0, boxCogs: 15.60, capsPerPack: 12 },
+  { category: "Functional",       sub: "Wellness Drink",     maxDiscount: 0.30, packPrice: 22.0, boxCogs:  7.31, capsPerPack: 12 },
+  { category: "Functional",       sub: "Functional Coffee",  maxDiscount: 0.15, packPrice: 22.0, boxCogs:  8.99, capsPerPack: 12 },
+];
+
+// ── BUNDLE MARGIN CALCULATOR ─────────────────────────────────────────────────
+
+interface BundleItem { id: number; name: string; fullPrice: number; cogs: number; qty: number; }
+
+let _nextBundleId = 5;
+const DEFAULT_ITEMS: BundleItem[] = [
+  { id: 1, name: "Versatile Machine",         fullPrice: 399,  cogs: 268.60, qty: 1 },
+  { id: 2, name: "Capsule Box (Multi Classic)",fullPrice: 20.5, cogs:   6.16, qty: 2 },
+  { id: 3, name: "Metal Cup 280ml",           fullPrice: 35,   cogs:  16.22, qty: 1 },
+  { id: 4, name: "Holder Round 18cm",         fullPrice: 20,   cogs:   9.17, qty: 1 },
+];
+
+function BundleCalc() {
+  const [bundlePrice, setBundlePrice] = useState(399);
+  const [items, setItems] = useState<BundleItem[]>(DEFAULT_ITEMS);
+  const [monthlyCapMargin, setMonthlyCapMargin] = useState(30);
+
+  function updateItem(id: number, field: keyof BundleItem, val: string) {
+    setItems(prev => prev.map(i =>
+      i.id === id ? { ...i, [field]: field === "name" ? val : Number(val) } : i
+    ));
+  }
+
+  const totalCogs   = items.reduce((s, i) => s + i.cogs * i.qty, 0);
+  const sumOfParts  = items.reduce((s, i) => s + i.fullPrice * i.qty, 0);
+  const netBundle   = bundlePrice / (1 + GEO_VAT);
+  const bundleMargin = netBundle > 0 ? (netBundle - totalCogs) / netBundle : 0;
+  const valueToCustomer = sumOfParts - bundlePrice;
+  const cornerCost  = (sumOfParts - bundlePrice) / (1 + GEO_VAT);
+  const payback     = monthlyCapMargin > 0 && cornerCost > 0 ? cornerCost / monthlyCapMargin : null;
+  const marginOk    = bundleMargin >= MARGIN_FLOOR;
+
+  return (
+    <Panel title="Bundle margin" sub="multi-SKU · payback">
+      <div className="p-5">
+        {/* items table */}
+        <div className="mb-1 grid grid-cols-[2fr_1fr_1fr_40px_20px] gap-2">
+          {["Item", "Full price ₾", "COGS ₾", "Qty", ""].map(h => (
+            <span key={h} className="font-mono text-[9px] uppercase tracking-widest text-meama-muted">{h}</span>
+          ))}
+        </div>
+        <div className="space-y-2">
+          {items.map(item => (
+            <div key={item.id} className="grid grid-cols-[2fr_1fr_1fr_40px_20px] items-center gap-2">
+              <input value={item.name} onChange={e => updateItem(item.id, "name", e.target.value)}
+                className="border border-meama-charcoal bg-meama-ivory px-2 py-1.5 text-sm text-meama-brown outline-none focus:border-meama-brown" />
+              <input type="number" value={item.fullPrice} onChange={e => updateItem(item.id, "fullPrice", e.target.value)}
+                className="tabular border border-meama-charcoal bg-meama-ivory px-2 py-1.5 text-sm text-meama-brown outline-none focus:border-meama-brown" />
+              <input type="number" value={item.cogs} onChange={e => updateItem(item.id, "cogs", e.target.value)}
+                className="tabular border border-meama-charcoal bg-meama-ivory px-2 py-1.5 text-sm text-meama-brown outline-none focus:border-meama-brown" />
+              <input type="number" value={item.qty} min={1} onChange={e => updateItem(item.id, "qty", e.target.value)}
+                className="tabular border border-meama-charcoal bg-meama-ivory px-2 py-1.5 text-sm text-meama-brown outline-none focus:border-meama-brown" />
+              <button onClick={() => setItems(p => p.filter(i => i.id !== item.id))}
+                className="text-meama-muted hover:text-meama-red text-base leading-none">×</button>
+            </div>
+          ))}
+        </div>
+        <button onClick={() => setItems(p => [...p, { id: _nextBundleId++, name: "New item", fullPrice: 0, cogs: 0, qty: 1 }])}
+          className="mt-3 font-mono text-[10px] uppercase tracking-wider text-meama-muted hover:text-meama-brown">
+          + Add item
+        </button>
+
+        {/* bundle price + payback input */}
+        <div className="mt-5 grid grid-cols-2 gap-4 border-t border-meama-charcoal pt-5">
+          <Field label="Bundle price ₾" value={String(bundlePrice)} onChange={v => setBundlePrice(Number(v))} />
+          <Field label="Monthly capsule margin / customer ₾" value={String(monthlyCapMargin)} onChange={v => setMonthlyCapMargin(Number(v))} />
+        </div>
+
+        {/* results */}
+        <div className="mt-5 grid grid-cols-2 gap-px border border-meama-charcoal bg-meama-charcoal sm:grid-cols-4">
+          {[
+            { l: "Bundle net margin", v: formatPercent(bundleMargin),   cls: marginOk ? "text-meama-green" : "text-meama-red" },
+            { l: "Total COGS",        v: formatGEL(totalCogs),           cls: "text-meama-brown" },
+            { l: "Value to customer", v: formatGEL(valueToCustomer),     cls: "text-meama-blue" },
+            { l: "Payback",           v: payback !== null ? `${payback.toFixed(1)} mo` : cornerCost <= 0 ? "none" : "—",
+              cls: payback !== null && payback <= 6 ? "text-meama-green" : payback !== null ? "text-meama-muted" : "text-meama-green" },
+          ].map(r => (
+            <div key={r.l} className="bg-meama-ivory px-3 py-2.5">
+              <p className="font-mono text-[9px] uppercase tracking-widest text-meama-muted">{r.l}</p>
+              <p className={`tabular mt-1 font-display text-[20px] uppercase leading-none ${r.cls}`}>{r.v}</p>
+            </div>
+          ))}
+        </div>
+        {!marginOk && (
+          <p className="mt-3 text-[12px] text-meama-red">
+            Net margin {formatPercent(bundleMargin)} is below the 40% floor — raise bundle price or reduce COGS.
+          </p>
+        )}
+        <p className="mt-3 text-[11px] text-meama-muted">
+          Payback = profit foregone (vs. selling parts individually) ÷ monthly capsule margin per customer.
+        </p>
+      </div>
+    </Panel>
+  );
+}
+
+// ── CATEGORY DISCOUNT CEILINGS ───────────────────────────────────────────────
+
+function CategoryCeilings() {
+  return (
+    <Panel title="Category discount ceilings" sub="commercial master · reference">
+      <div className="divide-y divide-meama-charcoal">
+        {CATEGORY_LIMITS.map(c => {
+          const barPct = Math.round((c.maxDiscount / 0.5) * 100);
+          return (
+            <div key={`${c.category}-${c.sub}`} className="flex items-center gap-3 px-5 py-2.5">
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm text-meama-brown">{c.sub}</p>
+                <p className="font-mono text-[9px] uppercase text-meama-muted">{c.category}</p>
+              </div>
+              <div className="h-1 w-14 overflow-hidden rounded-full bg-meama-charcoal">
+                <div className="h-full rounded-full bg-meama-brown" style={{ width: `${barPct}%` }} />
+              </div>
+              <span className={`tabular w-14 text-right font-mono text-[13px] font-medium ${
+                c.maxDiscount === 0 ? "text-meama-red" : c.maxDiscount >= 0.4 ? "text-meama-green" : "text-meama-brown"
+              }`}>
+                {c.maxDiscount === 0 ? "NO DISC" : formatPercent(c.maxDiscount)}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </Panel>
+  );
+}
+
+// ── GIFT-WITH-PURCHASE COST ──────────────────────────────────────────────────
+
+function GiftCalc() {
+  const [selectedIdx, setSelectedIdx] = useState(1); // Metal Cup 280ml default
+  const [basketGross, setBasketGross] = useState(100);
+
+  const acc = ACCESSORIES[selectedIdx];
+  const giftCost        = acc.cogs;
+  const fullMargin      = calcNetMargin(acc.fullPrice, acc.cogs);
+  const basketNet       = basketGross / (1 + GEO_VAT);
+  const marginHitPct    = basketNet > 0 ? giftCost / basketNet : 0;
+  const requiredMargin  = MARGIN_FLOOR + marginHitPct;
+
+  return (
+    <Panel title="Gift-with-purchase cost" sub="accessory COGS · margin hit">
+      <div className="p-5">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <label className="flex flex-col gap-1.5">
+            <span className="font-mono text-[9px] uppercase tracking-widest text-meama-muted">Accessory to gift</span>
+            <select value={selectedIdx} onChange={e => setSelectedIdx(Number(e.target.value))}
+              className="border border-meama-charcoal bg-meama-ivory px-3 py-2 text-sm text-meama-brown outline-none focus:border-meama-brown">
+              {ACCESSORIES.map((a, i) => (
+                <option key={a.name} value={i}>{a.name} (₾{a.fullPrice})</option>
+              ))}
+            </select>
+          </label>
+          <Field label="Basket size (order value) ₾" value={String(basketGross)} onChange={v => setBasketGross(Number(v))} />
+        </div>
+
+        <div className="mt-5 grid grid-cols-2 gap-px border border-meama-charcoal bg-meama-charcoal sm:grid-cols-4">
+          {[
+            { l: "Cost to gift",      v: formatGEL(giftCost),       cls: "text-meama-red" },
+            { l: "Full margin",       v: formatPercent(fullMargin),  cls: fullMargin >= MARGIN_FLOOR ? "text-meama-green" : "text-meama-muted" },
+            { l: "Margin hit",        v: formatPercent(marginHitPct),cls: "text-meama-brown" },
+            { l: "Required margin",   v: formatPercent(requiredMargin), cls: requiredMargin <= 0.7 ? "text-meama-green" : "text-meama-muted" },
+          ].map(r => (
+            <div key={r.l} className="bg-meama-ivory px-3 py-2.5">
+              <p className="font-mono text-[9px] uppercase tracking-widest text-meama-muted">{r.l}</p>
+              <p className={`tabular mt-1 font-display text-[20px] uppercase leading-none ${r.cls}`}>{r.v}</p>
+            </div>
+          ))}
+        </div>
+        <p className="mt-3 text-[11px] leading-relaxed text-meama-muted">
+          Margin hit = gift COGS ÷ basket net revenue. Your basket products must carry at least{" "}
+          <span className="text-meama-brown">{formatPercent(requiredMargin)}</span> net margin to land at 40% overall.
+        </p>
+      </div>
+    </Panel>
+  );
+}
+
 function CalculatorTab() {
   const { t } = useTranslation();
+  const [categoryIdx, setCategoryIdx] = useState<number | null>(null);
   const [sku, setSku] = useState("CAP-CLS-05");
-  const [fullPrice, setFullPrice] = useState(22.9);
-  const [cogs, setCogs] = useState(8.6);
+  const [fullPrice, setFullPrice] = useState(20.5);
+  const [cogs, setCogs] = useState(6.16);
   const [discount, setDiscount] = useState(15);
   const [result, setResult] = useState<PromoResponse | null>(null);
   const [offline, setOffline] = useState(false);
@@ -441,6 +770,16 @@ function CalculatorTab() {
   const [audience, setAudience] = useState(417);
   const [convRate, setConvRate] = useState(34);
   const [units, setUnits] = useState(2);
+
+  const selectedCat = categoryIdx !== null ? CATEGORY_LIMITS[categoryIdx] : null;
+
+  function applyCategory(idx: number) {
+    setCategoryIdx(idx);
+    const cat = CATEGORY_LIMITS[idx];
+    setFullPrice(cat.packPrice);
+    setCogs(cat.boxCogs);
+    setSku(`${cat.category} — ${cat.sub}`);
+  }
 
   async function calculate() {
     setLoading(true); setOffline(false);
@@ -463,11 +802,12 @@ function CalculatorTab() {
     const discountedPrice = fullPrice * (1 - discount / 100);
     const converters = Math.round(audience * (convRate / 100));
     const unitsSold = converters * units;
-    const revenue = unitsSold * discountedPrice;
-    const promoCost = unitsSold * (fullPrice - discountedPrice);
-    const grossProfit = revenue - unitsSold * cogs;
-    const roi = promoCost > 0 ? grossProfit / promoCost : null;
-    const marginAfter = discountedPrice > 0 ? (discountedPrice - cogs) / discountedPrice : 0;
+    const revenue = unitsSold * discountedPrice;                       // gross GEL (incl. VAT)
+    const netRevenue = revenue / (1 + GEO_VAT);                        // ex-VAT
+    const promoCost = unitsSold * (fullPrice - discountedPrice);       // discount value gross
+    const grossProfit = netRevenue - unitsSold * cogs;                 // net profit
+    const roi = promoCost > 0 ? grossProfit / (promoCost / (1 + GEO_VAT)) : null;
+    const marginAfter = calcNetMargin(discountedPrice, cogs);
     return { converters, revenue, promoCost, grossProfit, roi, marginAfter };
   }, [fullPrice, cogs, discount, audience, convRate, units]);
 
@@ -483,9 +823,9 @@ function CalculatorTab() {
         </div>
         <div className="mt-3 grid grid-cols-2 gap-px bg-meama-charcoal sm:grid-cols-4">
           {[
-            { tag: "Margin floor", value: "40%", note: "Min gross margin on every line", cls: "text-meama-green" },
-            { tag: "Discount cap", value: "25%", note: "Hard cap — never overridable", cls: "text-meama-red" },
-            { tag: "Min price", value: "×1.6667", note: "COGS × 1.6667 = floor per SKU", cls: "text-meama-brown" },
+            { tag: "Margin floor", value: "40%", note: "Min net margin (ex-VAT) — the hard block", cls: "text-meama-green" },
+            { tag: "VAT", value: "18%", note: "Stripped before every margin calculation", cls: "text-meama-brown" },
+            { tag: "Min price", value: "×1.9667", note: "COGS × 1.6667 × 1.18 = gross price floor", cls: "text-meama-brown" },
             { tag: "VIP segments", value: "0%", note: "Champion · Loyalist · Explorer — never discounted", cls: "text-meama-blue" },
           ].map((r) => (
             <div key={r.tag} className="bg-meama-roast p-4">
@@ -504,8 +844,33 @@ function CalculatorTab() {
         {/* margin safety */}
         <Panel title="Promotion builder" sub="margin safety · live">
           <div className="p-5">
+            {/* category selector */}
+            <label className="mb-4 flex flex-col gap-1.5">
+              <span className="font-mono text-[9px] uppercase tracking-widest text-meama-muted">Category (auto-fills price &amp; COGS)</span>
+              <select value={categoryIdx ?? ""} onChange={e => e.target.value !== "" && applyCategory(Number(e.target.value))}
+                className="border border-meama-charcoal bg-meama-ivory px-3 py-2 text-sm text-meama-brown outline-none focus:border-meama-brown">
+                <option value="">— pick a category —</option>
+                {CATEGORY_LIMITS.map((c, i) => (
+                  <option key={i} value={i}>{c.category} · {c.sub} (₾{c.packPrice})</option>
+                ))}
+              </select>
+            </label>
+            {selectedCat && (
+              <div className="mb-4 flex items-center justify-between border border-dashed border-meama-charcoal px-3 py-2 text-[11px]">
+                <span className="text-meama-muted">Category ceiling</span>
+                <span className={`tabular font-mono font-medium ${selectedCat.maxDiscount === 0 ? "text-meama-red" : "text-meama-brown"}`}>
+                  {selectedCat.maxDiscount === 0 ? "NO DISCOUNT" : `≤ ${(selectedCat.maxDiscount * 100).toFixed(0)}%`}
+                </span>
+                {discount / 100 > selectedCat.maxDiscount && selectedCat.maxDiscount > 0 && (
+                  <Badge tone="red">ABOVE CEILING</Badge>
+                )}
+                {discount / 100 <= selectedCat.maxDiscount && selectedCat.maxDiscount > 0 && (
+                  <Badge tone="green">WITHIN CEILING</Badge>
+                )}
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-4">
-              <Field label="SKU" type="text" value={sku} onChange={setSku} />
+              <Field label="SKU / name" type="text" value={sku} onChange={setSku} />
               <Field label="Full price ₾" value={String(fullPrice)} onChange={(v) => setFullPrice(Number(v))} />
               <Field label="COGS ₾" value={String(cogs)} onChange={(v) => setCogs(Number(v))} />
               <Field label="Discount %" value={String(discount)} onChange={(v) => setDiscount(Number(v))} />
@@ -567,6 +932,17 @@ function CalculatorTab() {
             </p>
           </div>
         </Panel>
+      </div>
+
+      {/* Bundle margin + payback */}
+      <div className="mt-5">
+        <BundleCalc />
+      </div>
+
+      {/* Category ceilings + gift calculator */}
+      <div className="mt-5 grid grid-cols-1 gap-5 lg:grid-cols-2">
+        <CategoryCeilings />
+        <GiftCalc />
       </div>
     </>
   );
@@ -885,7 +1261,7 @@ function SpendBars({ data }: { data: { date: string; spend_usd: number }[] }) {
     <svg viewBox={`0 0 ${W} ${H}`} className="w-full" preserveAspectRatio="none" aria-hidden="true">
       {data.map((d, i) => {
         const h = Math.max(2, (d.spend_usd / max) * (H - 4));
-        return <rect key={d.date} x={i * (barW + gap)} y={H - h} width={barW} height={h} fill="#1C3A7A" opacity="0.6" />;
+        return <rect key={d.date} x={i * (barW + gap)} y={H - h} width={barW} height={h} fill="#1A68CC" opacity="0.6" />;
       })}
     </svg>
   );
@@ -1043,7 +1419,7 @@ export default function Campaigns() {
 
   const addCampaign = (c: CampaignSummary) => setCampaigns((prev) => [c, ...prev]);
 
-  const active = campaigns.filter((c) => c.status === "active").length;
+  const active = campaigns.filter((c) => effectiveStatus(c) === "ACTIVE").length;
   const totalRev = campaigns.reduce((s, c) => s + (c.revenue_total ?? 0), 0);
   const withRoi = campaigns.filter((c) => c.roi !== null);
   const avgRoi = withRoi.length ? withRoi.reduce((s, c) => s + (c.roi ?? 0), 0) / withRoi.length : null;

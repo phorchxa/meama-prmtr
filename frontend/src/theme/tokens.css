@@ -1,24 +1,144 @@
-/* MEAMA design tokens — editorial Yeezy/clay edition. */
-@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;500;600;700&display=swap');
+/* ───────────────────────────────────────────────────────────────────────────
+   MEAMA PRMTR — Design tokens · v2.0
+   Source of truth: frontend/design/design.md (binding spec)
+   Two-tier model: primitives (raw scale) → semantic tokens (used everywhere).
+   The legacy --meama-* vars are kept as aliases so existing markup inherits v2.
+   ─────────────────────────────────────────────────────────────────────────── */
 
 :root {
-  --meama-espresso:  #F4F0EA;  /* page background — sandy clay */
-  --meama-roast:     #EDEBE5;  /* tinted surface */
-  --meama-ivory:     #FFFFFF;  /* card surface — pure white */
-  --meama-brown:     #0D0D0D;  /* primary text — near black */
-  --meama-cream:     #6E6B67;  /* secondary text — warm mid-gray */
-  --meama-charcoal:  #D8D4CE;  /* borders / dividers */
-  --meama-muted:     #9C9894;  /* muted / placeholder */
-  --meama-gold:      #0D0D0D;  /* accent (editorial monochrome) */
-  --meama-goldsoft:  #444140;  /* softer accent */
-  --meama-sand:      #C8C3BC;  /* light text on dark surfaces */
-  --meama-green:     #1A3D1F;  /* positive */
-  --meama-red:       #8B1A14;  /* critical */
-  --meama-blue:      #1C3A7A;  /* info / Meta */
-  --meama-muted:     #9C9894;  /* muted / placeholder */
+  /* ── Primitives — Neutrals (cool, faintly green-undertoned) ─────────────── */
+  --gray-0:   #FFFFFF;
+  --gray-25:  #FAFBFA;
+  --gray-50:  #F5F7F5;   /* app canvas */
+  --gray-100: #ECEFEC;
+  --gray-200: #E0E4E1;   /* hairline borders */
+  --gray-300: #CBD1CC;
+  --gray-400: #9BA39C;
+  --gray-500: #727B73;
+  --gray-600: #525B53;
+  --gray-700: #3A423B;
+  --gray-800: #222823;
+  --gray-900: #121712;   /* primary ink */
+  --gray-950: #0A0D0A;
+
+  /* ── Primitives — Brand green ───────────────────────────────────────────── */
+  --green-50:  #E9F8EE;
+  --green-100: #CFF0DA;
+  --green-200: #A5E2BB;
+  --green-300: #6FCB90;
+  --green-400: #3DAE68;
+  --green-500: #1F9D52;   /* brand green */
+  --green-600: #16823F;
+  --green-700: #0F662F;
+  --green-800: #0A4D24;
+  --green-900: #063318;
+
+  /* ── Primitives — Signal lime (live / now / active only) ────────────────── */
+  --signal-100: #F2FAC9;
+  --signal-300: #E4F784;
+  --signal-500: #D2F03C;
+  --signal-600: #B6D81F;
+  --signal-700: #8FAA12;
+
+  /* ── Primitives — Status hues ───────────────────────────────────────────── */
+  --success-50:  #E9F8EE; --success-500: #1F9D52; --success-600: #16823F; --success-700: #0F662F;
+  --danger-50:   #FDECEC; --danger-500:  #E5484D; --danger-600:  #CC2E33; --danger-700:  #A31C20;
+  --warning-50:  #FFF6E6; --warning-500: #F5A314; --warning-600: #C97E08; --warning-700: #9A5F04;
+  --info-50:     #EAF3FE; --info-500:    #2E84F0; --info-600:    #1A68CC; --info-700:    #1351A3;
+  --critical-50: #FCE9E9; --critical-500:#C2181E; --critical-600:#9E1115; --critical-700:#6E0B0E;
+
+  /* ── Categorical — RFM segments + action-type accents ───────────────────── */
+  --seg-champions:  #0F662F;  --seg-loyal:       #15998A;  --seg-potential: #3DAE68;
+  --seg-new:        #2E84F0;  --seg-promising:   #7A5AF0;  --seg-attention: #F5A314;
+  --seg-atrisk:     #EF6820;  --seg-cantlose:    #C2181E;  --seg-hibernating:#727B73;
+  --seg-lost:       #9BA39C;
+  --violet-50: #F0ECFE; --violet-600: #5B3FD6;
+  --teal-50:   #E2F6F3; --teal-600:   #0E8C7E;
+
+  /* ── Semantic tokens (consume these) ────────────────────────────────────── */
+  --color-canvas:         var(--gray-50);
+  --color-surface:        var(--gray-0);
+  --color-surface-raised: var(--gray-25);
+  --color-surface-sunken: var(--gray-100);
+  --color-overlay:        color-mix(in srgb, var(--gray-950) 55%, transparent);
+
+  --color-border:        var(--gray-200);
+  --color-border-strong: var(--gray-300);
+  --color-divider:       var(--gray-100);
+  --color-focus-ring:    var(--signal-500);
+
+  --color-text:           var(--gray-900);
+  --color-text-secondary: var(--gray-600);
+  --color-text-tertiary:  var(--gray-500);
+  --color-text-disabled:  var(--gray-400);
+  --color-text-inverse:   var(--gray-0);
+  --color-text-link:      var(--green-600);
+
+  --color-action-primary:        var(--gray-900);
+  --color-action-primary-hover:  var(--gray-800);
+  --color-action-primary-text:   var(--gray-0);
+  --color-action-positive:       var(--green-500);
+  --color-action-positive-hover: var(--green-600);
+
+  --color-brand:       var(--green-700);
+  --color-accent:      var(--signal-500);
+  --color-accent-soft: var(--signal-300);
+
+  --color-positive:      var(--success-600);
+  --color-positive-bg:   var(--success-50);
+  --color-negative:      var(--danger-600);
+  --color-negative-bg:   var(--danger-50);
+  --color-neutral-delta: var(--gray-500);
+
+  --color-warning:    var(--warning-600);
+  --color-warning-bg: var(--warning-50);
+  --color-info:       var(--info-600);
+  --color-info-bg:    var(--info-50);
+
+  --color-margin-safe:      var(--green-600);   --color-margin-safe-bg:   var(--green-50);
+  --color-margin-near:      var(--warning-600); --color-margin-near-bg:   var(--warning-50);
+  --color-margin-breach:    var(--critical-600);--color-margin-breach-bg: var(--critical-50);
+
+  /* ── Typography ─────────────────────────────────────────────────────────── */
+  --font-ui:   "Hanken Grotesk", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "Geist Mono", "SFMono-Regular", ui-monospace, monospace;
+
+  /* ── Radius — fully square ──────────────────────────────────────────────── */
+  --radius: 0px;
+
+  /* ── Elevation ──────────────────────────────────────────────────────────── */
+  --shadow-xs:    0 1px 2px rgba(18,23,18,.05);
+  --shadow-sm:    0 1px 3px rgba(18,23,18,.06), 0 1px 2px rgba(18,23,18,.04);
+  --shadow-md:    0 4px 12px rgba(18,23,18,.07), 0 2px 4px rgba(18,23,18,.04);
+  --shadow-lg:    0 12px 28px rgba(18,23,18,.10), 0 4px 8px rgba(18,23,18,.05);
+  --shadow-pop:   0 16px 40px rgba(18,23,18,.16);
+  --shadow-focus: 0 0 0 3px color-mix(in srgb, var(--signal-500) 55%, transparent);
+
+  /* ── Motion ─────────────────────────────────────────────────────────────── */
+  --ease-out:    cubic-bezier(.2,.8,.2,1);
+  --ease-in-out: cubic-bezier(.4,0,.2,1);
+  --dur-fast: 120ms;
+  --dur-base: 200ms;
+  --dur-slow: 320ms;
+
+  /* ── Legacy aliases — old --meama-* names now resolve to the v2 palette ──── */
+  --meama-espresso: var(--gray-50);    /* page background */
+  --meama-roast:    var(--gray-100);   /* tinted surface */
+  --meama-ivory:    var(--gray-0);     /* card surface */
+  --meama-brown:    var(--gray-900);   /* primary text */
+  --meama-cream:    var(--gray-600);   /* secondary text */
+  --meama-charcoal: var(--gray-200);   /* borders / dividers */
+  --meama-muted:    var(--gray-500);   /* muted / placeholder */
+  --meama-gold:     var(--green-600);  /* accent → brand green */
+  --meama-goldsoft: var(--gray-700);   /* softer accent */
+  --meama-sand:     var(--gray-300);   /* light text on dark */
+  --meama-green:    var(--green-600);  /* positive */
+  --meama-red:      var(--danger-600); /* critical / negative */
+  --meama-blue:     var(--info-600);   /* info / Meta */
 }
 
-.tabular {
+.tabular,
+.tnum {
   font-variant-numeric: tabular-nums;
-  font-feature-settings: "tnum";
+  font-feature-settings: "tnum" 1, "lnum" 1;
 }

@@ -11,21 +11,21 @@ import {
 
 // ── Design tokens (prototype palette) ──────────────────────────────
 const C = {
-  bg: "#F1ECE1",
-  card: "#FBFAF6",
-  line: "#E4DDCD",
-  lineSoft: "#EDE7DA",
-  ink: "#2B2823",
-  muted: "#A39B89",
-  muted2: "#857E6E",
-  green: "#3C7A52",
-  greenBg: "#DCEAE0",
-  greenBar: "#4F8F66",
-  amber: "#A9772F",
-  amberBar: "#B98A3E",
-  red: "#BB4A3D",
-  redBg: "#FBEDEA",
-  chipLine: "#D9D2C2",
+  bg: "#F5F7F5",      // gray-50 canvas
+  card: "#FFFFFF",    // gray-0 surface
+  line: "#E0E4E1",    // gray-200 border
+  lineSoft: "#ECEFEC",// gray-100 divider
+  ink: "#121712",     // gray-900 text
+  muted: "#9BA39C",   // gray-400
+  muted2: "#727B73",  // gray-500
+  green: "#16823F",   // green-600
+  greenBg: "#E9F8EE", // green-50
+  greenBar: "#1F9D52",// green-500
+  amber: "#C97E08",   // warning-600
+  amberBar: "#F5A314",// warning-500
+  red: "#CC2E33",     // danger-600
+  redBg: "#FDECEC",   // danger-50
+  chipLine: "#CBD1CC",// gray-300
 };
 
 // ── Helpers ──────────────────────────────────────────────────────────
@@ -71,14 +71,14 @@ function chLabel(ch: string): string {
   return m[ch] ?? ch;
 }
 
-const FUNNEL_COLORS = [C.greenBar, "#6E9E72", "#9A8C4E", C.amberBar, "#B0653A", C.green];
-const CHANNEL_COLORS = [C.amberBar, C.greenBar, "#9A8C4E", "#6E9E72", "#B0653A", C.muted2];
+const FUNNEL_COLORS = [C.greenBar, "#3DAE68", "#6FCB90", C.amberBar, "#EF6820", C.green];
+const CHANNEL_COLORS = [C.amberBar, C.greenBar, "#2E84F0", "#3DAE68", "#EF6820", C.muted2];
 
 // ── Components ────────────────────────────────────────────────────────
 
 function Sec({ title, meta, children }: { title: string; meta?: string; children: React.ReactNode }) {
   return (
-    <div style={{ background: C.card, border: `1px solid ${C.line}`, borderRadius: 11 }} className="p-5 mb-5">
+    <div style={{ background: C.card, border: `1px solid ${C.line}`, borderRadius: 0 }} className="p-5 mb-5">
       <div className="flex justify-between items-baseline mb-4">
         <h2 style={{ color: C.ink }} className="text-[15px] font-semibold m-0">{title}</h2>
         {meta && <span style={{ color: C.muted }} className="font-mono text-[10px] tracking-[.13em] uppercase">{meta}</span>}
@@ -110,7 +110,7 @@ function KpiBox({ label, value, sub }: { label: string; value: React.ReactNode; 
 
 function HBar({ pct, color, height = 22 }: { pct: number; color: string; height?: number }) {
   return (
-    <div style={{ height, background: C.lineSoft, borderRadius: 5, overflow: "hidden" }}>
+    <div style={{ height, background: C.lineSoft, borderRadius: 0, overflow: "hidden" }}>
       <span style={{ display: "block", height: "100%", width: `${Math.max(pct * 100, 2)}%`, background: color, transition: "width .4s ease" }} />
     </div>
   );
@@ -120,7 +120,7 @@ function SegPill({ label, color, value }: { label: string; color: string; value:
   return (
     <div className="flex justify-between items-center" style={{ color: C.muted2, fontSize: 13 }}>
       <span className="flex items-center gap-2">
-        <span style={{ width: 9, height: 9, borderRadius: 2, background: color, display: "inline-block" }} />
+        <span style={{ width: 9, height: 9, borderRadius: 0, background: color, display: "inline-block" }} />
         {label}
       </span>
       <b style={{ color: C.ink }}>{value}</b>
@@ -134,7 +134,7 @@ function Callout({ children, variant = "red" }: { children: React.ReactNode; var
     <div style={{
       borderLeft: `3px solid ${isGreen ? C.green : C.red}`,
       background: isGreen ? C.greenBg : C.redBg,
-      borderRadius: "0 7px 7px 0",
+      borderRadius: 0,
       padding: "12px 14px",
       fontSize: 13,
       marginTop: 14,
@@ -150,7 +150,7 @@ function RankRow({ name, count, max, color = C.amber }: { name: string; count: n
     <div className="grid items-center gap-2" style={{ gridTemplateColumns: "1fr 64px" }}>
       <div>
         <div style={{ fontSize: 13, color: C.ink }}>{name}</div>
-        <div style={{ height: 6, background: C.lineSoft, borderRadius: 4, marginTop: 4, overflow: "hidden" }}>
+        <div style={{ height: 6, background: C.lineSoft, borderRadius: 0, marginTop: 4, overflow: "hidden" }}>
           <span style={{ display: "block", height: "100%", width: `${(count / max) * 100}%`, background: color }} />
         </div>
       </div>
@@ -164,13 +164,13 @@ function RankRow({ name, count, max, color = C.amber }: { name: string; count: n
 type SegPill2Props = { label: string; tone: "atrisk" | "never" | "queued" | "plain" };
 function Pill2({ label, tone }: SegPill2Props) {
   const styles: Record<string, React.CSSProperties> = {
-    atrisk: { borderColor: "#E2BBA4", color: "#A85A36", background: "#F8ECE4" },
-    never:  { borderColor: "#C9C0AC", color: C.muted2 },
-    queued: { borderColor: "#B7D2BF", color: C.green, background: C.greenBg },
+    atrisk: { borderColor: "#FBD9C4", color: "#EF6820", background: "#FDEEE4" },
+    never:  { borderColor: "#CBD1CC", color: C.muted2 },
+    queued: { borderColor: "#A5E2BB", color: C.green, background: C.greenBg },
     plain:  { borderColor: C.chipLine, color: C.muted2 },
   };
   return (
-    <span style={{ fontFamily: "monospace", fontSize: "9.5px", letterSpacing: ".06em", textTransform: "uppercase", padding: "3px 8px", borderRadius: 20, border: `1px solid`, display: "inline-block", ...styles[tone] }}>
+    <span style={{ fontFamily: "var(--font-mono)", fontSize: "10px", letterSpacing: ".04em", textTransform: "uppercase", padding: "3px 8px", borderRadius: 0, border: `1px solid`, display: "inline-block", ...styles[tone] }}>
       {label}
     </span>
   );
@@ -204,7 +204,7 @@ export default function Sessions() {
 
       {/* Range toggle */}
       <div className="flex justify-end mb-5">
-        <div style={{ display: "inline-flex", background: C.card, border: `1px solid ${C.line}`, borderRadius: 8, overflow: "hidden" }}>
+        <div style={{ display: "inline-flex", background: C.card, border: `1px solid ${C.line}`, borderRadius: 0, overflow: "hidden" }}>
           {(["today", "7d", "30d"] as Range[]).map((r) => (
             <button
               key={r}
@@ -224,7 +224,7 @@ export default function Sessions() {
       </div>
 
       {error && (
-        <div style={{ background: C.redBg, border: `1px solid ${C.red}`, borderRadius: 9, padding: "12px 16px", color: C.red, marginBottom: 20 }}>
+        <div style={{ background: C.redBg, border: `1px solid ${C.red}`, borderRadius: 0, padding: "12px 16px", color: C.red, marginBottom: 20 }}>
           Error: {error}
         </div>
       )}
@@ -238,7 +238,7 @@ export default function Sessions() {
       {!loading && overview && (
         <>
           {/* KPI strip */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(8,1fr)", background: C.line, border: `1px solid ${C.line}`, borderRadius: 11, overflow: "hidden", marginBottom: 20 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(8,1fr)", background: C.line, border: `1px solid ${C.line}`, borderRadius: 0, overflow: "hidden", marginBottom: 20 }}>
             <KpiBox label="Sessions" value={fmtNum(overview.kpis.sessions)} />
             <KpiBox label="Unique visitors" value={fmtNum(overview.kpis.unique_visitors)} />
             <KpiBox label="Registered share" value={Math.round(overview.kpis.registered_share * 100)} sub="%" />
@@ -283,13 +283,13 @@ export default function Sessions() {
                 const regPct = total ? overview.who.registered / total : 0;
                 return (
                   <>
-                    <div style={{ height: 14, borderRadius: 7, display: "flex", overflow: "hidden", marginBottom: 14 }}>
+                    <div style={{ height: 14, borderRadius: 0, display: "flex", overflow: "hidden", marginBottom: 14 }}>
                       <i style={{ display: "block", height: "100%", width: `${regPct * 100}%`, background: C.greenBar }} />
-                      <i style={{ display: "block", height: "100%", flex: 1, background: "#C7BEA8" }} />
+                      <i style={{ display: "block", height: "100%", flex: 1, background: "#CBD1CC" }} />
                     </div>
                     <div className="flex flex-col gap-2">
                       <SegPill label="Registered (linked to customer)" color={C.greenBar} value={fmtNum(overview.who.registered)} />
-                      <SegPill label="Anonymous (aggregate only)" color="#C7BEA8" value={fmtNum(overview.who.anonymous)} />
+                      <SegPill label="Anonymous (aggregate only)" color="#CBD1CC" value={fmtNum(overview.who.anonymous)} />
                     </div>
                     <Callout>
                       <b style={{ color: C.ink }}>{fmtNum(overview.who.warm)} registered customers browsing, not buying.</b> Includes never-ordered registrants — the warm pool for re-engagement.
@@ -394,7 +394,7 @@ export default function Sessions() {
       {!loading && abandonment && (
         <>
           {/* Abandonment KPI strip */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", background: C.line, border: `1px solid ${C.line}`, borderRadius: 11, overflow: "hidden", marginBottom: 20 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", background: C.line, border: `1px solid ${C.line}`, borderRadius: 0, overflow: "hidden", marginBottom: 20 }}>
             <KpiBox label="Cart abandonment" value={Math.round(abandonment.kpis.cart_abandonment_rate * 100)} sub="%" />
             <KpiBox label="Checkout abandonment" value={Math.round(abandonment.kpis.checkout_abandonment_rate * 100)} sub="%" />
             <KpiBox label={`Recoverable carts · ${rangeLabel}`} value={fmtNum(abandonment.kpis.recoverable_carts)} />
@@ -410,7 +410,7 @@ export default function Sessions() {
                   return abandonment.by_stage.map((s, i) => (
                     <div key={s.stage} className="grid items-center gap-[10px]" style={{ gridTemplateColumns: "160px 1fr 48px" }}>
                       <span style={{ fontFamily: "monospace", fontSize: "10.5px", textTransform: "uppercase", color: C.muted2 }}>{s.stage}</span>
-                      <HBar pct={s.count / max} color={[C.amberBar, "#B98A3E", "#B0653A", C.red][i] ?? C.red} height={18} />
+                      <HBar pct={s.count / max} color={[C.amberBar, "#F5A314", "#EF6820", C.red][i] ?? C.red} height={18} />
                       <span style={{ textAlign: "right", fontFamily: "monospace", fontSize: 11, color: C.muted2 }}>{s.count}</span>
                     </div>
                   ));
@@ -429,13 +429,13 @@ export default function Sessions() {
                 const shopifyPct = total ? abandonment.source.shopify_abandoned / total : 0;
                 return (
                   <>
-                    <div style={{ height: 14, borderRadius: 7, display: "flex", overflow: "hidden", marginBottom: 14 }}>
+                    <div style={{ height: 14, borderRadius: 0, display: "flex", overflow: "hidden", marginBottom: 14 }}>
                       <i style={{ display: "block", height: "100%", width: `${shopifyPct * 100}%`, background: C.amberBar }} />
-                      <i style={{ display: "block", height: "100%", flex: 1, background: "#6E9E72" }} />
+                      <i style={{ display: "block", height: "100%", flex: 1, background: "#3DAE68" }} />
                     </div>
                     <div className="flex flex-col gap-2">
                       <SegPill label="Shopify abandoned checkout (email)" color={C.amberBar} value={abandonment.source.shopify_abandoned} />
-                      <SegPill label="Live pixel (earlier stages)" color="#6E9E72" value={abandonment.source.live_pixel} />
+                      <SegPill label="Live pixel (earlier stages)" color="#3DAE68" value={abandonment.source.live_pixel} />
                     </div>
                     <p style={{ fontFamily: "monospace", fontSize: 10, color: C.muted2, marginTop: 14 }}>
                       Existing <b>georgia_abandoned_carts</b> + live <b>checkout_started</b> abandonment, deduped by client/session.

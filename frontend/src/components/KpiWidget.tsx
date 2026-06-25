@@ -51,11 +51,11 @@ export function KpiWidget({ label, value, unit, deltaPct, trend }: KpiWidgetProp
   const positive = (deltaPct ?? 0) >= 0;
   return (
     <div className="card-m card-m-hover group p-5">
-      <div className="font-mono text-[9.5px] uppercase tracking-[0.28em] text-meama-muted">
+      <div className="text-[12px] font-medium text-meama-muted">
         {label}
       </div>
       <div className="mt-2 flex items-end justify-between gap-2">
-        <div className="tabular font-display text-[34px] uppercase leading-none text-meama-brown">
+        <div className="tabular font-mono text-[30px] font-semibold leading-none tracking-[-0.02em] text-meama-brown">
           {renderValue(animated, unit)}
         </div>
         {trend && trend.length > 1 ? (

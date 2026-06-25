@@ -15,24 +15,24 @@ export function StatCallout({
   dark?: boolean;
 }) {
   const toneText = {
-    gold:  dark ? "text-[#F4F0EA]"   : "text-meama-brown",
-    green: dark ? "text-[#5CB87A]"   : "text-meama-green",
-    red:   dark ? "text-[#E05A52]"   : "text-meama-red",
-    blue:  dark ? "text-[#6B8FD8]"   : "text-meama-blue",
+    gold:  dark ? "text-[#F5F7F5]"   : "text-meama-brown",
+    green: dark ? "text-[#3DAE68]"   : "text-meama-green",
+    red:   dark ? "text-[#E5484D]"   : "text-meama-red",
+    blue:  dark ? "text-[#2E84F0]"   : "text-meama-blue",
   }[tone];
 
   const tagBase = dark
-    ? "border-[#F4F0EA]/20 text-[#C8C3BC]"
+    ? "border-[#F5F7F5]/20 text-[#CBD1CC]"
     : "border-meama-charcoal text-meama-muted";
 
   return (
     <div className="border-t border-meama-charcoal/50 pt-5">
       <div
-        className={`tabular font-display text-[52px] uppercase leading-none tracking-[0.04em] ${toneText}`}
+        className={`tabular font-mono text-[44px] font-semibold leading-none tracking-[-0.02em] ${toneText}`}
       >
         {value}
       </div>
-      <p className={`mt-2 text-sm leading-relaxed ${dark ? "text-[#9A9590]" : "text-meama-muted"}`}>
+      <p className={`mt-2 text-sm leading-relaxed ${dark ? "text-[#9BA39C]" : "text-meama-muted"}`}>
         {children}
       </p>
       {tag ? (

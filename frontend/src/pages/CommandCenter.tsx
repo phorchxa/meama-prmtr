@@ -23,18 +23,18 @@ function RevenueArea({ data }: { data: number[] }) {
   return (
     <svg viewBox={`0 0 ${w} ${h}`} className="h-36 w-full" role="img" aria-label="30-day revenue trend">
       {[0.25, 0.5, 0.75].map((f) => (
-        <line key={f} x1="0" y1={h * f} x2={w} y2={h * f} stroke="var(--meama-charcoal)" opacity="0.06" />
+        <line key={f} x1="0" y1={h * f} x2={w} y2={h * f} stroke="var(--gray-300)" opacity="0.5" />
       ))}
-      <polygon points={area} fill="var(--meama-brown)" opacity="0.06" />
+      <polygon points={area} fill="var(--green-500)" opacity="0.12" />
       <polyline
         points={line}
         fill="none"
-        stroke="var(--meama-brown)"
+        stroke="var(--green-600)"
         strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
-      <circle cx={pts[pts.length - 1][0]} cy={pts[pts.length - 1][1]} r="4" fill="var(--meama-brown)" />
+      <circle cx={pts[pts.length - 1][0]} cy={pts[pts.length - 1][1]} r="4" fill="var(--green-600)" />
     </svg>
   );
 }
@@ -74,9 +74,9 @@ function KpiCard({ label, value, sub, tone = "default" }: KpiCardProps) {
 
   return (
     <div className="card-m">
-      <div className="mb-1 font-mono text-[9.5px] uppercase tracking-[0.28em] text-meama-muted">{label}</div>
-      <div className={`tabular font-display text-[32px] uppercase leading-none ${valColor}`}>{value}</div>
-      {sub && <div className="mt-1 text-xs text-meama-muted">{sub}</div>}
+      <div className="mb-1.5 text-[12px] font-medium text-meama-muted">{label}</div>
+      <div className={`tabular font-mono text-[30px] font-semibold leading-none tracking-[-0.02em] ${valColor}`}>{value}</div>
+      {sub && <div className="mt-1.5 text-xs text-meama-muted">{sub}</div>}
     </div>
   );
 }
@@ -208,9 +208,9 @@ export default function CommandCenter() {
                     <span>E-commerce {formatPercent(ecomPct, 0)}</span>
                     <span>Brand stores {formatPercent(1 - ecomPct, 0)}</span>
                   </div>
-                  <div className="flex h-1 overflow-hidden">
-                    <div className="bg-meama-brown" style={{ width: `${ecomPct * 100}%` }} />
-                    <div className="bg-meama-charcoal" style={{ width: `${(1 - ecomPct) * 100}%` }} />
+                  <div className="flex h-1.5 overflow-hidden">
+                    <div className="bg-green-500" style={{ width: `${ecomPct * 100}%` }} />
+                    <div className="bg-gray-200" style={{ width: `${(1 - ecomPct) * 100}%` }} />
                   </div>
                 </div>
               )}
@@ -229,9 +229,9 @@ export default function CommandCenter() {
 
         <Link
           to="/stock"
-          className="card-m-hover block border border-meama-charcoal bg-[#0D0D0D] p-5 text-[#F4F0EA] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_8px_32px_rgba(0,0,0,0.15)]"
+          className="card-m-hover panel-dark block transition-all duration-300 hover:-translate-y-px hover:shadow-lg"
         >
-          <div className="mb-3 font-mono text-[9.5px] uppercase tracking-[0.32em] text-[#9A9590]">
+          <div className="mb-3 text-[12px] font-medium text-gray-400">
             Stock alerts
           </div>
           {loading ? (
@@ -241,10 +241,10 @@ export default function CommandCenter() {
             </div>
           ) : (
             <>
-              <div className="tabular font-display text-[52px] uppercase leading-none text-meama-red">
+              <div className="tabular font-mono text-[52px] font-semibold leading-none tracking-[-0.02em] text-danger-500">
                 {kpis?.critical_stock_skus ?? 0}
               </div>
-              <p className="mt-2 text-sm leading-relaxed text-[#9A9590]">
+              <p className="mt-2 text-sm leading-relaxed text-gray-400">
                 critical SKUs below 2-week cover floor.{" "}
                 {(kpis?.low_stock_skus ?? 0) > 0
                   ? `${kpis!.low_stock_skus} more approaching the limit.`
@@ -252,7 +252,7 @@ export default function CommandCenter() {
               </p>
             </>
           )}
-          <span className="mt-4 inline-block font-mono text-[10px] uppercase tracking-[0.22em] text-[#C8C3BC]">
+          <span className="mt-4 inline-block font-mono text-[11px] font-semibold text-gray-300">
             View stock →
           </span>
         </Link>

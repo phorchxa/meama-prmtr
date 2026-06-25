@@ -10,7 +10,7 @@ export function Sparkline({
   data,
   width = 96,
   height = 28,
-  color = "#0D0D0D",
+  color = "#121712",
 }: SparklineProps) {
   if (data.length < 2) {
     return <svg width={width} height={height} aria-hidden="true" />;

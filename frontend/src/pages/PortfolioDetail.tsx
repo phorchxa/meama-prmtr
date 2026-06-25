@@ -121,24 +121,24 @@ function regionLabel(region: string | null | undefined) {
 
 function tagClass(tone: Tone = "neutral") {
   const tones: Record<Tone, string> = {
-    green: "border-[#a8d9bf] bg-[#e9f6ef] text-[#147348]",
-    red: "border-[#efb7b1] bg-[#fff0ee] text-[#bb3a2f]",
-    amber: "border-[#e4c07f] bg-[#fff4df] text-[#a26a10]",
-    blue: "border-[#abc4ee] bg-[#edf3ff] text-[#214f90]",
-    purple: "border-[#c8b3f3] bg-[#f3efff] text-[#6b43b6]",
-    neutral: "border-[rgba(32,27,20,.095)] bg-[#f7f3ec] text-[#62594e]",
+    green: "border-[#A5E2BB] bg-[#E9F8EE] text-[#16823F]",
+    red: "border-[#F1B9BB] bg-[#FDECEC] text-[#CC2E33]",
+    amber: "border-[#F0D79A] bg-[#FFF6E6] text-[#C97E08]",
+    blue: "border-[#B8D4F8] bg-[#EAF3FE] text-[#1A68CC]",
+    purple: "border-[#CFC2F5] bg-[#F0ECFE] text-[#5B3FD6]",
+    neutral: "border-[rgba(18,23,18,.095)] bg-[#ECEFEC] text-[#525B53]",
   };
   return tones[tone];
 }
 
 function toneTextClass(tone: Tone = "neutral") {
   const tones: Record<Tone, string> = {
-    green: "text-[#147348]",
-    red: "text-[#bb3a2f]",
-    amber: "text-[#a26a10]",
-    blue: "text-[#214f90]",
-    purple: "text-[#6b43b6]",
-    neutral: "text-[#62594e]",
+    green: "text-[#16823F]",
+    red: "text-[#CC2E33]",
+    amber: "text-[#C97E08]",
+    blue: "text-[#1A68CC]",
+    purple: "text-[#5B3FD6]",
+    neutral: "text-[#525B53]",
   };
   return tones[tone];
 }
@@ -150,9 +150,9 @@ function healthTone(score: number): Tone {
 }
 
 function healthFill(score: number) {
-  if (score >= 70) return "bg-[#147348]";
-  if (score >= 40) return "bg-[#a26a10]";
-  return "bg-[#bb3a2f]";
+  if (score >= 70) return "bg-[#16823F]";
+  if (score >= 40) return "bg-[#C97E08]";
+  return "bg-[#CC2E33]";
 }
 
 function churnTone(reason: ChurnReason | null | undefined): Tone {
@@ -200,7 +200,7 @@ const FUNNEL_STAGE_LABEL_D: Record<number, string> = {
 
 function Tag({ tone = "neutral", children }: { tone?: Tone; children: ReactNode }) {
   return (
-    <span className={cx("inline-flex items-center rounded-md border px-1.5 py-0.5 font-mono text-[10px]", tagClass(tone))}>
+    <span className={cx("inline-flex items-center rounded-none border px-1.5 py-0.5 font-mono text-[10px]", tagClass(tone))}>
       {children}
     </span>
   );
@@ -208,9 +208,9 @@ function Tag({ tone = "neutral", children }: { tone?: Tone; children: ReactNode 
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className="overflow-hidden rounded-2xl border border-[rgba(32,27,20,.095)] bg-white/75 shadow-[0_18px_50px_-34px_rgba(35,25,12,.55)]">
-      <div className="border-b border-[rgba(32,27,20,.095)] px-4 py-3">
-        <h3 className="text-[12.5px] font-semibold text-[#17120d]">{title}</h3>
+    <section className="overflow-hidden rounded-none border border-[rgba(18,23,18,.095)] bg-white/75 shadow-[0_18px_50px_-34px_rgba(18,23,18,.55)]">
+      <div className="border-b border-[rgba(18,23,18,.095)] px-4 py-3">
+        <h3 className="text-[12.5px] font-semibold text-[#121712]">{title}</h3>
       </div>
       <div className="p-4">{children}</div>
     </section>
@@ -224,16 +224,16 @@ function FieldGrid({ children }: { children: ReactNode }) {
 function Field({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div className="min-w-0">
-      <div className="mb-1 font-mono text-[8.5px] uppercase tracking-[.09em] text-[#9a9187]">{label}</div>
-      <div className="truncate text-[12.5px] font-medium text-[#17120d]">{valueOrDash(value)}</div>
+      <div className="mb-1 font-mono text-[8.5px] uppercase tracking-[.09em] text-[#9BA39C]">{label}</div>
+      <div className="truncate text-[12.5px] font-medium text-[#121712]">{valueOrDash(value)}</div>
     </div>
   );
 }
 
 function Stat({ label, value, tone = "neutral" }: { label: string; value: ReactNode; tone?: Tone }) {
   return (
-    <div className="rounded-[18px] border border-[rgba(32,27,20,.095)] bg-white/75 p-3 shadow-[0_18px_50px_-34px_rgba(35,25,12,.55)]">
-      <div className="mb-1.5 font-mono text-[8.5px] uppercase tracking-[.09em] text-[#9a9187]">{label}</div>
+    <div className="rounded-none border border-[rgba(18,23,18,.095)] bg-white/75 p-3 shadow-[0_18px_50px_-34px_rgba(18,23,18,.55)]">
+      <div className="mb-1.5 font-mono text-[8.5px] uppercase tracking-[.09em] text-[#9BA39C]">{label}</div>
       <div className={cx("text-[21px] font-bold leading-none tracking-[-.045em]", toneTextClass(tone))}>
         {valueOrDash(value)}
       </div>
@@ -242,11 +242,11 @@ function Stat({ label, value, tone = "neutral" }: { label: string; value: ReactN
 }
 
 function ChipList({ values }: { values: string[] | null | undefined }) {
-  if (!values?.length) return <span className="text-[12px] text-[#9a9187]">—</span>;
+  if (!values?.length) return <span className="text-[12px] text-[#9BA39C]">—</span>;
   return (
     <div className="flex flex-wrap gap-1.5">
       {values.map((value) => (
-        <span key={value} className="rounded-full border border-[rgba(42,34,24,.12)] bg-white/80 px-2.5 py-1 text-[11px] text-[#17120d]">
+        <span key={value} className="rounded-none border border-[rgba(18,23,18,.12)] bg-white/80 px-2.5 py-1 text-[11px] text-[#121712]">
           {value}
         </span>
       ))}
@@ -255,13 +255,13 @@ function ChipList({ values }: { values: string[] | null | undefined }) {
 }
 
 function ProductList({ products }: { products: SessionProduct[] | null | undefined }) {
-  if (!products?.length) return <span className="text-[12px] text-[#9a9187]">—</span>;
+  if (!products?.length) return <span className="text-[12px] text-[#9BA39C]">—</span>;
   return (
     <div className="space-y-1.5">
       {products.map((product) => (
         <div key={product.sku} className="min-w-0">
-          <div className="truncate text-[12.5px] font-medium text-[#17120d]">{product.title}</div>
-          <div className="truncate font-mono text-[9.5px] text-[#9a9187]">{product.sku}</div>
+          <div className="truncate text-[12.5px] font-medium text-[#121712]">{product.title}</div>
+          <div className="truncate font-mono text-[9.5px] text-[#9BA39C]">{product.sku}</div>
         </div>
       ))}
     </div>
@@ -314,14 +314,14 @@ function ChannelSplit({ data }: { data: PortfolioDetailData }) {
   const store = data.brand_store_share ?? 0;
   const other = Math.max(0, 1 - ecommerce - store);
   const items = [
-    { label: "Ecommerce", value: ecommerce, color: "bg-[#214f90]" },
-    { label: "Brand store", value: store, color: "bg-[#147348]" },
-    { label: "Other", value: other, color: "bg-[#a26a10]" },
+    { label: "Ecommerce", value: ecommerce, color: "bg-[#1A68CC]" },
+    { label: "Brand store", value: store, color: "bg-[#16823F]" },
+    { label: "Other", value: other, color: "bg-[#C97E08]" },
   ].filter((item) => item.value > 0);
 
   return (
     <div>
-      <div className="mb-2 flex h-7 overflow-hidden rounded-md bg-[rgba(23,18,13,.095)]">
+      <div className="mb-2 flex h-7 overflow-hidden rounded-none bg-[rgba(18,23,18,.095)]">
         {items.length ? (
           items.map((item) => (
             <div key={item.label} className={cx("flex items-center justify-center font-mono text-[9.5px] text-white", item.color)} style={{ width: `${item.value * 100}%` }}>
@@ -329,10 +329,10 @@ function ChannelSplit({ data }: { data: PortfolioDetailData }) {
             </div>
           ))
         ) : (
-          <div className="flex w-full items-center justify-center font-mono text-[10px] text-[#9a9187]">No channel split</div>
+          <div className="flex w-full items-center justify-center font-mono text-[10px] text-[#9BA39C]">No channel split</div>
         )}
       </div>
-      <div className="flex flex-wrap gap-3 text-[11px] text-[#62594e]">
+      <div className="flex flex-wrap gap-3 text-[11px] text-[#525B53]">
         <span>E-commerce {pct(data.ecommerce_share)}</span>
         <span>Brand store {pct(data.brand_store_share)}</span>
       </div>
@@ -341,12 +341,12 @@ function ChannelSplit({ data }: { data: PortfolioDetailData }) {
 }
 
 function RecentOrders({ data }: { data: PortfolioDetailData }) {
-  if (!data.recent_orders.length) return <p className="text-[12px] text-[#9a9187]">No recent orders returned.</p>;
+  if (!data.recent_orders.length) return <p className="text-[12px] text-[#9BA39C]">No recent orders returned.</p>;
   return (
     <div className="overflow-x-auto">
       <table className="w-full border-collapse text-[12px]">
         <thead>
-          <tr className="border-b border-[rgba(32,27,20,.095)] bg-[#f7f3ec] font-mono text-[9px] uppercase tracking-[.07em] text-[#9a9187]">
+          <tr className="border-b border-[rgba(18,23,18,.095)] bg-[#ECEFEC] font-mono text-[9px] uppercase tracking-[.07em] text-[#9BA39C]">
             <th className="px-3 py-2 text-left font-medium">Order</th>
             <th className="px-3 py-2 text-left font-medium">Date</th>
             <th className="px-3 py-2 text-left font-medium">Channel</th>
@@ -355,11 +355,11 @@ function RecentOrders({ data }: { data: PortfolioDetailData }) {
         </thead>
         <tbody>
           {data.recent_orders.slice(0, 12).map((order) => (
-            <tr key={order.shopify_order_id} className="border-b border-[rgba(32,27,20,.075)] last:border-b-0">
-              <td className="px-3 py-2 font-mono text-[10px] text-[#62594e]">#{order.shopify_order_id}</td>
-              <td className="px-3 py-2 text-[#62594e]">{dateOrDash(order.processed_at)}</td>
-              <td className="px-3 py-2 text-[#62594e]">{order.source ? SOURCE_LABEL[order.source] ?? order.source : "—"}</td>
-              <td className="px-3 py-2 text-right font-medium text-[#17120d]">{formatGEL(order.total)}</td>
+            <tr key={order.shopify_order_id} className="border-b border-[rgba(18,23,18,.075)] last:border-b-0">
+              <td className="px-3 py-2 font-mono text-[10px] text-[#525B53]">#{order.shopify_order_id}</td>
+              <td className="px-3 py-2 text-[#525B53]">{dateOrDash(order.processed_at)}</td>
+              <td className="px-3 py-2 text-[#525B53]">{order.source ? SOURCE_LABEL[order.source] ?? order.source : "—"}</td>
+              <td className="px-3 py-2 text-right font-medium text-[#121712]">{formatGEL(order.total)}</td>
             </tr>
           ))}
         </tbody>
@@ -392,25 +392,25 @@ export default function PortfolioDetail() {
   if (!id || notFound) return <Navigate to="/portfolios" replace />;
 
   return (
-    <div className="text-[#17120d]">
-      <Link to="/portfolios" className="mb-4 inline-block font-mono text-[10px] uppercase tracking-[.09em] text-[#62594e] hover:text-[#17120d]">
+    <div className="text-[#121712]">
+      <Link to="/portfolios" className="mb-4 inline-block font-mono text-[10px] uppercase tracking-[.09em] text-[#525B53] hover:text-[#121712]">
         Back to portfolios
       </Link>
 
       {loading && !data && (
         <div className="space-y-4">
-          <Skeleton className="h-24 rounded-2xl" />
+          <Skeleton className="h-24 rounded-none" />
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
             {Array.from({ length: 4 }).map((_, index) => (
-              <Skeleton key={index} className="h-24 rounded-2xl" />
+              <Skeleton key={index} className="h-24 rounded-none" />
             ))}
           </div>
-          <Skeleton className="h-40 rounded-2xl" />
+          <Skeleton className="h-40 rounded-none" />
         </div>
       )}
 
       {error && (
-        <div className="rounded-2xl border border-[#efb7b1] bg-[#fff0ee] px-4 py-3 text-[13px] text-[#bb3a2f]">
+        <div className="rounded-none border border-[#F1B9BB] bg-[#FDECEC] px-4 py-3 text-[13px] text-[#CC2E33]">
           Error: {error}
         </div>
       )}
@@ -423,13 +423,13 @@ export default function PortfolioDetail() {
             subtitle="Customer 360"
           />
 
-          <div className="overflow-hidden rounded-[26px] border border-[rgba(42,34,24,.10)] bg-gradient-to-br from-white/95 to-[#fffaf2]/75 shadow-[0_18px_50px_-34px_rgba(35,25,12,.55)]">
+          <div className="overflow-hidden rounded-none border border-[rgba(18,23,18,.10)] bg-gradient-to-br from-white/95 to-[#FAFBFA]/75 shadow-[0_18px_50px_-34px_rgba(18,23,18,.55)]">
             <div className="flex flex-wrap items-start gap-4 p-5">
-              <div className={cx("flex h-[58px] w-[58px] shrink-0 items-center justify-center rounded-[20px] text-[18px] font-semibold text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,.22),0_18px_32px_-25px_rgba(0,0,0,.75)]", healthFill(data.health_score))}>
+              <div className={cx("flex h-[58px] w-[58px] shrink-0 items-center justify-center rounded-none text-[18px] font-semibold text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,.22),0_18px_32px_-25px_rgba(0,0,0,.75)]", healthFill(data.health_score))}>
                 {data.initials || "?"}
               </div>
               <div className="min-w-0 flex-1">
-                <div className="truncate text-[22px] font-extrabold leading-tight tracking-[-.045em] text-[#17120d]">
+                <div className="truncate text-[22px] font-extrabold leading-tight tracking-[-.045em] text-[#121712]">
                   {data.full_name?.trim() || `#${data.shopify_customer_id}`}
                 </div>
                 <div className="mt-2 flex flex-wrap items-center gap-1.5">
@@ -494,19 +494,19 @@ export default function PortfolioDetail() {
                 <Field label="Capsule price range" value={data.capsule_price_range?.replace("_", " ")} />
               </FieldGrid>
               <div>
-                <div className="mb-2 font-mono text-[8.5px] uppercase tracking-[.09em] text-[#9a9187]">Top flavors</div>
+                <div className="mb-2 font-mono text-[8.5px] uppercase tracking-[.09em] text-[#9BA39C]">Top flavors</div>
                 <ChipList values={data.top_flavors} />
               </div>
               <div>
-                <div className="mb-2 font-mono text-[8.5px] uppercase tracking-[.09em] text-[#9a9187]">Format preferences</div>
+                <div className="mb-2 font-mono text-[8.5px] uppercase tracking-[.09em] text-[#9BA39C]">Format preferences</div>
                 <ChipList values={data.format_preferences} />
               </div>
               <div>
-                <div className="mb-2 font-mono text-[8.5px] uppercase tracking-[.09em] text-[#9a9187]">Bought categories</div>
+                <div className="mb-2 font-mono text-[8.5px] uppercase tracking-[.09em] text-[#9BA39C]">Bought categories</div>
                 <ChipList values={data.bought_capsule_categories} />
               </div>
               <div>
-                <div className="mb-2 font-mono text-[8.5px] uppercase tracking-[.09em] text-[#9a9187]">Never bought categories</div>
+                <div className="mb-2 font-mono text-[8.5px] uppercase tracking-[.09em] text-[#9BA39C]">Never bought categories</div>
                 <ChipList values={data.never_bought_capsule_categories} />
               </div>
             </div>
@@ -568,19 +568,19 @@ export default function PortfolioDetail() {
                 <Field label="City" value={data.last_session_city} />
               </div>
               {data.session_warm && !["recovered_after_abandonment", "converted"].includes(sessionCartStatus(data)) && (
-                <div className="mt-3 rounded-xl border border-[#c8b090] bg-[#fbf6ec] p-3 text-[12px] leading-5 text-[#6b5a3e]">
-                  <b style={{ color: "#a9772f" }}>Win-back ready.</b> Customer has a recent session with cart activity and no recent order — warm pool for re-engagement.
+                <div className="mt-3 rounded-none border border-[#F0D79A] bg-[#FFF6E6] p-3 text-[12px] leading-5 text-[#525B53]">
+                  <b style={{ color: "#C97E08" }}>Win-back ready.</b> Customer has a recent session with cart activity and no recent order — warm pool for re-engagement.
                 </div>
               )}
               {sessionCartStatus(data) === "active_abandoner" && (
-                <div className="mt-3 rounded-xl border border-[#efb7b1] bg-[#fff0ee] p-3 text-[12px] leading-5 text-[#62594e]">
-                  <b className="text-[#bb3a2f]">Cart abandoner.</b> Customer added product(s) to cart but did not convert.
+                <div className="mt-3 rounded-none border border-[#F1B9BB] bg-[#FDECEC] p-3 text-[12px] leading-5 text-[#525B53]">
+                  <b className="text-[#CC2E33]">Cart abandoner.</b> Customer added product(s) to cart but did not convert.
                   {sessionCartProducts(data).length ? <div className="mt-2"><ProductList products={sessionCartProducts(data)} /></div> : null}
                 </div>
               )}
               {sessionCartStatus(data) === "recovered_after_abandonment" && (
-                <div className="mt-3 rounded-xl border border-[#a8d9bf] bg-[#e9f6ef] p-3 text-[12px] leading-5 text-[#62594e]">
-                  <b className="text-[#147348]">Recovered after abandonment.</b> Customer placed a later valid retail order.
+                <div className="mt-3 rounded-none border border-[#A5E2BB] bg-[#E9F8EE] p-3 text-[12px] leading-5 text-[#525B53]">
+                  <b className="text-[#16823F]">Recovered after abandonment.</b> Customer placed a later valid retail order.
                   <div className="mt-1">
                     {recoveredOrderAt(data) ? dateOrDash(recoveredOrderAt(data)) : "Recovered order date unavailable"}
                     {daysToRecovery(data) != null ? ` · ${daysToRecovery(data)}d to recovery` : ""}
@@ -588,12 +588,12 @@ export default function PortfolioDetail() {
                 </div>
               )}
               {sessionCartStatus(data) === "converted" && (
-                <div className="mt-3 rounded-xl border border-[#abc4ee] bg-[#edf3ff] p-3 text-[12px] leading-5 text-[#62594e]">
-                  <b className="text-[#214f90]">Converted session.</b> This session converted.
+                <div className="mt-3 rounded-none border border-[#B8D4F8] bg-[#EAF3FE] p-3 text-[12px] leading-5 text-[#525B53]">
+                  <b className="text-[#1A68CC]">Converted session.</b> This session converted.
                 </div>
               )}
               {data.never_ordered && (
-                <p className="mt-2 text-[11px]" style={{ color: "#9a9187" }}>
+                <p className="mt-2 text-[11px]" style={{ color: "#9BA39C" }}>
                   Never ordered — this section shows registration context, browse history, and the stage they stopped at.
                 </p>
               )}
@@ -606,7 +606,7 @@ export default function PortfolioDetail() {
                 <Field label="Churn reason" value={data.churn_reason ? CHURN_LABEL[data.churn_reason] : null} />
                 <Field label="Next best action" value={nextBestAction(data)} />
               </FieldGrid>
-              <div className="rounded-xl border border-[#c8b3f3] bg-[#f3efff] p-3 text-[12px] leading-5 text-[#62594e]">
+              <div className="rounded-none border border-[#CFC2F5] bg-[#F0ECFE] p-3 text-[12px] leading-5 text-[#525B53]">
                 {nextBestAction(data)}
               </div>
             </div>

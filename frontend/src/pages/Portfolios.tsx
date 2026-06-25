@@ -22,15 +22,15 @@ import { PageHeader } from "./PageHeader";
 
 // ── Color tokens (from meama-crm.html) ──────────────────────────
 const CLR = {
-  g: "#1c7a4a", gb: "#ecf7f1", gbd: "#b0dcc4",
-  r: "#b83228", rb: "#fdf2f1", rbd: "#edb8b3",
-  a: "#8a5a0a", ab: "#fdf5e8", abd: "#e0c898",
-  b: "#1a4d8a", bb: "#edf2fc", bbd: "#afc8f0",
-  tl: "#0c6868", tlb: "#edf6f6", tlbd: "#98d0d0",
-  pu: "#5a3a9a", pub: "#f2eeff", pubd: "#c4a8f0",
-  text: "#161513", t2: "#666460", t3: "#9e9b96", t4: "#c4c1bc",
-  bg2: "#ffffff", bg3: "#f2f1ef", bg4: "#ebebea", bg5: "#e2e1de",
-  border: "#e4e3e0", border2: "#d4d3d0",
+  g: "#16823F", gb: "#E9F8EE", gbd: "#A5E2BB",
+  r: "#CC2E33", rb: "#FDECEC", rbd: "#F1B9BB",
+  a: "#C97E08", ab: "#FFF6E6", abd: "#F0D79A",
+  b: "#1A68CC", bb: "#EAF3FE", bbd: "#B8D4F8",
+  tl: "#0E8C7E", tlb: "#E2F6F3", tlbd: "#A5DDD5",
+  pu: "#5B3FD6", pub: "#F0ECFE", pubd: "#CFC2F5",
+  text: "#121712", t2: "#525B53", t3: "#727B73", t4: "#9BA39C",
+  bg2: "#FFFFFF", bg3: "#ECEFEC", bg4: "#E0E4E1", bg5: "#CBD1CC",
+  border: "#E0E4E1", border2: "#CBD1CC",
 };
 
 type Variant = "green" | "red" | "amber" | "blue" | "teal" | "purple" | "neutral";
@@ -212,7 +212,7 @@ function PanelHeader({ title, sub }: { title: string; sub?: string }) {
 
 function Panel({ title, sub, children }: { title: string; sub?: string; children: ReactNode }) {
   return (
-    <div style={{ background: CLR.bg2, border: `1px solid ${CLR.border}`, borderRadius: 10, overflow: "hidden" }}>
+    <div style={{ background: CLR.bg2, border: `1px solid ${CLR.border}`, borderRadius: 0, overflow: "hidden" }}>
       <PanelHeader title={title} sub={sub} />
       <div className="p-4">{children}</div>
     </div>
@@ -370,15 +370,15 @@ function CustomerCard({ customer, onOpen }: { customer: PortfolioSummary; onOpen
       tabIndex={0}
       onClick={(e) => { (e.currentTarget as HTMLElement).blur(); onOpen(customer.shopify_customer_id); }}
       onKeyDown={(e) => e.key === "Enter" && onOpen(customer.shopify_customer_id)}
-      style={{ background: CLR.bg2, border: `1px solid ${CLR.border}`, borderRadius: 14 }}
-      className="cursor-pointer overflow-hidden transition-all duration-150 hover:-translate-y-0.5 hover:shadow-[0_6px_20px_-10px_rgba(0,0,0,.18)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1c7a4a]/40"
+      style={{ background: CLR.bg2, border: `1px solid ${CLR.border}`, borderRadius: 0 }}
+      className="cursor-pointer overflow-hidden transition-all duration-150 hover:-translate-y-0.5 hover:shadow-[0_6px_20px_-10px_rgba(0,0,0,.18)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#16823F]/40"
       onMouseEnter={(e) => (e.currentTarget.style.borderColor = CLR.border2)}
       onMouseLeave={(e) => (e.currentTarget.style.borderColor = CLR.border)}
     >
       {/* Top: avatar + name + LTV */}
       <div style={{ borderBottom: `1px solid ${CLR.border}` }} className="flex items-start gap-[11px] px-4 pb-3 pt-[14px]">
         <div
-          style={{ background: accent, width: 42, height: 42, borderRadius: 12 }}
+          style={{ background: accent, width: 42, height: 42, borderRadius: 0 }}
           className="flex shrink-0 items-center justify-center text-[15px] font-semibold text-white"
         >
           {customer.initials || "?"}
@@ -411,7 +411,7 @@ function CustomerCard({ customer, onOpen }: { customer: PortfolioSummary; onOpen
           <Tag variant={lifecycleVariant(customer.status)}>{lifecycleLabel(customer.status)}</Tag>
           <span className="font-mono text-[8.5px] uppercase tracking-[.06em]" style={{ color: CLR.t3 }}>Health</span>
           <div className="flex-1 h-[6px] rounded overflow-hidden" style={{ background: CLR.bg4 }}>
-            <div style={{ width: `${customer.health_score}%`, height: "100%", background: healthColor(customer.health_score), borderRadius: 4 }} />
+            <div style={{ width: `${customer.health_score}%`, height: "100%", background: healthColor(customer.health_score), borderRadius: 0 }} />
           </div>
           <span className="font-mono text-[13px] font-semibold w-[26px] text-right" style={{ color: healthColor(customer.health_score) }}>
             {customer.health_score}
@@ -466,24 +466,24 @@ function CustomerCard({ customer, onOpen }: { customer: PortfolioSummary; onOpen
         {!!customer.last_session_at && (
           <div
             style={{
-              borderTop: `1px dashed ${customer.session_warm ? "#C8B090" : CLR.border2}`,
-              background: customer.session_warm ? "#FBF6EC" : CLR.bg3,
-              borderRadius: 7, padding: "10px 12px", marginTop: 11,
+              borderTop: `1px dashed ${customer.session_warm ? "#F0D79A" : CLR.border2}`,
+              background: customer.session_warm ? "#FFF6E6" : CLR.bg3,
+              borderRadius: 0, padding: "10px 12px", marginTop: 11,
             }}
           >
             <div className="flex justify-between items-center">
               <span className="flex items-center gap-[6px] font-mono text-[10px] tracking-[.06em] uppercase"
-                style={{ color: customer.session_warm ? "#A9772F" : CLR.t3 }}>
+                style={{ color: customer.session_warm ? "#C97E08" : CLR.t3 }}>
                 {customer.session_warm && (
-                  <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#A9772F", boxShadow: "0 0 0 3px rgba(185,138,62,.2)", display: "inline-block" }} />
+                  <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#C97E08", boxShadow: "0 0 0 3px rgba(185,138,62,.2)", display: "inline-block" }} />
                 )}
                 {customer.session_warm ? "Warm · browsing" : "Last session"}
               </span>
-              <span className="font-mono text-[9px] uppercase tracking-[.06em]" style={{ color: "#A39B89" }}>
+              <span className="font-mono text-[9px] uppercase tracking-[.06em]" style={{ color: "#9BA39C" }}>
                 {relTimeSince(customer.last_session_at)}
               </span>
             </div>
-            <div className="mt-[6px] text-[11.5px]" style={{ color: "#2B2823" }}>
+            <div className="mt-[6px] text-[11.5px]" style={{ color: "#121712" }}>
               {customer.last_funnel_stage != null && (
                 <span>Reached <b>{FUNNEL_STAGE_LABEL[customer.last_funnel_stage] ?? `Stage ${customer.last_funnel_stage}`}</b></span>
               )}
@@ -573,7 +573,7 @@ function CustomerCard({ customer, onOpen }: { customer: PortfolioSummary; onOpen
             <span style={{ color: reorderColor(customer) }}>{reorderText(customer)}</span>
           </div>
           <div className="h-[5px] rounded overflow-hidden" style={{ background: CLR.bg4 }}>
-            <div style={{ width: `${reorderPct(customer)}%`, height: "100%", background: reorderColor(customer), borderRadius: 3 }} />
+            <div style={{ width: `${reorderPct(customer)}%`, height: "100%", background: reorderColor(customer), borderRadius: 0 }} />
           </div>
         </div>
       </div>
@@ -641,7 +641,7 @@ function CustomerDrawer({ customerId, onClose }: { customerId: number | null; on
         aria-modal="true"
         tabIndex={-1}
         style={{
-          background: "#f7f6f4",
+          background: "#FAFBFA",
           borderLeft: `1px solid ${CLR.border}`,
           boxShadow: "-20px 0 50px -20px rgba(0,0,0,.25)",
         }}
@@ -671,7 +671,7 @@ function engBg(level: string): string {
   if (level === "bounce") return CLR.rb;
   if (level === "quick")  return CLR.ab;
   if (level === "engaged" || level === "deep") return CLR.gb;
-  return "#efefed";
+  return "#ECEFEC";
 }
 
 function DrawerContent({ data, onClose, pageJourney }: { data: PortfolioDetail; onClose: () => void; pageJourney?: PageJourney | null }) {
@@ -711,7 +711,7 @@ function DrawerContent({ data, onClose, pageJourney }: { data: PortfolioDetail; 
         style={{ background: CLR.bg2, borderBottom: `1px solid ${CLR.border}` }}
         className="flex shrink-0 items-start gap-[13px] px-5 py-[18px]"
       >
-        <div style={{ background: accent, width: 50, height: 50, borderRadius: 14 }}
+        <div style={{ background: accent, width: 50, height: 50, borderRadius: 0 }}
           className="flex shrink-0 items-center justify-center text-[18px] font-semibold text-white">
           {data.initials || "?"}
         </div>
@@ -728,8 +728,8 @@ function DrawerContent({ data, onClose, pageJourney }: { data: PortfolioDetail; 
         </div>
         <button
           onClick={onClose}
-          style={{ border: `1px solid ${CLR.border}`, background: CLR.bg2, borderRadius: 7, color: CLR.t2 }}
-          className="flex h-[28px] w-[28px] shrink-0 items-center justify-center text-[13px] hover:bg-[#f2f1ef]"
+          style={{ border: `1px solid ${CLR.border}`, background: CLR.bg2, borderRadius: 0, color: CLR.t2 }}
+          className="flex h-[28px] w-[28px] shrink-0 items-center justify-center text-[13px] hover:bg-[#ECEFEC]"
           aria-label="Close"
         >
           ✕
@@ -747,7 +747,7 @@ function DrawerContent({ data, onClose, pageJourney }: { data: PortfolioDetail; 
             { label: "AOV", value: formatGEL(data.aov), color: CLR.text },
             { label: "Churn risk", value: `${churnRiskStat}%`, color: churnColor(churnRiskStat) },
           ].map(({ label, value, color }) => (
-            <div key={label} style={{ background: CLR.bg2, border: `1px solid ${CLR.border}`, borderRadius: 10 }} className="p-3">
+            <div key={label} style={{ background: CLR.bg2, border: `1px solid ${CLR.border}`, borderRadius: 0 }} className="p-3">
               <div className="font-mono text-[8.5px] uppercase tracking-[.06em] mb-[5px]" style={{ color: CLR.t3 }}>{label}</div>
               <div className="text-[17px] font-light leading-none" style={{ color }}>{value}</div>
             </div>
@@ -768,15 +768,15 @@ function DrawerContent({ data, onClose, pageJourney }: { data: PortfolioDetail; 
           ) : (
             <>
               {data.session_warm && !["recovered_after_abandonment", "converted"].includes(sessionCartStatus(data)) && (
-                <div style={{ background: "#FBF6EC", border: `1px solid #C8B090`, borderRadius: 7, padding: "8px 11px", marginBottom: 11 }}>
-                  <span className="flex items-center gap-[6px] font-mono text-[10px] uppercase tracking-[.06em]" style={{ color: "#A9772F" }}>
-                    <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#A9772F", boxShadow: "0 0 0 3px rgba(185,138,62,.2)", display: "inline-block" }} />
+                <div style={{ background: "#FFF6E6", border: `1px solid #F0D79A`, borderRadius: 0, padding: "8px 11px", marginBottom: 11 }}>
+                  <span className="flex items-center gap-[6px] font-mono text-[10px] uppercase tracking-[.06em]" style={{ color: "#C97E08" }}>
+                    <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#C97E08", boxShadow: "0 0 0 3px rgba(185,138,62,.2)", display: "inline-block" }} />
                     Warm · actively browsing, no recent order — win-back opportunity
                   </span>
                 </div>
               )}
               {sessionCartStatus(data) === "active_abandoner" && (
-                <div style={{ background: CLR.rb, border: `1px solid ${CLR.rbd}`, borderRadius: 7, padding: "8px 11px", marginBottom: 11 }}>
+                <div style={{ background: CLR.rb, border: `1px solid ${CLR.rbd}`, borderRadius: 0, padding: "8px 11px", marginBottom: 11 }}>
                   <div className="font-mono text-[10px] uppercase tracking-[.06em]" style={{ color: CLR.r }}>
                     Cart abandoner
                   </div>
@@ -784,7 +784,7 @@ function DrawerContent({ data, onClose, pageJourney }: { data: PortfolioDetail; 
                 </div>
               )}
               {sessionCartStatus(data) === "recovered_after_abandonment" && (
-                <div style={{ background: CLR.gb, border: `1px solid ${CLR.gbd}`, borderRadius: 7, padding: "8px 11px", marginBottom: 11 }}>
+                <div style={{ background: CLR.gb, border: `1px solid ${CLR.gbd}`, borderRadius: 0, padding: "8px 11px", marginBottom: 11 }}>
                   <div className="font-mono text-[10px] uppercase tracking-[.06em]" style={{ color: CLR.g }}>
                     Recovered after abandonment
                   </div>
@@ -795,7 +795,7 @@ function DrawerContent({ data, onClose, pageJourney }: { data: PortfolioDetail; 
                 </div>
               )}
               {sessionCartStatus(data) === "converted" && (
-                <div style={{ background: CLR.bb, border: `1px solid ${CLR.bbd}`, borderRadius: 7, padding: "8px 11px", marginBottom: 11 }}>
+                <div style={{ background: CLR.bb, border: `1px solid ${CLR.bbd}`, borderRadius: 0, padding: "8px 11px", marginBottom: 11 }}>
                   <span className="font-mono text-[10px] uppercase tracking-[.06em]" style={{ color: CLR.b }}>
                     Converted session
                   </span>
@@ -990,7 +990,7 @@ function DrawerContent({ data, onClose, pageJourney }: { data: PortfolioDetail; 
               { label: "App", pct: appPct, color: CLR.tl },
             ].map(({ label, pct: p, color }) => (
               <div key={label} className="flex items-center gap-[5px] text-[11px]" style={{ color: CLR.t2 }}>
-                <div style={{ width: 8, height: 8, borderRadius: 2, background: color }} />
+                <div style={{ width: 8, height: 8, borderRadius: 0, background: color }} />
                 {label} {p}%
               </div>
             ))}
@@ -1012,11 +1012,11 @@ function DrawerContent({ data, onClose, pageJourney }: { data: PortfolioDetail; 
               <div className="h-[9px] rounded overflow-hidden" style={{ background: CLR.bg4 }}>
                 <div style={{
                   width: `${Math.min(100, (data.avg_capsule_packs_per_month / 2.5) * 100)}%`,
-                  height: "100%", background: underConsuming ? CLR.r : CLR.g, opacity: 0.8, borderRadius: 5
+                  height: "100%", background: underConsuming ? CLR.r : CLR.g, opacity: 0.8, borderRadius: 0
                 }} />
               </div>
               {underConsuming && (
-                <div style={{ background: CLR.rb, borderLeft: `2px solid ${CLR.r}`, borderRadius: 6, color: CLR.t2 }}
+                <div style={{ background: CLR.rb, borderLeft: `2px solid ${CLR.r}`, borderRadius: 0, color: CLR.t2 }}
                   className="mt-2 p-[9px_11px] text-[11.5px] leading-[1.5]">
                   <strong>Under-consuming.</strong> Machine owner buying far fewer capsules than expected — a silent churn signal. Trigger a reorder nudge now.
                 </div>
@@ -1050,7 +1050,7 @@ function DrawerContent({ data, onClose, pageJourney }: { data: PortfolioDetail; 
             <div className="font-mono text-[8.5px] uppercase tracking-[.09em] mb-[9px]" style={{ color: CLR.t3 }}>RFM breakdown</div>
             <div className="flex gap-[14px] mb-[9px]">
               {[["Recency", R], ["Frequency", F], ["Monetary", M]].map(([k, v]) => (
-                <div key={k as string} style={{ flex: 1, background: CLR.bg3, border: `1px solid ${CLR.border}`, borderRadius: 8 }}
+                <div key={k as string} style={{ flex: 1, background: CLR.bg3, border: `1px solid ${CLR.border}`, borderRadius: 0 }}
                   className="px-[11px] py-[9px] text-center">
                   <div className="font-mono text-[9px] uppercase tracking-[.07em] mb-1" style={{ color: CLR.t3 }}>{k as string}</div>
                   <div className="text-[22px] font-light" style={{ color: (v as number) >= 4 ? CLR.g : (v as number) >= 3 ? CLR.a : CLR.r }}>
@@ -1060,7 +1060,7 @@ function DrawerContent({ data, onClose, pageJourney }: { data: PortfolioDetail; 
                 </div>
               ))}
             </div>
-            <div style={{ background: CLR.bg3, borderRadius: 6, color: CLR.t2 }} className="px-[10px] py-[7px] font-mono text-[10px]">
+            <div style={{ background: CLR.bg3, borderRadius: 0, color: CLR.t2 }} className="px-[10px] py-[7px] font-mono text-[10px]">
               RFM label: <strong>{rLabel}</strong>
             </div>
           </div>
@@ -1193,7 +1193,7 @@ function DrawerContent({ data, onClose, pageJourney }: { data: PortfolioDetail; 
             <Fld label="📦 Packs / month" value={data.avg_capsule_packs_per_month != null ? `${data.avg_capsule_packs_per_month.toFixed(1)}` : "—"} />
           </Grid2>
           {data.recommended_next_machine && (
-            <div style={{ background: CLR.ab, border: `1px solid ${CLR.abd}`, borderRadius: 7 }}
+            <div style={{ background: CLR.ab, border: `1px solid ${CLR.abd}`, borderRadius: 0 }}
               className="mt-[11px] flex items-center gap-[10px] p-[10px_12px]">
               <div className="text-[18px]">🤖</div>
               <div>
@@ -1203,7 +1203,7 @@ function DrawerContent({ data, onClose, pageJourney }: { data: PortfolioDetail; 
             </div>
           )}
           {(data.machine_to_capsule_conversion_status === "machine_only_no_capsules") && (
-            <div style={{ background: CLR.rb, borderLeft: `2px solid ${CLR.r}`, borderRadius: 6, color: CLR.t2 }}
+            <div style={{ background: CLR.rb, borderLeft: `2px solid ${CLR.r}`, borderRadius: 0, color: CLR.t2 }}
               className="mt-[10px] p-[9px_11px] text-[11.5px] leading-[1.5]">
               <strong>⚠ Under-consuming.</strong> Has a machine but {data.avg_capsule_packs_per_month ?? 0} packs/mo — well below potential. Trigger a capsule starter offer now.
             </div>
@@ -1240,7 +1240,7 @@ function DrawerContent({ data, onClose, pageJourney }: { data: PortfolioDetail; 
             )}
           </Grid2>
           {data.expected_return_window_start && data.expected_return_window_end && (
-            <div style={{ background: CLR.tlb, border: `1px solid ${CLR.tlbd}`, borderRadius: 7 }}
+            <div style={{ background: CLR.tlb, border: `1px solid ${CLR.tlbd}`, borderRadius: 0 }}
               className="mt-[9px] px-3 py-[9px]">
               <FieldLabel>Expected return window</FieldLabel>
               <div className="text-[13px] font-medium mt-1" style={{ color: CLR.tl }}>
@@ -1255,7 +1255,7 @@ function DrawerContent({ data, onClose, pageJourney }: { data: PortfolioDetail; 
           <div style={{
             background: CLR.bg2,
             border: `1px solid ${isDiscountLed ? CLR.rbd : CLR.border}`,
-            borderRadius: 10,
+            borderRadius: 0,
             overflow: "hidden",
           }}>
             <div style={{
@@ -1287,7 +1287,7 @@ function DrawerContent({ data, onClose, pageJourney }: { data: PortfolioDetail; 
               <div style={{
                 background: isDiscountLed ? CLR.rb : CLR.bg3,
                 borderLeft: `2px solid ${isDiscountLed ? CLR.r : CLR.g}`,
-                borderRadius: 6,
+                borderRadius: 0,
               color: CLR.t2,
               }} className="p-[9px_11px] text-[11.5px] leading-[1.5]">
                 {spendInsight}
@@ -1301,7 +1301,7 @@ function DrawerContent({ data, onClose, pageJourney }: { data: PortfolioDetail; 
           <div className="font-mono text-[8.5px] uppercase tracking-[.09em] mb-[3px]" style={{ color: CLR.t3 }}>
             Based on churn signal: {data.churn_reason ? CHURN_LABEL[data.churn_reason] : "—"}
           </div>
-          <div style={{ background: CLR.bg3, borderRadius: 6, borderLeft: `2px solid ${CLR.border2}`, color: CLR.t2 }}
+          <div style={{ background: CLR.bg3, borderRadius: 0, borderLeft: `2px solid ${CLR.border2}`, color: CLR.t2 }}
             className="p-[9px_11px] text-[12px] leading-[1.5]">
             {nextBestAction(data)}
           </div>
@@ -1344,7 +1344,7 @@ function DrawerContent({ data, onClose, pageJourney }: { data: PortfolioDetail; 
               href={`https://clarity.microsoft.com/projects/view/s77hhg1bkm/impressions?CustomUserId=${data.shopify_customer_id}`}
               target="_blank"
               rel="noopener noreferrer"
-              style={{ background: CLR.text, color: "#fff", borderRadius: 8, display: "block", textDecoration: "none" }}
+              style={{ background: CLR.text, color: "#fff", borderRadius: 0, display: "block", textDecoration: "none" }}
               className="w-full py-[10px] text-[12px] font-medium text-center hover:opacity-90 transition-opacity"
             >
               Open in Clarity →
@@ -1357,7 +1357,7 @@ function DrawerContent({ data, onClose, pageJourney }: { data: PortfolioDetail; 
 
         {/* 14. Action button */}
         <button
-          style={{ background: CLR.text, color: "#fff", border: "none", borderRadius: 8 }}
+          style={{ background: CLR.text, color: "#fff", border: "none", borderRadius: 0 }}
           className="w-full py-[10px] text-[12px] font-medium text-center hover:opacity-90 transition-opacity"
         >
           {nextBestAction(data)} →
@@ -1523,14 +1523,14 @@ export default function Portfolios() {
       </p>
 
       {/* Search + sort toolbar */}
-      <div style={{ background: CLR.bg2, border: `1px solid ${CLR.border}`, borderRadius: 10 }}
+      <div style={{ background: CLR.bg2, border: `1px solid ${CLR.border}`, borderRadius: 0 }}
         className="mb-3 flex flex-wrap items-center gap-2 p-2.5">
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search (name / email / phone)…"
           style={{ background: CLR.bg3, border: `1px solid ${CLR.border}`, color: CLR.text }}
-          className="h-8 w-full max-w-[200px] rounded-md px-[10px] text-[12px] outline-none placeholder:text-[#9e9b96] focus:border-[#d4d3d0]"
+          className="h-8 w-full max-w-[200px] rounded-md px-[10px] text-[12px] outline-none placeholder:text-[#727B73] focus:border-[#CBD1CC]"
         />
         <select value={region} onChange={(e) => setRegion(e.target.value)}
           style={{ background: CLR.bg3, border: `1px solid ${CLR.border}`, color: CLR.t2 }}
@@ -1575,7 +1575,7 @@ export default function Portfolios() {
       </div>
 
       {/* Filter row 1 */}
-      <div style={{ background: CLR.bg2 + "99", border: `1px solid ${CLR.border}`, borderRadius: 10 }}
+      <div style={{ background: CLR.bg2 + "99", border: `1px solid ${CLR.border}`, borderRadius: 0 }}
         className="mb-3 flex flex-wrap items-center gap-1.5 p-2.5">
         <span className="mr-1 font-mono text-[10px] uppercase tracking-[.07em]" style={{ color: CLR.t3 }}>Filter</span>
         {row1Opts.map((o) => (
@@ -1589,7 +1589,7 @@ export default function Portfolios() {
       </div>
 
       {/* Filter row 2 — Reachable */}
-      <div style={{ background: CLR.bg2 + "99", border: `1px solid ${CLR.border}`, borderRadius: 10 }}
+      <div style={{ background: CLR.bg2 + "99", border: `1px solid ${CLR.border}`, borderRadius: 0 }}
         className="mb-3 flex flex-wrap items-center gap-1.5 p-2.5">
         <span className="mr-1 font-mono text-[10px] uppercase tracking-[.07em]" style={{ color: CLR.t3 }}>Reachable</span>
         {row2Opts.map((o) => (
@@ -1598,7 +1598,7 @@ export default function Portfolios() {
       </div>
 
       {/* Filter row 3 — Intensity */}
-      <div style={{ background: CLR.bg2 + "99", border: `1px solid ${CLR.border}`, borderRadius: 10 }}
+      <div style={{ background: CLR.bg2 + "99", border: `1px solid ${CLR.border}`, borderRadius: 0 }}
         className="mb-3 flex flex-wrap items-center gap-1.5 p-2.5">
         <span className="mr-1 font-mono text-[10px] uppercase tracking-[.07em]" style={{ color: CLR.t3 }}>Intensity</span>
         <FilterPill label="☕ All"    active={intensity === ""}       onClick={() => setIntensity("")} />
@@ -1608,7 +1608,7 @@ export default function Portfolios() {
       </div>
 
       {/* Filter row 4 — Session */}
-      <div style={{ background: CLR.bg2 + "99", border: `1px solid ${CLR.border}`, borderRadius: 10 }}
+      <div style={{ background: CLR.bg2 + "99", border: `1px solid ${CLR.border}`, borderRadius: 0 }}
         className="mb-6 flex flex-wrap items-center gap-1.5 p-2.5">
         <span className="mr-1 font-mono text-[10px] uppercase tracking-[.07em]" style={{ color: CLR.t3 }}>Session</span>
         <FilterPill label="Any"                active={sessionAction === ""}                  onClick={() => setSessionAction("")} />
@@ -1620,7 +1620,7 @@ export default function Portfolios() {
 
       {/* Error */}
       {error && (
-        <div style={{ background: CLR.rb, border: `1px solid ${CLR.rbd}`, borderRadius: 10, color: CLR.r }}
+        <div style={{ background: CLR.rb, border: `1px solid ${CLR.rbd}`, borderRadius: 0, color: CLR.r }}
           className="mb-5 px-4 py-3 text-[13px]">
           Error: {error}
         </div>
@@ -1628,7 +1628,7 @@ export default function Portfolios() {
 
       {/* Coming soon placeholder */}
       {isComingSoon && (
-        <div style={{ background: CLR.bg2, border: `1px solid ${CLR.border}`, borderRadius: 10, color: CLR.t3 }}
+        <div style={{ background: CLR.bg2, border: `1px solid ${CLR.border}`, borderRadius: 0, color: CLR.t3 }}
           className="mt-12 p-8 text-center text-[13px]">
           This view needs a dedicated endpoint before it can show real data.
         </div>
@@ -1653,7 +1653,7 @@ export default function Portfolios() {
           </div>
 
           {!items.length && !loading && (
-            <div style={{ background: CLR.bg2, border: `1px solid ${CLR.border}`, borderRadius: 10, color: CLR.t3 }}
+            <div style={{ background: CLR.bg2, border: `1px solid ${CLR.border}`, borderRadius: 0, color: CLR.t3 }}
               className="mt-10 p-8 text-center text-[13px]">No customers match this filter.</div>
           )}
 

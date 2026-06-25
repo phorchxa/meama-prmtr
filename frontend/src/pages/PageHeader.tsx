@@ -12,13 +12,13 @@ export function PageHeader({
   kickerKa?: string;
 }) {
   return (
-    <div className="mb-10 border-b border-meama-charcoal pb-8">
+    <div className="mb-7 border-b border-meama-charcoal pb-6">
       {kicker ? <Kicker ka={kickerKa}>{kicker}</Kicker> : null}
-      <h1 className="font-display text-[56px] uppercase leading-none tracking-[0.06em] text-meama-brown">
+      <h1 className="text-[30px] font-bold leading-tight tracking-[-0.02em] text-meama-brown">
         {title}
       </h1>
       {subtitle ? (
-        <p className="mt-3 font-mono text-[11px] uppercase tracking-[0.25em] text-meama-muted">
+        <p className="mt-2 text-[14px] leading-snug text-meama-cream">
           {subtitle}
         </p>
       ) : null}

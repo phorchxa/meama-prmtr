@@ -221,10 +221,10 @@ function RevenueTab({ products }: { products: ProductSummary[] }) {
           { label: "Brand Store · 30d", value: formatGEL0(totalPos), sub: totalRev ? `${((totalPos/totalRev)*100).toFixed(0)}% of 30d` : "—" },
           { label: "All-Time Revenue", value: formatGEL0(totalAllTime) },
         ].map((s) => (
-          <div key={s.label} className="panel-dark border-l-2 border-l-[#3A3A3A]">
-            <div className="font-mono text-[10px] uppercase tracking-wider text-[#9A9590]">{s.label}</div>
-            <div className="tabular mt-1 font-display text-[28px] uppercase leading-none text-[#F4F0EA]">{s.value}</div>
-            {s.sub ? <div className="font-mono text-xs text-[#C8C3BC]">{s.sub}</div> : null}
+          <div key={s.label} className="panel-dark border-l-2 border-l-[#3A423B]">
+            <div className="font-mono text-[10px] uppercase tracking-wider text-[#9BA39C]">{s.label}</div>
+            <div className="tabular mt-1 font-display text-[28px] uppercase leading-none text-[#F5F7F5]">{s.value}</div>
+            {s.sub ? <div className="font-mono text-xs text-[#CBD1CC]">{s.sub}</div> : null}
           </div>
         ))}
       </div>
@@ -332,17 +332,17 @@ function RevenueTab({ products }: { products: ProductSummary[] }) {
           — Promo Behaviour · Full Price vs Discounted (All-Time)
         </div>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div className="panel-dark border-l-2 border-l-[#3A3A3A]">
-            <div className="font-mono text-[10px] uppercase tracking-wider text-[#9A9590]">Full-Price Revenue</div>
-            <div className="tabular mt-1 font-display text-[28px] uppercase leading-none text-[#F4F0EA]">{formatGEL0(totalFullPrice)}</div>
-            <div className="font-mono text-xs text-[#C8C3BC]">
+          <div className="panel-dark border-l-2 border-l-[#3A423B]">
+            <div className="font-mono text-[10px] uppercase tracking-wider text-[#9BA39C]">Full-Price Revenue</div>
+            <div className="tabular mt-1 font-display text-[28px] uppercase leading-none text-[#F5F7F5]">{formatGEL0(totalFullPrice)}</div>
+            <div className="font-mono text-xs text-[#CBD1CC]">
               {totalAllTime > 0 ? `${((totalFullPrice / totalAllTime) * 100).toFixed(1)}% of all-time` : "—"}
             </div>
           </div>
-          <div className="panel-dark border-l-2 border-l-[#3A3A3A]">
-            <div className="font-mono text-[10px] uppercase tracking-wider text-[#9A9590]">Discounted Revenue</div>
-            <div className="tabular mt-1 font-display text-[28px] uppercase leading-none text-[#F4F0EA]">{formatGEL0(totalDiscounted)}</div>
-            <div className="font-mono text-xs text-[#C8C3BC]">
+          <div className="panel-dark border-l-2 border-l-[#3A423B]">
+            <div className="font-mono text-[10px] uppercase tracking-wider text-[#9BA39C]">Discounted Revenue</div>
+            <div className="tabular mt-1 font-display text-[28px] uppercase leading-none text-[#F5F7F5]">{formatGEL0(totalDiscounted)}</div>
+            <div className="font-mono text-xs text-[#CBD1CC]">
               {totalAllTime > 0 ? `${((totalDiscounted / totalAllTime) * 100).toFixed(1)}% of all-time` : "—"}
             </div>
           </div>
@@ -435,40 +435,40 @@ function RetentionTab({ products }: { products: ProductSummary[] }) {
       {/* Stock + refund summary */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         {[
-          { label: "Understock SKUs", value: String(understockCount), cls: understockCount > 0 ? "text-meama-red" : "text-[#F4F0EA]" },
-          { label: "Overstock SKUs",  value: String(overstockCount),  cls: overstockCount  > 0 ? "text-meama-blue" : "text-[#F4F0EA]" },
-          { label: "Avg Refund Rate", value: formatPercent(avgRefundRate, 2), cls: avgRefundRate > 0.05 ? "text-meama-red" : "text-[#F4F0EA]" },
-          { label: "Products Tracked", value: String(products.filter((p) => p.avg_monthly_consumption > 0).length), cls: "text-[#F4F0EA]" },
+          { label: "Understock SKUs", value: String(understockCount), cls: understockCount > 0 ? "text-meama-red" : "text-[#F5F7F5]" },
+          { label: "Overstock SKUs",  value: String(overstockCount),  cls: overstockCount  > 0 ? "text-meama-blue" : "text-[#F5F7F5]" },
+          { label: "Avg Refund Rate", value: formatPercent(avgRefundRate, 2), cls: avgRefundRate > 0.05 ? "text-meama-red" : "text-[#F5F7F5]" },
+          { label: "Products Tracked", value: String(products.filter((p) => p.avg_monthly_consumption > 0).length), cls: "text-[#F5F7F5]" },
         ].map((s) => (
-          <div key={s.label} className="panel-dark border-l-2 border-l-[#3A3A3A]">
-            <div className="font-mono text-[10px] uppercase tracking-wider text-[#9A9590]">{s.label}</div>
+          <div key={s.label} className="panel-dark border-l-2 border-l-[#3A423B]">
+            <div className="font-mono text-[10px] uppercase tracking-wider text-[#9BA39C]">{s.label}</div>
             <div className={`tabular mt-1 font-display text-[28px] uppercase leading-none ${s.cls}`}>{s.value}</div>
           </div>
         ))}
       </div>
 
       {/* Top retention capsules */}
-      <div className="panel-dark border-l-2 border-l-[#3A3A3A]">
-        <div className="mb-4 font-mono text-[9.5px] uppercase tracking-[0.3em] text-[#9A9590]">
+      <div className="panel-dark border-l-2 border-l-[#3A423B]">
+        <div className="mb-4 font-mono text-[9.5px] uppercase tracking-[0.3em] text-[#9BA39C]">
           — Capsules That Bring Customers Back Most · 90d Retention Rate
         </div>
         <div className="space-y-3">
           {topRetention.map((p, i) => (
             <div key={p.sku} className="flex items-center gap-3">
-              <span className="tabular w-4 font-mono text-xs text-[#5A5A5A]">{i + 1}</span>
+              <span className="tabular w-4 font-mono text-xs text-[#727B73]">{i + 1}</span>
               <div className="flex-1">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-[#F4F0EA]">{p.name}</span>
+                  <span className="text-sm font-medium text-[#F5F7F5]">{p.name}</span>
                   <StockBadge status={p.stock_status} />
                 </div>
-                <div className="mt-1 h-px bg-[#2A2A2A]">
-                  <div className="h-full bg-[#F4F0EA]" style={{ width: `${p.retention_rate * 100}%` }} />
+                <div className="mt-1 h-px bg-[#222823]">
+                  <div className="h-full bg-[#F5F7F5]" style={{ width: `${p.retention_rate * 100}%` }} />
                 </div>
               </div>
-              <span className="tabular font-display text-xl text-[#F4F0EA]">
+              <span className="tabular font-display text-xl text-[#F5F7F5]">
                 {formatPercent(p.retention_rate, 1)}
               </span>
-              <span className="font-mono text-[10px] text-[#5A5A5A]">{p.total_buyers} buyers</span>
+              <span className="font-mono text-[10px] text-[#727B73]">{p.total_buyers} buyers</span>
             </div>
           ))}
         </div>
@@ -703,12 +703,12 @@ function SegmentIntelTab({ products }: { products: ProductSummary[] }) {
             const count = intensityDist[b];
             const pct = products.length > 0 ? count / products.length : 0;
             return (
-              <div key={b} className="panel-dark border-l-2 border-l-[#3A3A3A]">
-                <div className="font-mono text-[10px] uppercase tracking-wider text-[#9A9590]">{b}</div>
+              <div key={b} className="panel-dark border-l-2 border-l-[#3A423B]">
+                <div className="font-mono text-[10px] uppercase tracking-wider text-[#9BA39C]">{b}</div>
                 <div className={`tabular mt-1 font-display text-[28px] uppercase leading-none ${
                   b === "light" ? "text-meama-green" : b === "medium" ? "text-meama-gold" : b === "strong" ? "text-meama-red" : "text-meama-muted"
                 }`}>{count}</div>
-                <div className="font-mono text-xs text-[#C8C3BC]">{formatPercent(pct, 0)} of catalog</div>
+                <div className="font-mono text-xs text-[#CBD1CC]">{formatPercent(pct, 0)} of catalog</div>
               </div>
             );
           })}
@@ -832,29 +832,29 @@ function SegmentIntelTab({ products }: { products: ProductSummary[] }) {
               .slice(0, 5);
             if (group.length === 0) return null;
             return (
-              <div key={cc} className="panel-dark border-l-2 border-l-[#3A3A3A]">
+              <div key={cc} className="panel-dark border-l-2 border-l-[#3A423B]">
                 <div className={`mb-3 font-mono text-[10px] uppercase tracking-wider font-bold ${
                   cc === "coffee" ? "text-meama-gold" : cc === "tea" ? "text-meama-green" : "text-meama-blue"
                 }`}>{cc}</div>
                 <div className="space-y-2">
                   {group.map((p, i) => (
                     <div key={p.sku} className="flex items-center gap-2">
-                      <span className="tabular w-3 font-mono text-[10px] text-[#5A5A5A]">{i + 1}</span>
+                      <span className="tabular w-3 font-mono text-[10px] text-[#727B73]">{i + 1}</span>
                       <div className="flex-1 min-w-0">
-                        <Link to={`/products/${p.sku}`} className="truncate block text-[11px] font-medium text-[#F4F0EA] hover:text-meama-gold">
+                        <Link to={`/products/${p.sku}`} className="truncate block text-[11px] font-medium text-[#F5F7F5] hover:text-meama-gold">
                           {p.name}
                         </Link>
-                        <div className="mt-0.5 h-px bg-[#2A2A2A]">
-                          <div className="h-full bg-[#C8963E]" style={{ width: `${Math.min(p.reorder_rate_90d * 100, 100)}%` }} />
+                        <div className="mt-0.5 h-px bg-[#222823]">
+                          <div className="h-full bg-[#16823F]" style={{ width: `${Math.min(p.reorder_rate_90d * 100, 100)}%` }} />
                         </div>
                       </div>
-                      <span className="tabular shrink-0 font-mono text-xs font-bold text-[#F4F0EA]">
+                      <span className="tabular shrink-0 font-mono text-xs font-bold text-[#F5F7F5]">
                         {formatPercent(p.reorder_rate_90d, 1)}
                       </span>
                     </div>
                   ))}
                 </div>
-                <div className="mt-3 border-t border-[#2A2A2A] pt-2">
+                <div className="mt-3 border-t border-[#222823] pt-2">
                   <Link
                     to={`/customers?beverage_type=${cc}`}
                     className="font-mono text-[9px] text-meama-gold/60 hover:text-meama-gold"
