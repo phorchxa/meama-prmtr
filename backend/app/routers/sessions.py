@@ -289,13 +289,16 @@ async def sessions_abandonment(
             ):
                 live_sku_name[sku] = title
 
-    shopify_res = (
-        sb.table("georgia_abandoned_carts")
-        .select("token,email,phone,total_price,created_at")
-        .gte("created_at", cutoff_iso)
-        .execute()
-    )
-    shopify_carts = shopify_res.data or []
+    try:
+        shopify_res = (
+            sb.table("georgia_abandoned_carts")
+            .select("token,email,phone,total_price,created_at")
+            .gte("created_at", cutoff_iso)
+            .execute()
+        )
+        shopify_carts = shopify_res.data or []
+    except Exception:
+        shopify_carts = []
 
     live_value = sum(float(s.get("cart_value_peak") or 0) for s in live_recoverable)
     shopify_value = sum(float(c.get("total_price") or 0) for c in shopify_carts)

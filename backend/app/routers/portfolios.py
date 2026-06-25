@@ -78,7 +78,7 @@ def _cart_status(session: dict | None, recovered_order: dict | None) -> dict[str
     status = "no_cart_activity"
     if session.get("converted") is True:
         status = "converted"
-    elif _has_cart_activity(session) and session.get("converted") is False:
+    elif _has_cart_activity(session) and not session.get("converted"):
         status = "recovered_after_abandonment" if recovered_order else "active_abandoner"
     elif (
         session.get("funnel_stage")

@@ -75,6 +75,46 @@ def _int0(v) -> int:
         return 0
 
 
+_PT_TO_CATEGORY: dict[str, str] = {
+    "multi capsule coffee":          "Multicapsule",
+    "multi capsule tea":             "Tea",
+    "multi capsule wellness":        "Multicapsule",
+    "multi capsule kidsline":        "Multicapsule",
+    "multi capsule mixology":        "Multicapsule",
+    "european coffee capsule":       "European",
+    "machine":                       "Coffee Machine",
+    "metal cup":                     "Accessories",
+    "small metal cup":               "Accessories",
+    "glass cup":                     "Accessories",
+    "ceramic mug":                   "Accessories",
+    "acrylic holder":                "Accessories",
+    "wooden holder":                 "Accessories",
+    "coaster":                       "Accessories",
+    "variety box":                   "Variety Pack",
+    "bean coffee":                   "Classic Coffee",
+    "ground coffee bags":            "Classic Coffee",
+    "large ground coffee bags":      "Classic Coffee",
+    "ground coffee sachets":         "Classic Coffee",
+    "cleaning capsule":              "Accessories",
+    "cleaning powder":               "Accessories",
+    "machine part":                  "Coffee Machine Replacement Parts",
+    "scented candles":               "Merch",
+    "blanket":                       "Merch",
+    "brand bag":                     "Accessories",
+    "bundle":                        "Bundle",
+    "packetproduct":                 "Other",
+}
+
+_SKIP_TYPES = {"offer"}
+
+
+def _pt_to_category(pt: str | None) -> str:
+    if not pt:
+        return "Other"
+    clean = re.sub(r"\s*\(POS\)\s*$", "", pt, flags=re.IGNORECASE).strip().lower()
+    return _PT_TO_CATEGORY.get(clean, "Other")
+
+
 @router.get("", response_model=ProductIntelligenceResponse)
 async def get_product_intelligence(sb=Depends(get_supabase), response: Response = None) -> ProductIntelligenceResponse:
     if _cache["data"] and (time.time() - float(_cache["ts"])) < _CACHE_TTL:
@@ -82,70 +122,48 @@ async def get_product_intelligence(sb=Depends(get_supabase), response: Response 
             response.headers["Cache-Control"] = "s-maxage=300, stale-while-revalidate=60"
         return _cache["data"]  # type: ignore[return-value]
 
-    # ── 1. Products master ──────────────────────────────────────────────────
-    products_raw: list[dict] = (
-        sb.table("products_master")
-        .select("sku, name, name_en, category, collection, price_b2c, price_brand_shop, "
-                "price_marketplace, cogs, stock_quantity")
-        .execute()
-        .data or []
-    )
-    if not products_raw:
+    # ── 1. Products catalog from products_georgia (deduplicated by variant_sku) ──
+    try:
+        pg_raw: list[dict] = (
+            sb.table("products_georgia")
+            .select(
+                "variant_sku, title, product_type, variant_price, cost_per_item, "
+                "inventory_quantity, image_url, flavor_profile, capsule_format"
+            )
+            .not_.is_("variant_sku", "null")
+            .execute()
+            .data or []
+        )
+    except Exception:
+        pg_raw = []
+
+    if not pg_raw:
         return ProductIntelligenceResponse(products=[], affinities=[])
 
-    product_map = {p["sku"]: p for p in products_raw}
+    # Keep one canonical row per SKU: skip POS variants and Tier Point rows
+    product_map: dict[str, dict] = {}
+    for p in pg_raw:
+        vs = p.get("variant_sku") or ""
+        if not vs:
+            continue
+        pt = p.get("product_type") or ""
+        title = p.get("title") or ""
+        if re.search(r"\(POS\)", pt, re.IGNORECASE) or re.search(r"\(POS\)", title, re.IGNORECASE):
+            continue
+        if "Tier Point" in title:
+            continue
+        if vs not in product_map:
+            product_map[vs] = p
 
-    # ── 2. Products_georgia enrichment (image, product_type, flavor_profile, capsule_format) ───
-    try:
-        geo_raw: list[dict] = (
-            sb.table("products_georgia")
-            .select("variant_sku, image_url, product_type, flavor_profile, capsule_format, variant_price, inventory_quantity")
-            .execute()
-            .data or []
-        )
-        image_map: dict[str, str] = {}
-        geo_map: dict[str, dict] = {}
-        for r in geo_raw:
-            vs = r.get("variant_sku")
-            if not vs:
-                continue
-            geo_map[vs] = r
-            if r.get("image_url") and vs not in image_map:
-                image_map[vs] = r["image_url"]
-    except Exception:
-        image_map = {}
-        geo_map = {}
+    if not product_map:
+        return ProductIntelligenceResponse(products=[], affinities=[])
 
-    # ── 2b. SKU bridge: products_master.sku → products_georgia.variant_sku ─────
-    # Some products_master SKUs (e.g. cap51-08) differ from products_georgia
-    # variant_sku (cap51-1208). "SKU Matching" table provides the mapping.
-    try:
-        sku_match_raw: list[dict] = (
-            sb.table("SKU Matching")
-            .select('"Product variant SKU","unified Code"')
-            .execute()
-            .data or []
-        )
-        # Map short products_master SKU → long products_georgia variant_sku
-        sku_bridge: dict[str, str] = {
-            r["Product variant SKU"]: r["unified Code"]
-            for r in sku_match_raw
-            if r.get("Product variant SKU") and r.get("unified Code")
-            and r["Product variant SKU"] != r["unified Code"]
-        }
-    except Exception:
-        sku_bridge = {}
-
-    def _geo_lookup(sku: str) -> dict:
-        """Look up products_georgia row, trying bridge SKU if direct miss."""
-        return geo_map.get(sku) or geo_map.get(sku_bridge.get(sku, ""), {})
-
-    # Rebuild image_map with bridge lookups too
-    for pm_sku in product_map:
-        if pm_sku not in image_map:
-            bridged_geo = geo_map.get(sku_bridge.get(pm_sku, ""))
-            if bridged_geo and bridged_geo.get("image_url"):
-                image_map[pm_sku] = bridged_geo["image_url"]
+    # ── 2. Image map (same source) ──────────────────────────────────────────
+    image_map: dict[str, str] = {
+        sku: p["image_url"]
+        for sku, p in product_map.items()
+        if p.get("image_url")
+    }
 
     # ── 3. Bible enrichment ─────────────────────────────────────────────────
     try:
@@ -183,11 +201,21 @@ async def get_product_intelligence(sb=Depends(get_supabase), response: Response 
     tb_map    = {row["sku"]: row for row in tb_raw}
 
     # ── 9. Build response ───────────────────────────────────────────────────
+    _BEV_MAP = {
+        "ესპრესო & ლუნგო": "espresso",
+        "ფილტრის ყავა":    "filter_coffee",
+        "ჩაი & ნაყენი":    "tea",
+        "მიქსოლოგია":      "cold_mix",
+        "საკვები დანამატი": "wellness",
+    }
+
     result: list[ProductSummary] = []
     for sku, p in product_map.items():
-        cat = p.get("category")
-        if cat in _EXCLUDE_CATEGORIES:
+        pt_raw = p.get("product_type") or ""
+        if pt_raw.lower() in _SKIP_TYPES:
             continue
+
+        cat = _pt_to_category(pt_raw)
 
         st  = stats_map.get(sku, {})
         ch  = ch_map.get(sku, {})
@@ -196,10 +224,7 @@ async def get_product_intelligence(sb=Depends(get_supabase), response: Response 
         tb  = tb_map.get(sku, {})
         bib = bible_map.get(sku, {})
 
-        # Stock status: derived from products_master.stock_quantity + avg_monthly_consumption.
-        # avg_monthly_consumption comes from get_product_new_metrics(); stock_quantity is read
-        # directly from products_master above. Re-derived here so the router is self-contained.
-        sq = p.get("stock_quantity")
+        sq = p.get("inventory_quantity")
         amc = _float0(nm.get("avg_monthly_consumption"))
         if sq is None:
             stock_status: str | None = "unknown"
@@ -214,24 +239,6 @@ async def get_product_intelligence(sb=Depends(get_supabase), response: Response 
             else:
                 stock_status = "overstock"
 
-        geo = _geo_lookup(sku)
-
-        # Stock: prefer products_master.stock_quantity, fall back to products_georgia.inventory_quantity
-        if sq is None and geo.get("inventory_quantity") is not None:
-            sq = geo["inventory_quantity"]
-            # Re-derive stock_status with fallback stock value
-            if amc <= 0:
-                stock_status = "unknown"
-            else:
-                months = float(sq) / amc
-                if months < 2:
-                    stock_status = "understock"
-                elif months <= 3:
-                    stock_status = "in_stock"
-                else:
-                    stock_status = "overstock"
-
-        # intensity_bucket from Bible intensity_level
         raw_intensity = _float(bib.get("Intensity level"))
         intensity_bucket: str | None = None
         if raw_intensity is not None:
@@ -242,8 +249,7 @@ async def get_product_intelligence(sb=Depends(get_supabase), response: Response 
             else:
                 intensity_bucket = "strong"
 
-        # flavor_notes: products_georgia.flavor_profile is text[] — parse safely
-        geo_flavor_raw = geo.get("flavor_profile")
+        geo_flavor_raw = p.get("flavor_profile")
         if isinstance(geo_flavor_raw, list):
             flavor_notes = [f for f in geo_flavor_raw if f and str(f).strip()]
         elif isinstance(geo_flavor_raw, str) and geo_flavor_raw.strip():
@@ -251,29 +257,19 @@ async def get_product_intelligence(sb=Depends(get_supabase), response: Response 
         else:
             flavor_notes = []
 
-        # beverage_type_en: normalise from Georgian Bible label
         bev_raw = bib.get("Beverage Type") or ""
-        _BEV_MAP = {
-            "ესპრესო & ლუნგო": "espresso",
-            "ფილტრის ყავა":    "filter_coffee",
-            "ჩაი & ნაყენი":    "tea",
-            "მიქსოლოგია":      "cold_mix",
-            "საკვები დანამატი": "wellness",
-        }
         beverage_type_en: str | None = _BEV_MAP.get(bev_raw.strip())
 
-        # product_type from products_georgia (strip POS suffix)
-        pt_raw = geo.get("product_type") or ""
         product_type_geo = re.sub(r"\s*\(POS\)\s*$", "", pt_raw, flags=re.IGNORECASE).strip() or None
 
         result.append(
             ProductSummary(
                 sku=sku,
-                name=p.get("name_en") or p.get("name") or sku,
-                category=cat or "Other",
-                subcategory=p.get("collection"),
-                price=_price(p) or float(geo.get("variant_price") or 0) or float(ch.get("avg_price_web") or ch.get("avg_price_pos") or 0),
-                cogs=_float(p.get("cogs")),
+                name=p.get("title") or sku,
+                category=cat,
+                subcategory=None,
+                price=float(p.get("variant_price") or 0) or float(ch.get("avg_price_web") or ch.get("avg_price_pos") or 0),
+                cogs=_float(p.get("cost_per_item")),
                 # enrichment
                 image_url=image_map.get(sku),
                 caffeine=bib.get("Caffeine"),
@@ -290,7 +286,7 @@ async def get_product_intelligence(sb=Depends(get_supabase), response: Response 
                 beverage_type_en=beverage_type_en,
                 bio=bool(bib.get("Bio", False) or False),
                 compatible_with=bib.get("Compatible with"),
-                capsule_format=bib.get("Capsule Format") or geo.get("capsule_format") or None,
+                capsule_format=bib.get("Capsule Format") or p.get("capsule_format") or None,
                 hot_cold=bib.get("Hot / Cold"),
                 product_type_geo=product_type_geo,
                 # 30d + monthly
