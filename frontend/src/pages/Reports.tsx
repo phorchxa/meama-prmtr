@@ -20,6 +20,29 @@ export default function Reports() {
   const [reports, setReports] = useState<ReportDef[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [atRiskLoading, setAtRiskLoading] = useState(false);
+
+  const handleAtRiskExport = async () => {
+    setAtRiskLoading(true);
+    try {
+      const res = await fetch(`${BASE}/api/v1/reports/at-risk-export`);
+      if (!res.ok) throw new Error("Export failed");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `at_risk_customers_${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Export error:", err);
+      alert("Export failed. Please try again.");
+    } finally {
+      setAtRiskLoading(false);
+    }
+  };
 
   const load = () => {
     setLoading(true);
@@ -53,6 +76,43 @@ export default function Reports() {
           </button>
         </div>
       )}
+
+      {/* ── AT-RISK EXPORT CARD ────────────────────────────────────── */}
+      <div style={{ background: "#fff", border: "1px solid #E0E4E1", padding: 24, marginBottom: 20 }}>
+        <div style={{ fontSize: 16, fontWeight: 700, color: "#121712", marginBottom: 6 }}>
+          At-Risk Customers
+        </div>
+        <div style={{ fontSize: 13, color: "#727B73", marginBottom: 16 }}>
+          45–90 days since last order. Includes last 3 orders' capsule history.
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
+          <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", background: "#FDECEC", color: "#CC2E33" }}>
+            at-risk
+          </span>
+          <span style={{ fontSize: 11, color: "#9BA39C" }}>
+            capsule buyers · phone available
+          </span>
+        </div>
+        <button
+          onClick={handleAtRiskExport}
+          disabled={atRiskLoading}
+          style={{
+            height: 36, padding: "0 16px",
+            background: atRiskLoading ? "#ECEFEC" : "#121712",
+            color: atRiskLoading ? "#9BA39C" : "#fff",
+            border: "none", fontSize: 13, fontWeight: 600,
+            cursor: atRiskLoading ? "not-allowed" : "pointer",
+            fontFamily: "'Hanken Grotesk',sans-serif",
+            display: "flex", alignItems: "center", gap: 8,
+          }}
+        >
+          {atRiskLoading ? (
+            <><span style={{ fontSize: 12 }}>⏳</span> Generating...</>
+          ) : (
+            <><span style={{ fontSize: 12 }}>⬇</span> Export CSV</>
+          )}
+        </button>
+      </div>
 
       {loading ? (
         <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">

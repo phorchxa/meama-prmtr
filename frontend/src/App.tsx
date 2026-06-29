@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { NavLink, Navigate, Route, Routes, useLocation } from "react-router-dom";
 
 import Actions from "./pages/Actions";
+import KpiDashboard from "./pages/KpiDashboard";
 import Alerts from "./pages/Alerts";
 import CommandCenter from "./pages/CommandCenter";
 import CustomerDetail from "./pages/CustomerDetail";
@@ -58,6 +59,11 @@ const Icons = {
       <path d="M3 13l9 5 9-5" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" /></I>
   ),
   activity: () => <I d="M3 12h4l3 8 4-16 3 8h4" />,
+  kpi: () => (
+    <I><rect x="3" y="12" width="4" height="9" stroke="currentColor" strokeWidth="1.7" />
+      <rect x="10" y="7" width="4" height="14" stroke="currentColor" strokeWidth="1.7" />
+      <rect x="17" y="3" width="4" height="18" stroke="currentColor" strokeWidth="1.7" /></I>
+  ),
   package: () => (
     <I><path d="M4 7l8-4 8 4v10l-8 4-8-4V7z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
       <path d="M4 7l8 4 8-4M12 11v10" stroke="currentColor" strokeWidth="1.7" /></I>
@@ -92,6 +98,7 @@ const NAV_GROUPS: NavGroup[] = [
     label: "Command",
     items: [
       { to: "/", key: "command", icon: Icons.grid, end: true },
+      { to: "/kpi", key: "kpi", icon: Icons.kpi },
       { to: "/actions", key: "actions", icon: Icons.queue },
       { to: "/money-hunter", key: "moneyHunter", icon: Icons.target },
     ],
@@ -298,6 +305,7 @@ export default function App() {
   return (
     <Routes>
       <Route path="/" element={<Layout><CommandCenter /></Layout>} />
+      <Route path="/kpi" element={<Layout><KpiDashboard /></Layout>} />
       <Route path="/money-hunter" element={<Layout><MoneyHunter /></Layout>} />
       <Route path="/ads" element={<Navigate to="/campaigns" replace />} />
       <Route path="/discount-engine" element={<Navigate to="/campaigns" replace />} />

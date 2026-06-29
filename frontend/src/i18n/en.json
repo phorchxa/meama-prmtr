@@ -2,6 +2,7 @@
   "app": { "name": "MEAMA PRMTR", "tagline": "Intelligence for every cup sold" },
   "nav": {
     "command": "Command Center",
+    "kpi": "KPI Dashboard",
     "moneyHunter": "Money Hunter",
     "campaigns": "Promotions",
     "actions": "Action Queue",

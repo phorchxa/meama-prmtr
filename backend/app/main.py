@@ -16,6 +16,7 @@ from .routers import (
     alerts,
     campaigns,
     customers,
+    kpi,
     overview,
     portfolios,
     products,
@@ -125,6 +126,7 @@ def create_app() -> FastAPI:
         alerts,
         actions,
         sessions,
+        kpi,
     ):
         app.include_router(module.router, prefix=API_PREFIX)
 

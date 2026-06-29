@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Skeleton } from "../components/Skeleton";
 import { formatGEL, formatGEL0, formatNumber, tbilisiDate } from "../lib/format";
@@ -581,7 +582,9 @@ function CustomerCard({ customer, onOpen }: { customer: PortfolioSummary; onOpen
   );
 }
 
-// ── Drawer loading / error ────────────────────────────────────────
+// ── REMOVED: CustomerDrawer (drawer → full page navigation) ──────
+
+// ── Main page temp anchor (drawer block deleted) ─────────────────
 
 function DrawerSkeleton() {
   return (
@@ -599,7 +602,7 @@ function DrawerSkeleton() {
 
 // ── CustomerDrawer ────────────────────────────────────────────────
 
-function CustomerDrawer({ customerId, onClose }: { customerId: number | null; onClose: () => void }) {
+export function CustomerDrawer({ customerId, onClose }: { customerId: number | null; onClose: () => void }) {
   const [data, setData] = useState<PortfolioDetail | null>(null);
   const [pageJourney, setPageJourney] = useState<PageJourney | null>(null);
   const [loading, setLoading] = useState(false);
@@ -1410,11 +1413,8 @@ export default function Portfolios() {
   const [loading, setLoading] = useState(true);
   const [error, setError]   = useState<string | null>(null);
   const [fetched, setFetched] = useState(false);
-  const [drawerId, setDrawerId] = useState<number | null>(null);
-
+  const navigate = useNavigate();
   const debounce = useRef<ReturnType<typeof setTimeout>>();
-  const openDrawer  = useCallback((id: number) => { const y = window.scrollY; setDrawerId(id); requestAnimationFrame(() => window.scrollTo(0, y)); }, []);
-  const closeDrawer = useCallback(() => setDrawerId(null), []);
 
   useEffect(() => { setPage(1); }, [query, row1, row2, intensity, region, channel, sort, descDir, sessionRecency, sessionAction, warmFilter]);
 
@@ -1648,7 +1648,7 @@ export default function Portfolios() {
         <>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {items.map((c) => (
-              <CustomerCard key={c.shopify_customer_id} customer={c} onOpen={openDrawer} />
+              <CustomerCard key={c.shopify_customer_id} customer={c} onOpen={(id) => navigate(`/portfolios/${id}`)} />
             ))}
           </div>
 
@@ -1675,7 +1675,6 @@ export default function Portfolios() {
         </>
       )}
 
-      <CustomerDrawer customerId={drawerId} onClose={closeDrawer} />
     </div>
   );
 }
