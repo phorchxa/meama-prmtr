@@ -138,7 +138,7 @@ async def sessions_overview(
         for sku in (s.get("products_carted_sku") or []):
             sku_cart[sku] += 1
 
-    # Resolve SKU → name / category from products_georgia (deduped by variant_sku)
+    # Resolve SKU → name / category
     top_skus = [sku for sku, _ in sku_view.most_common(20)]
     product_map: dict = {}
     if top_skus:

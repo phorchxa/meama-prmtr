@@ -540,10 +540,22 @@ export interface InstagramKpis {
   story_completion: number | null; // always null — not in DB
 }
 
+export interface FacebookKpis {
+  available: boolean;
+  followers_total: number | null;
+  follower_growth_pct: number | null;
+  organic_reach_30d: number | null;
+  impressions_30d: number | null;
+  engagement_rate: number | null;
+  reach_trend: number[];
+  video_views_3s: number | null;   // null — not in current schema
+  post_count_30d: number | null;   // null — not in current schema
+}
+
 export interface SocialKpis {
   tiktok: TikTokKpis;
   instagram: InstagramKpis;
-  facebook: { available: boolean };
+  facebook: FacebookKpis;
   generated_at: string;
 }
 
@@ -551,4 +563,252 @@ export async function fetchSocialKpis(): Promise<SocialKpis> {
   const res = await fetch(`${BASE}/api/v1/marketing/social-kpis`);
   if (!res.ok) throw new Error(`social-kpis ${res.status}`);
   return res.json() as Promise<SocialKpis>;
+}
+
+// ── Social KPI dashboard (detailed — /social-kpis) ──────────────────────────
+
+export type MetricStatus =
+  | "ok"
+  | "insufficient_history"
+  | "not_available"
+  | "not_connected"
+  | "no_data";
+
+export interface KpiMetric {
+  value: number | null;
+  status: MetricStatus;
+  note: string | null;
+}
+
+export interface SocialKpisTikTok {
+  available: boolean;
+  follower_growth_rate: KpiMetric;
+  followers_total: KpiMetric;
+  engagement_rate: KpiMetric;
+  reach: KpiMetric;
+  share_rate: KpiMetric;
+  fyp_rate: KpiMetric;
+  cadence_weekly: number[];
+  cadence_per_week: number | null;
+}
+
+export interface SocialKpisInstagram {
+  available: boolean;
+  follower_growth_rate: KpiMetric;
+  followers_total: KpiMetric;
+  engagement_rate: KpiMetric;
+  reach_30d: KpiMetric;
+  impressions_30d: KpiMetric;
+  saves_per_post: KpiMetric;
+  reels_plays: KpiMetric;
+  cadence_weekly: number[];
+  cadence_per_week: number | null;
+}
+
+export interface SocialKpisFacebook {
+  available: boolean;
+  status: MetricStatus;
+  note: string;
+}
+
+export interface SocialKpisPlaceholder {
+  available: boolean;
+  status: MetricStatus;
+  note: string;
+}
+
+export interface SocialKpisOverview {
+  tiktok: SocialKpisTikTok;
+  instagram: SocialKpisInstagram;
+  facebook: SocialKpisFacebook;
+  meama_corner: SocialKpisPlaceholder;
+  x_twitter: SocialKpisPlaceholder;
+  period_days: number;
+  generated_at: string;
+}
+
+export async function fetchSocialKpisOverview(periodDays = 30): Promise<SocialKpisOverview> {
+  const res = await fetch(`${BASE}/api/v1/social-kpis/overview?period_days=${periodDays}`);
+  if (!res.ok) throw new Error(`social-kpis/overview ${res.status}`);
+  return res.json() as Promise<SocialKpisOverview>;
+}
+
+// ── Social content browser (/social) ────────────────────────────────────────
+
+export interface TikTokVideoSnap {
+  video_id: string;
+  title: string | null;
+  description: string | null;
+  cover_image_url: string | null;
+  video_url: string | null;
+  duration: number | null;
+  published_at: string | null;
+  view_count: number;
+  like_count: number;
+  comment_count: number;
+  share_count: number;
+  download_count: number;
+  engagement_rate: number | null;
+  snapshot_date: string | null;
+  hashtags: string[];
+  snapshot_count: number;
+}
+
+export interface TikTokSnapshotPoint {
+  date: string;
+  view_count: number;
+  like_count: number;
+}
+
+export interface TikTokVideoHistory {
+  video_id: string;
+  snapshots: TikTokSnapshotPoint[];
+}
+
+export interface FollowerGrowthPoint {
+  date: string;
+  followers_count: number;
+}
+
+export interface HashtagCount {
+  hashtag: string;
+  count: number;
+}
+
+export interface TikTokOverview {
+  total_videos: number;
+  total_views: number;
+  total_likes: number;
+  total_comments: number;
+  total_shares: number;
+  avg_engagement_rate: number | null;
+  followers_count: number | null;
+  follower_growth_trend: FollowerGrowthPoint[];
+  top_5_by_views: TikTokVideoSnap[];
+  top_5_by_engagement: TikTokVideoSnap[];
+  top_hashtags: HashtagCount[];
+}
+
+export interface TikTokVideosResponse {
+  videos: TikTokVideoSnap[];
+  total: number;
+}
+
+export interface AiReport {
+  report: string;
+  generated_at: string;
+  cached: boolean;
+}
+
+export interface MetaIgPost {
+  media_id: string;
+  media_type: string;
+  permalink: string | null;
+  thumbnail_url: string | null;
+  caption: string | null;
+  timestamp: string | null;
+  likes: number;
+  comments: number;
+}
+
+export interface MetaIgInsightPoint {
+  date: string;
+  total_followers: number | null;
+  reach: number | null;
+  accounts_engaged: number | null;
+  total_interactions: number | null;
+}
+
+export interface MetaTypeStat {
+  media_type: string;
+  post_count: number;
+  avg_likes: number;
+  avg_comments: number;
+}
+
+export interface MetaOverview {
+  total_posts: number;
+  total_likes: number;
+  total_comments: number;
+  by_media_type: MetaTypeStat[];
+  top_5_by_likes: MetaIgPost[];
+  current_followers: number | null;
+  followers_delta: number | null;
+  insights_trend: MetaIgInsightPoint[];
+}
+
+export interface MetaPostsResponse {
+  posts: MetaIgPost[];
+  total: number;
+}
+
+export interface MetaCampaignBrief {
+  campaign_id: string;
+  name: string | null;
+  objective: string | null;
+  status: string | null;
+  daily_budget: number | null;
+  lifetime_budget: number | null;
+  has_performance_data: boolean;
+  ad_sets_count: number;
+}
+
+export interface MetaCampaignsResponse {
+  campaigns: MetaCampaignBrief[];
+  total_campaigns: number;
+  total_ad_sets: number;
+  total_ads: number;
+  performance_data_available: boolean;
+}
+
+export async function fetchSocialTikTokOverview(): Promise<TikTokOverview> {
+  const res = await fetch(`${BASE}/api/v1/social/tiktok/overview`);
+  if (!res.ok) throw new Error(`social/tiktok/overview ${res.status}`);
+  return res.json() as Promise<TikTokOverview>;
+}
+
+export async function fetchSocialTikTokVideos(): Promise<TikTokVideosResponse> {
+  const res = await fetch(`${BASE}/api/v1/social/tiktok/videos`);
+  if (!res.ok) throw new Error(`social/tiktok/videos ${res.status}`);
+  return res.json() as Promise<TikTokVideosResponse>;
+}
+
+export async function fetchSocialTikTokVideoHistory(videoId: string): Promise<TikTokVideoHistory> {
+  const res = await fetch(`${BASE}/api/v1/social/tiktok/video/${encodeURIComponent(videoId)}/history`);
+  if (!res.ok) throw new Error(`social/tiktok/video/${videoId}/history ${res.status}`);
+  return res.json() as Promise<TikTokVideoHistory>;
+}
+
+export async function fetchSocialTikTokAiReport(lang: string, refresh = false): Promise<AiReport> {
+  const params = new URLSearchParams({ lang });
+  if (refresh) params.set("refresh", "true");
+  const res = await fetch(`${BASE}/api/v1/social/tiktok/ai-report?${params}`);
+  if (!res.ok) throw new Error(`social/tiktok/ai-report ${res.status}`);
+  return res.json() as Promise<AiReport>;
+}
+
+export async function fetchSocialMetaOverview(): Promise<MetaOverview> {
+  const res = await fetch(`${BASE}/api/v1/social/meta/overview`);
+  if (!res.ok) throw new Error(`social/meta/overview ${res.status}`);
+  return res.json() as Promise<MetaOverview>;
+}
+
+export async function fetchSocialMetaPosts(limit = 60): Promise<MetaPostsResponse> {
+  const res = await fetch(`${BASE}/api/v1/social/meta/posts?limit=${limit}`);
+  if (!res.ok) throw new Error(`social/meta/posts ${res.status}`);
+  return res.json() as Promise<MetaPostsResponse>;
+}
+
+export async function fetchSocialMetaCampaigns(): Promise<MetaCampaignsResponse> {
+  const res = await fetch(`${BASE}/api/v1/social/meta/campaigns`);
+  if (!res.ok) throw new Error(`social/meta/campaigns ${res.status}`);
+  return res.json() as Promise<MetaCampaignsResponse>;
+}
+
+export async function fetchSocialMetaAiReport(lang: string, refresh = false): Promise<AiReport> {
+  const params = new URLSearchParams({ lang });
+  if (refresh) params.set("refresh", "true");
+  const res = await fetch(`${BASE}/api/v1/social/meta/ai-report?${params}`);
+  if (!res.ok) throw new Error(`social/meta/ai-report ${res.status}`);
+  return res.json() as Promise<AiReport>;
 }

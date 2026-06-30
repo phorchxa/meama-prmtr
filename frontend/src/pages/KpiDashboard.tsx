@@ -84,6 +84,20 @@ const channelSt = (revDelta: number | null): { st: ST; status: string } => {
   return                       { st: 'growing', status: `↑ On track · +${revDelta.toFixed(1)}% MoM` };
 };
 
+// ── Social KPI helpers (comms tab) ───────────────────────────────────────
+const fmtK = (v: number | null | undefined): string => {
+  if (v == null) return '—';
+  if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(1)}M`;
+  if (v >= 1_000) return `${(v / 1_000).toFixed(0)}K`;
+  return v.toLocaleString();
+};
+const fmtPctS = (v: number | null | undefined, sign = false): string => {
+  if (v == null) return '—';
+  return `${sign && v > 0 ? '+' : ''}${v.toFixed(1)}%`;
+};
+const grade = (v: number | null | undefined, thresh: number): { vt: VT; dt: DT } =>
+  v == null ? { vt: 'pos', dt: 'neu' } : v >= thresh ? { vt: 'pos', dt: 'pos' } : { vt: 'neg', dt: 'neg' };
+
 // ── Metric cell ─────────────────────────────────────────────────────────────
 function MC({ label, value, vt, prev, delta, dt, bar, primary }: McProps) {
   return (
@@ -192,6 +206,10 @@ export default function KpiDashboard() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [kpiData, setKpiData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [social,  setSocial]  = useState<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [metaOv,  setMetaOv]  = useState<any>(null);
 
   useEffect(() => {
     fetch(`${API_BASE}/api/v1/kpi/sales-channels`)
@@ -199,6 +217,14 @@ export default function KpiDashboard() {
       .then(d => setKpiData(d))
       .catch(() => { /* show — values on error */ })
       .finally(() => setLoading(false));
+    fetch(`${API_BASE}/api/v1/marketing/social-kpis`)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d) setSocial(d); })
+      .catch(() => {});
+    fetch(`${API_BASE}/api/v1/campaigns/meta-overview`)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d) setMetaOv(d); })
+      .catch(() => {});
   }, []);
 
   // ── Live channel data ────────────────────────────────────────────────────
@@ -254,6 +280,57 @@ export default function KpiDashboard() {
     cell('Phone AOV',             metric('aov', cs),        'currency', true),
     cell('Upsell Rate',           metric('upsell_rate', cs),'pct',      true),
     cell('New Customers Reached', metric('new_customers', cs),'number', true),
+  ];
+
+  // ── Comms tab: live social + paid data ───────────────────────────────────
+  const tt  = social?.tiktok;
+  const igs = social?.instagram;
+  const fbm = metaOv;
+
+  const ttGrowth = tt?.follower_growth_pct ?? null;
+  const ttGoodGr = ttGrowth != null && ttGrowth >= 5;
+  const ttSt: ST = tt == null ? 'track' : ttGoodGr ? 'growing' : 'behind';
+  const ttStatus = tt == null ? '— Loading' : `${ttGoodGr ? '↑' : '↓'} Growth ${fmtPctS(ttGrowth)} vs ≥5%`;
+  const ttRow1: McProps[] = [
+    { label: 'Follower Growth Rate', value: fmtPctS(ttGrowth, true), ...grade(ttGrowth, 5), prev: 'target ≥5% / month', delta: ttGrowth != null && !ttGoodGr ? `↓ ${(ttGrowth - 5).toFixed(1)}pp vs target` : '', bar: { w: ttGrowth != null ? `${Math.min(100, Math.max(0, ttGrowth / 5 * 100)).toFixed(0)}%` : '0%', bt: ttGoodGr ? 'pos' : 'neg' }, primary: true },
+    { label: 'Total Followers',      value: tt?.followers_total != null ? tt.followers_total.toLocaleString() : '—', vt: 'pos', prev: '—', delta: '', dt: 'neu' },
+    { label: 'Engagement Rate',      value: fmtPctS(tt?.engagement_rate), ...grade(tt?.engagement_rate, 4), prev: 'target ≥4%', delta: tt?.engagement_rate != null && tt.engagement_rate < 4 ? `↓ ${(tt.engagement_rate - 4).toFixed(1)}pp vs target` : '' },
+  ];
+  const ttRow2: McProps[] = [
+    { label: 'Reach · Video Views', value: fmtK(tt?.reach_30d),    vt: 'pos', prev: 'last 30d',         delta: '', dt: 'neu' },
+    { label: 'FYP Rate',            value: '—',                     vt: 'pos', prev: 'not in API scope',  delta: '', dt: 'neu' },
+    { label: 'Share / Duet Rate',   value: fmtPctS(tt?.share_rate), vt: 'pos', prev: 'shares ÷ views',   delta: '', dt: 'neu' },
+  ];
+
+  const igGrowth = igs?.follower_growth_pct ?? null;
+  const igGoodGr = igGrowth != null && igGrowth >= 5;
+  const igSt: ST = igs == null ? 'track' : igGoodGr ? 'growing' : 'behind';
+  const igStatus = igs == null ? '— Loading' : `${igGoodGr ? '↑' : '↓'} Growth ${fmtPctS(igGrowth)} vs ≥5%`;
+  const igRow1: McProps[] = [
+    { label: 'Follower Growth Rate', value: fmtPctS(igGrowth, true), ...grade(igGrowth, 5), prev: 'target ≥5% / month', delta: igGrowth != null && !igGoodGr ? `↓ ${(igGrowth - 5).toFixed(1)}pp vs target` : '', bar: { w: igGrowth != null ? `${Math.min(100, Math.max(0, igGrowth / 5 * 100)).toFixed(0)}%` : '0%', bt: igGoodGr ? 'pos' : 'neg' }, primary: true },
+    { label: 'Total Followers',      value: igs?.followers_total != null ? igs.followers_total.toLocaleString() : '—', vt: 'pos', prev: '—', delta: '', dt: 'neu' },
+    { label: 'Engagement Rate',      value: fmtPctS(igs?.engagement_rate), ...grade(igs?.engagement_rate, 3), prev: 'target ≥3%', delta: igs?.engagement_rate != null && igs.engagement_rate < 3 ? `↓ ${(igs.engagement_rate - 3).toFixed(1)}pp vs target` : '' },
+  ];
+  const igRow2: McProps[] = [
+    { label: 'Reach (30d)',      value: fmtK(igs?.reach_30d),                                               vt: 'pos', prev: 'total last 30d',   delta: '', dt: 'neu' },
+    { label: 'Story Completion', value: '—',                                                                vt: 'pos', prev: 'not in DB',          delta: '', dt: 'neu' },
+    { label: 'Saves / Post',     value: igs?.saves_per_post != null ? igs.saves_per_post.toFixed(0) : '—', vt: 'pos', prev: 'saves not in API',   delta: '', dt: 'neu' },
+  ];
+
+  const fbRoas     = fbm?.blended_roas ?? null;
+  const fbGoodRoas = fbRoas != null && fbRoas >= 3;
+  const fbSt: ST   = fbm == null ? 'track' : fbGoodRoas ? 'growing' : 'behind';
+  const fbStatus   = fbm == null ? '— Loading' : `${fbGoodRoas ? '↑' : '↓'} ROAS ${fbRoas?.toFixed(1) ?? '—'}× vs ≥3×`;
+  const fbImpr     = fbm?.total_impressions ?? 0;
+  const fbClicks   = fbm?.total_clicks ?? 0;
+  const fbSpendUsd = fbm?.total_spend_usd ?? 0;
+  const fbCtr      = fbImpr > 0 ? fbClicks / fbImpr * 100 : null;
+  const fbCpm      = fbImpr > 0 ? fbSpendUsd / fbImpr * 1000 : null;
+  const fbRow: McProps[] = [
+    { label: 'ROAS',        value: fbRoas != null ? `${fbRoas.toFixed(1)}×` : '—', ...grade(fbRoas, 3), prev: 'target ≥3×', delta: fbRoas != null && !fbGoodRoas ? `↓ ${(fbRoas - 3).toFixed(1)}× vs target` : '', bar: { w: fbRoas != null ? `${Math.min(100, fbRoas / 3 * 100).toFixed(0)}%` : '0%', bt: fbGoodRoas ? 'pos' : 'neg' }, primary: true },
+    { label: 'CTR',         value: fmtPctS(fbCtr),                                 vt: 'pos', prev: 'clicks ÷ impressions',  delta: '', dt: 'neu' },
+    { label: 'CPM (USD)',   value: fbCpm != null ? `$${fbCpm.toFixed(2)}` : '—',   vt: 'pos', prev: 'cost per 1K impr.',     delta: '', dt: 'neu' },
+    { label: 'Impressions', value: fmtK(fbm?.total_impressions),                   vt: 'pos', prev: `${fbm?.period_days ?? 30}d`, delta: '', dt: 'neu' },
   ];
 
   const tbtn = (t: Tab) => ({
@@ -393,47 +470,23 @@ export default function KpiDashboard() {
         {/* TikTok + Instagram — row 1 */}
         <Side mb={20}>
           <Ch noMb>
-            <ChHeader name="TikTok" sub="Short Video" dot="#121712" st="behind"
-              status="↓ Growth 3.2% vs ≥5%" />
-            <MGrid cols={3} cells={[
-              { label: 'Follower Growth Rate', value: '+3.2%', vt: 'neg', prev: 'prev +5.0% · target ≥5%', delta: '↓ –1.8pp MoM', dt: 'neg', bar: { w: '64%', bt: 'neg' }, primary: true },
-              { label: 'Total Followers',      value: '48.4K', vt: 'pos', prev: 'prev 46.9K',               delta: '↑ +1,500',     dt: 'pos' },
-              { label: 'Engagement Rate',      value: '3.8%',  vt: 'neg', prev: 'prev 4.3% · target ≥4%',  delta: '↓ –0.5pp',     dt: 'neg' },
-            ]} />
-            <MGrid cols={3} cells={[
-              { label: 'Reach / Impressions', value: '890K', vt: 'pos', prev: 'prev 795K',   delta: '↑ +12%',   dt: 'pos' },
-              { label: 'FYP Rate',            value: '6.1%', vt: 'pos', prev: 'prev 5.9%',   delta: '↑ +0.2pp', dt: 'pos' },
-              { label: 'Share / Duet Rate',   value: '1.2%', vt: 'pos', prev: 'tracking',    delta: '→ MoM',    dt: 'neu' },
-            ]} />
+            <ChHeader name="TikTok" sub="Short Video" dot="#121712" st={ttSt} status={ttStatus} />
+            <MGrid cols={3} cells={ttRow1} />
+            <MGrid cols={3} cells={ttRow2} />
           </Ch>
 
           <Ch noMb>
-            <ChHeader name="Instagram" sub="Photo · Reels" dot="#7C3AED" st="behind"
-              status="↓ Growth 2.1% vs ≥5%" />
-            <MGrid cols={3} cells={[
-              { label: 'Follower Growth Rate', value: '+2.1%', vt: 'neg', prev: 'prev +5.0% · target ≥5%', delta: '↓ –2.9pp MoM', dt: 'neg', bar: { w: '42%', bt: 'neg' }, primary: true },
-              { label: 'Total Followers',      value: '62.1K', vt: 'pos', prev: 'prev 60.8K',               delta: '↑ +1,300',     dt: 'pos' },
-              { label: 'Engagement Rate',      value: '2.7%',  vt: 'neg', prev: 'prev 3.1% · target ≥3%',  delta: '↓ –0.4pp',     dt: 'neg' },
-            ]} />
-            <MGrid cols={3} cells={[
-              { label: 'Reach / Post',  value: '18.4K', vt: 'pos', prev: 'prev 17.0K',      delta: '↑ +8%',  dt: 'pos' },
-              { label: 'Story Views',   value: '9,800', vt: 'pos', prev: 'prev 9,245',       delta: '↑ +6%',  dt: 'pos' },
-              { label: 'Saves / Shares',value: '1,340', vt: 'pos', prev: 'tracking growth',  delta: '→ MoM',  dt: 'neu' },
-            ]} />
+            <ChHeader name="Instagram" sub="Photo · Reels" dot="#7C3AED" st={igSt} status={igStatus} />
+            <MGrid cols={3} cells={igRow1} />
+            <MGrid cols={3} cells={igRow2} />
           </Ch>
         </Side>
 
-        {/* Facebook + Meama Corner — row 2 */}
+        {/* Facebook Ads + Meama Corner — row 2 */}
         <Side>
           <Ch noMb>
-            <ChHeader name="Facebook Ads" sub="Paid · Social" dot="#1A68CC" st="behind"
-              status="↓ ROAS 2.8× vs ≥3×" />
-            <MGrid cols={4} cells={[
-              { label: 'ROAS',  value: '2.8×',  vt: 'neg', prev: 'prev 3.2× · target ≥3×', delta: '↓ –0.4× MoM',   dt: 'neg', bar: { w: '93%', bt: 'neg' }, primary: true },
-              { label: 'CTR',   value: '1.4%',  vt: 'pos', prev: 'prev 1.6%',               delta: '↓ –0.2pp',      dt: 'neg' },
-              { label: 'CPM',   value: '₾4.20', vt: 'pos', prev: 'prev ₾3.80',              delta: '↓ +₾0.40 (up)', dt: 'neg' },
-              { label: 'Reach', value: '210K',  vt: 'pos', prev: 'prev 183K',               delta: '↑ +15%',        dt: 'pos' },
-            ]} />
+            <ChHeader name="Facebook Ads" sub="Paid · Social" dot="#1A68CC" st={fbSt} status={fbStatus} />
+            <MGrid cols={4} cells={fbRow} />
           </Ch>
 
           <Ch noMb>

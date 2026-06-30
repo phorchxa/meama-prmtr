@@ -198,9 +198,53 @@ def _instagram(sb, now: datetime) -> dict[str, Any]:
     }
 
 
-def _facebook(sb) -> dict[str, Any]:
-    rows = _select(sb, "meta_page_insights", "date")
-    return {"available": bool(rows)}
+def _facebook(sb, now: datetime) -> dict[str, Any]:
+    rows = _select(sb, "meta_page_insights",
+                   "date, fan_count, reach, impressions, engagements",
+                   order="date")
+    _fb_null: dict[str, Any] = {
+        "available": False,
+        "followers_total": None, "follower_growth_pct": None,
+        "organic_reach_30d": None, "impressions_30d": None,
+        "engagement_rate": None, "reach_trend": [],
+        "video_views_3s": None, "post_count_30d": None,
+    }
+    if not rows:
+        return _fb_null
+
+    followers_total = _i(rows[-1].get("fan_count")) if rows else None
+
+    # Follower Growth Rate ★ — oldest vs latest fan_count
+    growth_pct = None
+    if len(rows) >= 2:
+        growth_pct = _growth_pct(_f(rows[-1].get("fan_count")),
+                                 _f(rows[0].get("fan_count")))
+
+    # 30-day window metrics
+    cutoff = now - timedelta(days=30)
+    window = [r for r in rows if (d := _parse_dt(str(r.get("date")))) and d >= cutoff]
+
+    organic_reach_30d = sum(_i(r.get("reach")) for r in window) if window else None
+    impressions_30d = sum(_i(r.get("impressions")) for r in window) if window else None
+
+    total_reach = sum(_i(r.get("reach")) for r in window)
+    total_eng = sum(_i(r.get("engagements")) for r in window)
+    engagement_rate = round(total_eng / total_reach * 100, 2) if total_reach > 0 else None
+
+    reach_trend = [_i(r.get("reach")) for r in rows[-30:]]
+
+    return {
+        "available": True,
+        "followers_total": followers_total,
+        "follower_growth_pct": growth_pct,
+        "organic_reach_30d": organic_reach_30d,
+        "impressions_30d": impressions_30d,
+        "engagement_rate": engagement_rate,
+        "reach_trend": reach_trend,
+        # fields in spec not yet in schema — null is rendered as "–" on the card
+        "video_views_3s": None,
+        "post_count_30d": None,
+    }
 
 
 @router.get("/social-kpis")
@@ -215,7 +259,7 @@ async def get_social_kpis(sb=Depends(get_supabase), response: Response = None):
     result = {
         "tiktok": _tiktok(sb, now),
         "instagram": _instagram(sb, now),
-        "facebook": _facebook(sb),
+        "facebook": _facebook(sb, now),
         "generated_at": now.isoformat(),
     }
 

@@ -23,6 +23,8 @@ from .routers import (
     products,
     reports,
     sessions,
+    social,
+    social_kpis,
     stock,
 )
 from .schemas.common import Health
@@ -123,12 +125,14 @@ def create_app() -> FastAPI:
         stock,
         campaigns,
         ads,
-        marketing,
         reports,
         alerts,
         actions,
         sessions,
         kpi,
+        marketing,
+        social_kpis,
+        social,
     ):
         app.include_router(module.router, prefix=API_PREFIX)
 
