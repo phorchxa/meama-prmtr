@@ -510,3 +510,45 @@ export async function fetchMetaOverview(): Promise<MetaOverview> {
   if (!res.ok) throw new Error(`meta-overview ${res.status}`);
   return res.json() as Promise<MetaOverview>;
 }
+
+// ── Marketing · Social KPIs ─────────────────────────────────────────────────
+
+export interface TikTokKpis {
+  available: boolean;
+  followers_total: number | null;
+  follower_growth_pct: number | null;
+  engagement_rate: number | null;
+  reach_30d: number | null;
+  share_rate: number | null;
+  completion_rate: number | null; // always null — not in DB
+  fyp_rate: number | null;        // always null — not in DB
+  cadence_weekly: number[];
+  cadence_per_week: number | null;
+}
+
+export interface InstagramKpis {
+  available: boolean;
+  followers_total: number | null;
+  follower_growth_pct: number | null;
+  engagement_rate: number | null;
+  reach_30d: number | null;
+  reach_trend: number[];
+  saves_per_post: number | null;  // null = N/A (saves unavailable)
+  reels_count_30d: number | null;
+  cadence_weekly: number[];
+  cadence_per_week: number | null;
+  story_completion: number | null; // always null — not in DB
+}
+
+export interface SocialKpis {
+  tiktok: TikTokKpis;
+  instagram: InstagramKpis;
+  facebook: { available: boolean };
+  generated_at: string;
+}
+
+export async function fetchSocialKpis(): Promise<SocialKpis> {
+  const res = await fetch(`${BASE}/api/v1/marketing/social-kpis`);
+  if (!res.ok) throw new Error(`social-kpis ${res.status}`);
+  return res.json() as Promise<SocialKpis>;
+}

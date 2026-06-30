@@ -48,3 +48,45 @@ def dedupe_geo(rows: list[dict], key: str = "variant_sku") -> dict[str, dict]:
         if cur is None or geo_rank(r) > geo_rank(cur):
             out[k] = r
     return out
+
+
+def normalize_status(raw: str | None) -> str:
+    """products_georgia.status (ACTIVE/DRAFT/ARCHIVED) → lowercase; default active.
+    The UI 'Cancelled' tab maps to 'archived'."""
+    s = (raw or "").strip().lower()
+    return s if s in ("active", "draft", "archived") else "active"
+
+
+def fetch_fina_stock(sb) -> dict[str, int]:
+    """Map product_code → total on-hand balance (sul_nashti) from fina_stock.
+
+    Fina is the source of truth for stock (per the business). product_code equals
+    products_georgia.variant_sku == order_items.sku. Paginated; duplicate codes
+    are summed (a SKU split across Fina product rows = combined balance).
+    """
+    out: dict[str, int] = {}
+    start = 0
+    while True:
+        try:
+            rows = (
+                sb.table("fina_stock")
+                .select("product_code, sul_nashti")
+                .range(start, start + 999)
+                .execute()
+                .data or []
+            )
+        except Exception:
+            break
+        for r in rows:
+            code = r.get("product_code")
+            if not code:
+                continue
+            try:
+                qty = int(r.get("sul_nashti") or 0)
+            except (TypeError, ValueError):
+                qty = 0
+            out[code] = out.get(code, 0) + qty
+        if len(rows) < 1000:
+            break
+        start += 1000
+    return out

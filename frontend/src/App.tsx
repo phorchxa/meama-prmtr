@@ -9,6 +9,7 @@ import CommandCenter from "./pages/CommandCenter";
 import CustomerDetail from "./pages/CustomerDetail";
 import Customers from "./pages/Customers";
 import Campaigns from "./pages/Campaigns";
+import MarketingKpis from "./pages/MarketingKpis";
 import MoneyHunter from "./pages/MoneyHunter";
 import PortfolioDetail from "./pages/PortfolioDetail";
 import Portfolios from "./pages/Portfolios";
@@ -25,6 +26,22 @@ const I = ({ d, children, size = 19 }: { d?: string; children?: ReactNode; size?
     {d ? <path d={d} stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /> : children}
   </svg>
 );
+
+const NAV_ITEMS = [
+  { to: "/", key: "command", end: true },
+  { to: "/kpi", key: "kpi" },
+  { to: "/money-hunter", key: "moneyHunter" },
+  { to: "/campaigns", key: "campaigns" },
+  { to: "/marketing/kpis", key: "social" },
+  { to: "/actions", key: "actions" },
+  { to: "/products", key: "products" },
+  { to: "/customers", key: "customers" },
+  { to: "/portfolios", key: "portfolios" },
+  { to: "/sessions", key: "sessions" },
+  { to: "/stock", key: "stock" },
+  { to: "/reports", key: "reports" },
+  { to: "/alerts", key: "alerts" },
+] as const;
 
 const Icons = {
   grid: () => (
@@ -303,25 +320,29 @@ function Layout({ children }: { children: ReactNode }) {
 /* ── Root ────────────────────────────────────────────────────────── */
 export default function App() {
   return (
-    <Routes>
-      <Route path="/" element={<Layout><CommandCenter /></Layout>} />
-      <Route path="/kpi" element={<Layout><KpiDashboard /></Layout>} />
-      <Route path="/money-hunter" element={<Layout><MoneyHunter /></Layout>} />
-      <Route path="/ads" element={<Navigate to="/campaigns" replace />} />
-      <Route path="/discount-engine" element={<Navigate to="/campaigns" replace />} />
-      <Route path="/campaigns" element={<Layout><Campaigns /></Layout>} />
-      <Route path="/actions" element={<Layout><Actions /></Layout>} />
-      <Route path="/products" element={<Layout><Products /></Layout>} />
-      <Route path="/products/:sku" element={<Layout><ProductDetail /></Layout>} />
-      <Route path="/customers" element={<Layout><Customers /></Layout>} />
-      <Route path="/customers/:id" element={<Layout><CustomerDetail /></Layout>} />
-      <Route path="/portfolios" element={<Layout><Portfolios /></Layout>} />
-      <Route path="/sessions" element={<Layout><Sessions /></Layout>} />
-      <Route path="/portfolios/:id" element={<Layout><PortfolioDetail /></Layout>} />
-      <Route path="/stock" element={<Layout><Stock /></Layout>} />
-      <Route path="/reports" element={<Layout><Reports /></Layout>} />
-      <Route path="/alerts" element={<Layout><Alerts /></Layout>} />
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+    <>
+      <CursorFollower />
+      <Routes>
+        <Route path="/" element={<Layout><CommandCenter /></Layout>} />
+        <Route path="/kpi" element={<Layout><KpiDashboard /></Layout>} />
+        <Route path="/money-hunter" element={<Layout><MoneyHunter /></Layout>} />
+        <Route path="/ads" element={<Navigate to="/campaigns" replace />} />
+        <Route path="/discount-engine" element={<Navigate to="/campaigns" replace />} />
+        <Route path="/campaigns" element={<Layout><Campaigns /></Layout>} />
+        <Route path="/marketing/kpis" element={<Layout><MarketingKpis /></Layout>} />
+        <Route path="/actions" element={<Layout><Actions /></Layout>} />
+        <Route path="/products" element={<Layout><Products /></Layout>} />
+        <Route path="/products/:sku" element={<Layout><ProductDetail /></Layout>} />
+        <Route path="/customers" element={<Layout><Customers /></Layout>} />
+        <Route path="/customers/:id" element={<Layout><CustomerDetail /></Layout>} />
+        <Route path="/portfolios" element={<Layout><Portfolios /></Layout>} />
+        <Route path="/sessions" element={<Layout><Sessions /></Layout>} />
+        <Route path="/portfolios/:id" element={<Layout><PortfolioDetail /></Layout>} />
+        <Route path="/stock" element={<Layout><Stock /></Layout>} />
+        <Route path="/reports" element={<Layout><Reports /></Layout>} />
+        <Route path="/alerts" element={<Layout><Alerts /></Layout>} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </>
   );
 }
