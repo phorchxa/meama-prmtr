@@ -14,7 +14,8 @@ Env:
 from __future__ import annotations
 
 import logging
-from ipaddress import AddressValueError, ip_address as parse_ip
+from ipaddress import AddressValueError
+from ipaddress import ip_address as parse_ip
 
 from ..config import get_settings
 from ..deps import _supabase_client

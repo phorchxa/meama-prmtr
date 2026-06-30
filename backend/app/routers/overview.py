@@ -59,7 +59,6 @@ async def get_overview(sb=Depends(get_supabase), response: Response = None):
         products_raw = []
 
     active = [p for p in products_raw if p.get("category") not in _EXCLUDE_CATEGORIES]
-    product_map = {p["sku"]: p for p in active}
 
     # ── 2. Sales stats from RPC (same as products router) ────────────────────
     try:

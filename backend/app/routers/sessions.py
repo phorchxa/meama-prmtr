@@ -402,7 +402,7 @@ def _empty_overview(range_param: str) -> SessionsOverviewResponse:
         kpis=SessionsKpis(sessions=0, unique_visitors=0, registered_share=0,
                           conversion_rate=0, avg_duration_seconds=0, engaged_pct=0,
                           bounce_rate_pct=0.0, new_visitors=0, returning_visitors=0),
-        funnel=[FunnelRow(label=l, count=0, pct=0) for l in _FUNNEL_LABELS],
+        funnel=[FunnelRow(label=lbl, count=0, pct=0) for lbl in _FUNNEL_LABELS],
         who=WhoIsBrowsing(registered=0, anonymous=0, warm=0),
         top_products=[], top_categories=[], viewed_not_bought=[],
         channels=[], devices=[], geo=[],

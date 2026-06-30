@@ -4,7 +4,7 @@ from __future__ import annotations
 import json
 import logging
 import time
-from datetime import date, timedelta
+from datetime import date
 
 import httpx
 

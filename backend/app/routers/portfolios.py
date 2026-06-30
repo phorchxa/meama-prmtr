@@ -5,18 +5,22 @@ All filtering, sorting, and pagination happen server-side via PostgREST.
 """
 from __future__ import annotations
 
-from typing import Annotated
+from datetime import UTC, datetime, timedelta
+from typing import Annotated, TypeVar
+from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-
-from datetime import UTC, datetime, timedelta
-from typing import TypeVar
-from zoneinfo import ZoneInfo
 
 from ..business_rules import RETAIL_ORDER_SOURCES
 from ..deps import get_supabase
 from ..schemas.common import Page
-from ..schemas.portfolios import OrderRow, PageJourneyEntry, PageJourneyResponse, PortfolioDetail, PortfolioSummary
+from ..schemas.portfolios import (
+    OrderRow,
+    PageJourneyEntry,
+    PageJourneyResponse,
+    PortfolioDetail,
+    PortfolioSummary,
+)
 
 T = TypeVar("T", bound=PortfolioSummary)
 _TZ_TBS = ZoneInfo("Asia/Tbilisi")
@@ -238,7 +242,6 @@ def _merge_behavior(sb, items: list[T]) -> list[T]:
         sku_cat_map = {r["variant_sku"]: r.get("product_type") for r in (pm.data or [])}
 
     enriched: list[T] = []
-    now = datetime.now(UTC)
     for it in items:
         cid = str(it.shopify_customer_id)
         b = beh_map.get(cid, {})
