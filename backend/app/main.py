@@ -17,11 +17,14 @@ from .routers import (
     campaigns,
     customers,
     kpi,
+    marketing,
     overview,
     portfolios,
     products,
     reports,
     sessions,
+    social,
+    social_kpis,
     stock,
 )
 from .schemas.common import Health
@@ -34,7 +37,7 @@ logger = logging.getLogger(__name__)
 API_PREFIX = "/api/v1"
 
 
-def _build_scheduler() -> AsyncIOScheduler | None:
+def _build_scheduler() -> "AsyncIOScheduler | None":
     """Create and configure the APScheduler instance. Returns None if not installed."""
     try:
         from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -127,6 +130,9 @@ def create_app() -> FastAPI:
         actions,
         sessions,
         kpi,
+        marketing,
+        social_kpis,
+        social,
     ):
         app.include_router(module.router, prefix=API_PREFIX)
 

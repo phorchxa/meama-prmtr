@@ -1,4 +1,4 @@
-"""04 Stock — inventory from products_georgia + velocity from get_product_stats RPC."""
+"""04 Stock — on-hand balance from fina_stock + velocity from get_product_stats RPC."""
 from __future__ import annotations
 
 import time
@@ -8,11 +8,11 @@ from fastapi import APIRouter, Depends, Response
 
 from ..business_rules import LOW_STOCK_WEEKS, REORDER_POINT_DAYS
 from ..deps import get_supabase
-from ..services.catalog import clean_category, dedupe_geo
+from ..services.catalog import clean_category, dedupe_geo, fetch_fina_stock
 
 router = APIRouter(prefix="/stock", tags=["stock"])
 
-_CACHE_TTL = 300
+_CACHE_TTL = 60  # 1 minute — favor fresh data over speed (user request)
 _cache: dict[str, Any] = {"ts": 0.0, "data": None}
 
 

@@ -9,6 +9,9 @@ import CommandCenter from "./pages/CommandCenter";
 import CustomerDetail from "./pages/CustomerDetail";
 import Customers from "./pages/Customers";
 import Campaigns from "./pages/Campaigns";
+import MarketingKpis from "./pages/MarketingKpis";
+import Social from "./pages/Social";
+import SocialKpis from "./pages/SocialKpis";
 import MoneyHunter from "./pages/MoneyHunter";
 import PortfolioDetail from "./pages/PortfolioDetail";
 import Portfolios from "./pages/Portfolios";
@@ -17,6 +20,9 @@ import ProductDetail from "./pages/ProductDetail";
 import Products from "./pages/Products";
 import Reports from "./pages/Reports";
 import Stock from "./pages/Stock";
+
+/* ── Cursor follower (stub — full impl in components/CursorFollower) ── */
+function CursorFollower() { return null; }
 
 /* ── Icons (Lucide-style line, 1.7px stroke, square) ──────────────── */
 type IconProps = { className?: string };
@@ -59,6 +65,15 @@ const Icons = {
       <path d="M3 13l9 5 9-5" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" /></I>
   ),
   activity: () => <I d="M3 12h4l3 8 4-16 3 8h4" />,
+  signal: () => (
+    <I><path d="M2 12C2 6.48 6.48 2 12 2s10 4.48 10 10" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+      <path d="M5 12c0-3.87 3.13-7 7-7s7 3.13 7 7" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+      <circle cx="12" cy="12" r="2" fill="currentColor" /></I>
+  ),
+  play: () => (
+    <I><rect x="2" y="4" width="20" height="16" rx="2" stroke="currentColor" strokeWidth="1.7" />
+      <path d="M10 9l5 3-5 3V9z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" /></I>
+  ),
   kpi: () => (
     <I><rect x="3" y="12" width="4" height="9" stroke="currentColor" strokeWidth="1.7" />
       <rect x="10" y="7" width="4" height="14" stroke="currentColor" strokeWidth="1.7" />
@@ -111,6 +126,13 @@ const NAV_GROUPS: NavGroup[] = [
       { to: "/campaigns", key: "campaigns", icon: Icons.tag },
       { to: "/portfolios", key: "portfolios", icon: Icons.layers },
       { to: "/sessions", key: "sessions", icon: Icons.activity },
+    ],
+  },
+  {
+    label: "Marketing",
+    items: [
+      { to: "/social-kpis", key: "socialKpis", icon: Icons.signal },
+      { to: "/social", key: "social", icon: Icons.play },
     ],
   },
   {
@@ -303,25 +325,31 @@ function Layout({ children }: { children: ReactNode }) {
 /* ── Root ────────────────────────────────────────────────────────── */
 export default function App() {
   return (
-    <Routes>
-      <Route path="/" element={<Layout><CommandCenter /></Layout>} />
-      <Route path="/kpi" element={<Layout><KpiDashboard /></Layout>} />
-      <Route path="/money-hunter" element={<Layout><MoneyHunter /></Layout>} />
-      <Route path="/ads" element={<Navigate to="/campaigns" replace />} />
-      <Route path="/discount-engine" element={<Navigate to="/campaigns" replace />} />
-      <Route path="/campaigns" element={<Layout><Campaigns /></Layout>} />
-      <Route path="/actions" element={<Layout><Actions /></Layout>} />
-      <Route path="/products" element={<Layout><Products /></Layout>} />
-      <Route path="/products/:sku" element={<Layout><ProductDetail /></Layout>} />
-      <Route path="/customers" element={<Layout><Customers /></Layout>} />
-      <Route path="/customers/:id" element={<Layout><CustomerDetail /></Layout>} />
-      <Route path="/portfolios" element={<Layout><Portfolios /></Layout>} />
-      <Route path="/sessions" element={<Layout><Sessions /></Layout>} />
-      <Route path="/portfolios/:id" element={<Layout><PortfolioDetail /></Layout>} />
-      <Route path="/stock" element={<Layout><Stock /></Layout>} />
-      <Route path="/reports" element={<Layout><Reports /></Layout>} />
-      <Route path="/alerts" element={<Layout><Alerts /></Layout>} />
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+    <>
+      <CursorFollower />
+      <Routes>
+        <Route path="/" element={<Layout><CommandCenter /></Layout>} />
+        <Route path="/kpi" element={<Layout><KpiDashboard /></Layout>} />
+        <Route path="/money-hunter" element={<Layout><MoneyHunter /></Layout>} />
+        <Route path="/ads" element={<Navigate to="/campaigns" replace />} />
+        <Route path="/discount-engine" element={<Navigate to="/campaigns" replace />} />
+        <Route path="/campaigns" element={<Layout><Campaigns /></Layout>} />
+        <Route path="/marketing/kpis" element={<Layout><MarketingKpis /></Layout>} />
+        <Route path="/social-kpis" element={<Layout><SocialKpis /></Layout>} />
+        <Route path="/social" element={<Layout><Social /></Layout>} />
+        <Route path="/actions" element={<Layout><Actions /></Layout>} />
+        <Route path="/products" element={<Layout><Products /></Layout>} />
+        <Route path="/products/:sku" element={<Layout><ProductDetail /></Layout>} />
+        <Route path="/customers" element={<Layout><Customers /></Layout>} />
+        <Route path="/customers/:id" element={<Layout><CustomerDetail /></Layout>} />
+        <Route path="/portfolios" element={<Layout><Portfolios /></Layout>} />
+        <Route path="/sessions" element={<Layout><Sessions /></Layout>} />
+        <Route path="/portfolios/:id" element={<Layout><PortfolioDetail /></Layout>} />
+        <Route path="/stock" element={<Layout><Stock /></Layout>} />
+        <Route path="/reports" element={<Layout><Reports /></Layout>} />
+        <Route path="/alerts" element={<Layout><Alerts /></Layout>} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </>
   );
 }

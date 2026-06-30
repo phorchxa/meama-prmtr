@@ -13,11 +13,11 @@ from pydantic import BaseModel
 from ..business_rules import RETAIL_CHANNELS
 from ..deps import get_supabase
 from ..schemas.products import AffinityPair, ProductIntelligenceResponse, ProductSummary
-from ..services.catalog import clean_category, dedupe_geo
+from ..services.catalog import clean_category, dedupe_geo, fetch_fina_stock, normalize_status
 
 router = APIRouter(prefix="/products", tags=["products"])
 
-_CACHE_TTL = 300  # 5 minutes
+_CACHE_TTL = 60  # 1 minute — favor fresh data over speed (user request)
 _cache: dict[str, object] = {"ts": 0.0, "data": None}
 _aff_cache: dict[str, object] = {"ts": 0.0, "data": None}
 
@@ -50,7 +50,7 @@ def _int0(v) -> int:
 async def get_product_intelligence(sb=Depends(get_supabase), response: Response = None) -> ProductIntelligenceResponse:
     if _cache["data"] and (time.time() - float(_cache["ts"])) < _CACHE_TTL:
         if response:
-            response.headers["Cache-Control"] = "s-maxage=300, stale-while-revalidate=60"
+            response.headers["Cache-Control"] = "s-maxage=60, stale-while-revalidate=30"
         return _cache["data"]  # type: ignore[return-value]
 
     # ── 1. Products_georgia — the single product catalog (keyed on variant_sku) ─
@@ -90,14 +90,15 @@ async def get_product_intelligence(sb=Depends(get_supabase), response: Response 
             return []
 
     loop = asyncio.get_event_loop()
-    with ThreadPoolExecutor(max_workers=5) as pool:
+    with ThreadPoolExecutor(max_workers=6) as pool:
         stats_fut  = loop.run_in_executor(pool, _rpc, "get_product_stats")
         ch_fut     = loop.run_in_executor(pool, _rpc, "get_product_channel_stats")
         rr_fut     = loop.run_in_executor(pool, _rpc, "get_product_reorder_rates")
         nm_fut     = loop.run_in_executor(pool, _rpc, "get_product_new_metrics")
         tb_fut     = loop.run_in_executor(pool, _rpc, "get_product_top_bundles")
-        stats_raw, ch_raw, rr_raw, nm_raw, tb_raw = await asyncio.gather(
-            stats_fut, ch_fut, rr_fut, nm_fut, tb_fut
+        stock_fut  = loop.run_in_executor(pool, fetch_fina_stock, sb)
+        stats_raw, ch_raw, rr_raw, nm_raw, tb_raw, fina_stock = await asyncio.gather(
+            stats_fut, ch_fut, rr_fut, nm_fut, tb_fut, stock_fut
         )
 
     stats_map = {row["sku"]: row for row in stats_raw}
@@ -132,8 +133,8 @@ async def get_product_intelligence(sb=Depends(get_supabase), response: Response 
         product_type_geo = clean_category(geo.get("product_type"))
         cat = product_type_geo or "Other"
 
-        # Stock status: products_georgia.inventory_quantity + avg_monthly_consumption
-        sq = geo.get("inventory_quantity")
+        # Stock: fina_stock.sul_nashti (Fina = source of truth), keyed by sku.
+        sq = fina_stock.get(sku)
         amc = _float0(nm.get("avg_monthly_consumption"))
         if sq is None or amc <= 0:
             stock_status: str | None = "unknown"
@@ -145,6 +146,10 @@ async def get_product_intelligence(sb=Depends(get_supabase), response: Response 
                 stock_status = "in_stock"
             else:
                 stock_status = "overstock"
+
+        # status (active/draft/archived) from the canonical catalog row; the UI
+        # 'Cancelled' tab maps to 'archived'.
+        status = normalize_status(geo.get("status"))
 
         # intensity_bucket from Bible intensity_level
         raw_intensity = _float(bib.get("Intensity level"))
@@ -188,6 +193,7 @@ async def get_product_intelligence(sb=Depends(get_supabase), response: Response 
                 subcategory=None,
                 price=_float0(geo.get("variant_price")) or _float0(ch.get("avg_price_web")) or _float0(ch.get("avg_price_pos")),
                 cogs=_float(geo.get("cost_per_item")),
+                status=status,
                 # enrichment
                 image_url=geo.get("image_url"),
                 caffeine=bib.get("Caffeine"),
@@ -254,7 +260,7 @@ async def get_product_intelligence(sb=Depends(get_supabase), response: Response 
     _cache["ts"] = time.time()
     _cache["data"] = built
     if response:
-        response.headers["Cache-Control"] = "s-maxage=300, stale-while-revalidate=60"
+        response.headers["Cache-Control"] = "s-maxage=60, stale-while-revalidate=30"
     return built
 
 

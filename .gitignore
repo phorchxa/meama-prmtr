@@ -48,3 +48,5 @@ supabase/.temp/
 
 # ---- TS build artifacts ----
 *.tsbuildinfo
+.vercel
+.env*

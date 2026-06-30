@@ -9,11 +9,11 @@ from fastapi import APIRouter, Depends, Response
 
 from ..business_rules import LOW_STOCK_WEEKS, REORDER_POINT_DAYS, RETAIL_CHANNELS
 from ..deps import get_supabase
-from ..services.catalog import clean_category, dedupe_geo
+from ..services.catalog import clean_category, dedupe_geo, fetch_fina_stock
 
 router = APIRouter(prefix="/overview", tags=["overview"])
 
-_CACHE_TTL = 300  # 5 minutes
+_CACHE_TTL = 60  # 1 minute — favor fresh data over speed (user request)
 _cache: dict[str, Any] = {"ts": 0.0, "data": None}
 
 
@@ -41,7 +41,7 @@ async def get_overview(sb=Depends(get_supabase), response: Response = None):
     """
     if _cache["data"] and (time.time() - float(_cache["ts"])) < _CACHE_TTL:
         if response:
-            response.headers["Cache-Control"] = "s-maxage=300, stale-while-revalidate=60"
+            response.headers["Cache-Control"] = "s-maxage=60, stale-while-revalidate=30"
         return _cache["data"]
 
     # ── 1. Catalog metadata from products_georgia (deduped by variant_sku) ────
@@ -71,6 +71,9 @@ async def get_overview(sb=Depends(get_supabase), response: Response = None):
         nm_raw = []
     nm_map = {r["sku"]: r for r in nm_raw}
 
+    # ── 3b. Stock on hand from fina_stock (Fina = source of truth) ───────────
+    fina_stock = fetch_fina_stock(sb)
+
     # ── 4. Aggregate KPIs — driven by SALES (every sku with retail revenue) ───
     total_skus = 0
     revenue_30d = 0.0
@@ -99,8 +102,8 @@ async def get_overview(sb=Depends(get_supabase), response: Response = None):
         cat = clean_category(geo.get("product_type")) or "Other"
         cat_rev[cat] = cat_rev.get(cat, 0.0) + rev
 
-        # Stock cover
-        sq = geo.get("inventory_quantity")
+        # Stock cover (stock from fina_stock)
+        sq = fina_stock.get(sku)
         amc = _float0(nm.get("avg_monthly_consumption"))
         if sq is not None and amc > 0:
             months = float(sq) / amc
@@ -180,7 +183,7 @@ async def get_overview(sb=Depends(get_supabase), response: Response = None):
         if _float0(nm.get("total_revenue")) <= 0:
             continue
         geo = geo_map.get(sku, {})
-        sq = geo.get("inventory_quantity")
+        sq = fina_stock.get(sku)
         amc = _float0(nm.get("avg_monthly_consumption"))
         if sq is None or amc <= 0:
             continue
@@ -222,5 +225,5 @@ async def get_overview(sb=Depends(get_supabase), response: Response = None):
     _cache["ts"] = time.time()
     _cache["data"] = result
     if response:
-        response.headers["Cache-Control"] = "s-maxage=300, stale-while-revalidate=60"
+        response.headers["Cache-Control"] = "s-maxage=60, stale-while-revalidate=30"
     return result

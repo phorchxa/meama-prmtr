@@ -1,10 +1,14 @@
 {
-  "app": { "name": "MEAMA PRMTR", "tagline": "Intelligence for every cup sold" },
+  "app": {
+    "name": "MEAMA PRMTR",
+    "tagline": "Intelligence for every cup sold"
+  },
   "nav": {
     "command": "Command Center",
     "kpi": "KPI Dashboard",
     "moneyHunter": "Money Hunter",
     "campaigns": "Promotions",
+    "social": "Social KPIs",
     "actions": "Action Queue",
     "products": "Product Analytics",
     "customers": "Customer Analytics",
@@ -12,7 +16,9 @@
     "sessions": "Sessions",
     "stock": "Stock",
     "alerts": "Alerts",
-    "reports": "Reports"
+    "reports": "Reports",
+    "socialKpis": "Social KPIs",
+    "social": "Content Browser"
   },
   "header": {
     "alerts": "Alerts",
@@ -30,21 +36,69 @@
     "demoData": "Demo data — wires to the API in phase 2"
   },
   "pages": {
-    "command": { "title": "Command Center", "subtitle": "Full business health. One screen. E-commerce + brand stores only." },
-    "moneyHunter": { "title": "Money Hunter", "subtitle": "Ranked revenue opportunities sitting in the customer base right now." },
-    "ads": { "title": "Ad Intelligence", "subtitle": "Meta campaigns — spend and ROAS in USD, never mixed with GEL." },
-    "campaigns": { "title": "Campaign Intelligence", "subtitle": "Every promotion — revenue, Meta spend and ROAS in one place." },
-    "discount": { "title": "Discount Engine", "subtitle": "Margin-guarded promo calculator. 40% floor, 25% cap — enforced, not suggested." },
-    "actions": { "title": "Action Queue", "subtitle": "AI-ranked daily task list for the commercial team." },
-    "products": { "title": "Product Analytics", "subtitle": "Revenue, margin, retention — per category and per SKU." },
-    "productDetail": { "back": "Back to categories", "flavours": "Flavours", "history": "12-month selling history" },
-    "customers": { "title": "Customer Analytics", "subtitle": "Segments, churn risk, lifecycle — rule-based RFM + Claude scoring." },
-    "portfolios": { "title": "Customer Portfolios", "subtitle": "Every buyer. Complete behavioural profile." },
-    "portfolioDetail": { "back": "Back to portfolios" },
-    "stock": { "title": "Stock", "subtitle": "Inventory cover with 2-week early warning." },
-    "alerts": { "title": "Alerts", "subtitle": "Telegram + in-app signals. Written to the alerts table before sending." },
-    "reports": { "title": "Reports", "subtitle": "121K orders. Pre-computed. Instant." },
-    "login": { "title": "Sign in", "email": "Email", "password": "Password", "submit": "Sign in", "invite_only": "Invite-only access." }
+    "command": {
+      "title": "Command Center",
+      "subtitle": "Full business health. One screen. E-commerce + brand stores only."
+    },
+    "moneyHunter": {
+      "title": "Money Hunter",
+      "subtitle": "Ranked revenue opportunities sitting in the customer base right now."
+    },
+    "ads": {
+      "title": "Ad Intelligence",
+      "subtitle": "Meta campaigns — spend and ROAS in USD, never mixed with GEL."
+    },
+    "campaigns": {
+      "title": "Campaign Intelligence",
+      "subtitle": "Every promotion — revenue, Meta spend and ROAS in one place."
+    },
+    "discount": {
+      "title": "Discount Engine",
+      "subtitle": "Margin-guarded promo calculator. 40% floor, 25% cap — enforced, not suggested."
+    },
+    "actions": {
+      "title": "Action Queue",
+      "subtitle": "AI-ranked daily task list for the commercial team."
+    },
+    "products": {
+      "title": "Product Analytics",
+      "subtitle": "Revenue, margin, retention — per category and per SKU."
+    },
+    "productDetail": {
+      "back": "Back to categories",
+      "flavours": "Flavours",
+      "history": "12-month selling history"
+    },
+    "customers": {
+      "title": "Customer Analytics",
+      "subtitle": "Segments, churn risk, lifecycle — rule-based RFM + Claude scoring."
+    },
+    "portfolios": {
+      "title": "Customer Portfolios",
+      "subtitle": "Every buyer. Complete behavioural profile."
+    },
+    "portfolioDetail": {
+      "back": "Back to portfolios"
+    },
+    "stock": {
+      "title": "Stock",
+      "subtitle": "Inventory cover with 2-week early warning."
+    },
+    "alerts": {
+      "title": "Alerts",
+      "subtitle": "Telegram + in-app signals. Written to the alerts table before sending."
+    },
+    "reports": {
+      "title": "Reports",
+      "subtitle": "121K orders. Pre-computed. Instant."
+    },
+    "login": {
+      "title": "Sign in",
+      "email": "Email",
+      "password": "Password",
+      "submit": "Sign in",
+      "invite_only": "Invite-only access."
+    }
   },
   "promo": {
     "title": "Promo calculator",

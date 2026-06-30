@@ -11,6 +11,7 @@ class ProductSummary(BaseModel):
     subcategory: str | None = None
     price: float
     cogs: float | None = None
+    status: str = "active"            # 'active' | 'draft' | 'archived'  (products_georgia.status)
 
     # ── Enrichment ──────────────────────────────────────────────────────────
     image_url: str | None = None
