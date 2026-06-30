@@ -61,12 +61,16 @@ async def sales_channels_kpi(sb=Depends(get_supabase)):
     c_sess  = _rpc("kpi_sessions",    cur_start, cur_end)
     c_store = _rpc("kpi_brand_stores", cur_start, cur_end)
     c_call  = _rpc("kpi_call_sales",  cur_start, cur_end)
+    c_whsl  = _rpc("kpi_wholesale",   cur_start, cur_end)
+    c_vend  = _rpc("kpi_dropper",     cur_start, cur_end)
 
     # previous month
     p_ecom  = _rpc("kpi_ecommerce",   prv_start, prv_end)
     p_sess  = _rpc("kpi_sessions",    prv_start, prv_end)
     p_store = _rpc("kpi_brand_stores", prv_start, prv_end)
     p_call  = _rpc("kpi_call_sales",  prv_start, prv_end)
+    p_whsl  = _rpc("kpi_wholesale",   prv_start, prv_end)
+    p_vend  = _rpc("kpi_dropper",     prv_start, prv_end)
 
     return {
         "period": {
@@ -76,4 +80,6 @@ async def sales_channels_kpi(sb=Depends(get_supabase)):
         "ecommerce":   _build_channel({**c_ecom, **c_sess}, {**p_ecom, **p_sess}),
         "brand_stores": _build_channel(c_store, p_store),
         "call_sales":  _build_channel(c_call,  p_call),
+        "wholesale":   _build_channel(c_whsl,  p_whsl),
+        "dropper":     _build_channel(c_vend,  p_vend),
     }

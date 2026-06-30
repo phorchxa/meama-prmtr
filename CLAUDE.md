@@ -30,14 +30,15 @@ Do **NOT** install scikit-learn, xgboost, HDBSCAN, or any ML training library. A
 `churn_score`, `cluster_tag`, `upsell_tag` are **Claude output, never a trained model**.
 
 ## Business rules (single source of truth: `backend/app/business_rules.py`)
-- MARGIN_FLOOR = 0.40 ; MIN_PRICE_MULTIPLIER = 1.6667 ; MAX_DISCOUNT = 0.25
+- MARGIN_FLOOR = 0.40 (NET of VAT) ; MIN_PRICE_MULTIPLIER = 1.6667 ; MAX_DISCOUNT = 0.25 (advisory guideline, NOT a hard block)
+- B2B_CAP_DISCOUNT_UNDER/OVER = 0.25/0.30 @ 500-cap threshold ; B2B_ACCESSORY_DISCOUNT = 0.15 (machines = ecom)
 - CHURN_DAYS = 90 (lost) ; AT_RISK = 45–89 days
 - LOW_STOCK_WEEKS = 2 ; REORDER_POINT_DAYS = 14
 - ROAS_ALERT_THRESHOLD = 2.0 ; CANCEL_SPIKE = 15% / 24h ; REFUND_SHARE_ALERT = 5% ; CHURN_SCORE_ALERT = 0.7
 - RETAIL_CHANNELS = ("ecom", "brand_store") — every metric filters to these
 - NO_DISCOUNT_SEGMENTS = ("champion","capsule_loyalist","flavour_explorer") — early access only, never discounts
 - AOV_EXCLUDES_ZERO_SPEND = True ; LTV_REGISTERED_ONLY = True
-- Promo calc: `min_safe_price = COGS × 1.6667`; `max_safe_discount = 1 − (COGS×1.6667 / full_price)`; block if discount > 25% or margin < 40%.
+- Promo calc (net of VAT): `net_margin = (P/1.18 − COGS)/(P/1.18)`; `min_safe_price = COGS × 1.6667 × 1.18`; `max_safe_discount = 1 − (min_safe_price / full_price)` (uncapped — can exceed 25%); the binding block is `net_margin < 40%`, not the discount %.
 
 ## Conventions (enforce everywhere)
 - **Currency:** order data is GEL (₾); Meta Ads data is USD ($). Never mix.

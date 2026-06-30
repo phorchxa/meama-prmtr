@@ -1,0 +1,1073 @@
+MEAMA PRMTR
+Product Specification  v2.0
+Commercial CRM Platform — E-Commerce + Brand Stores
+
+Version
+2.0 — merged from NextGen spec + field-level spec
+Date
+June 2026
+Status
+Final draft — for data team and engineering
+Scope
+Meama Georgia: Brand Store + Ecommerce + Call — plus Meama Corner (Facebook group) as separate channel
+Channels excluded
+Vending, B2B, Collect — isolated in data layer, not surfaced in platform
+Margin floor
+40% gross margin minimum enforced on all promotion calculations
+Churn definition
+No order in ≥ 3 calendar months
+At-risk threshold
+No order in 45–89 days
+Capsule loyalists rule
+Loyalty + explorer segment: zero discount offers. Use early access instead.
+Max discount allowed
+25% — hard cap across all campaign types
+
+What we are building — and why
+Meama operates across e-commerce, brand stores, vending, and B2B with no unified view of its customers, products, or campaigns. Retention and upsell decisions are made manually, based on experience rather than data.
+
+Module
+Problem it solves
+Customer 360
+No unified behavioural profile exists per customer
+Product Intelligence
+No view of what sells with what, or why
+Campaign Intelligence
+Campaigns run without prediction or ROI measurement
+Command Overview
+No single executive health view across all channels
+Alerts
+No early warning system for stock, churn, or margin risk
+Reports
+Reporting is manual, ad hoc, and retrospective
+
+Contents
+
+01  Command Overview
+02  Customer 360
+03  Product Intelligence
+04  Stock
+05  Campaign Intelligence
+06  Social &amp; Email Analytics
+07  Reports
+08  Alerts
+09  Action Queue
+10  KPI Dashboard &amp; Channel Tracking
+
+01
+Command Overview
+Executive homepage. Single screen — full business health. No filters required.
+
+CUSTOMER KPIS
+new_customers
+Registrations in current calendar month vs. prior month
+active_buyers
+Customers with ≥1 order in last 90 days
+total_registered
+All-time registered accounts
+guest_vs_registered
+% of orders from guest checkout vs. registered account
+customer_ltv
+Avg cumulative revenue per customer — by RFM segment
+monthly_churn_rate
+Customers lost this month / active base last month %
+machine_capsule_conv
+% of machine buyers who ordered capsules within 30 days
+
+REVENUE KPIS
+aov_total
+Avg order value — all orders, zero-order customers excluded
+aov_capsules
+AOV filtering out machine and accessory SKUs
+contribution_margin
+(Revenue − COGS − discounts) / Revenue %
+revenue_forecast
+30-day projection — trailing 90-day trend + seasonality
+business_health_score
+Composite: churn + margin + retention + AOV trend (0–100)
+total_orders_mtd
+Orders placed month-to-date, all channels
+ad_account_cost
+Current month Meta spend (live from Meta API)
+
+QUICK LISTS
+top_product_revenue
+Top SKU by revenue — current month
+top_product_volume
+Top SKU by units — MTD
+most_returned_to_capsule
+Which SKU brings customers back most (first-buy retention)
+avg_capsule_price
+Blended ASP — E-Com and Brand Store shown separately
+active_promotions
+Live promo codes and bundle deals
+region_vs_capital
+Order and revenue split: Tbilisi vs. regions
+delivery_vs_pickup
+AOV and volume comparison: home delivery vs. collect
+
+02
+Customer 360
+Complete behavioural and commercial profile per customer. One row per customer. Searchable, sortable, exportable.
+
+IDENTITY &amp; CONTACT
+customer_id
+Internal unique ID (Shopify)
+email
+Primary contact
+first_name / last_name
+From account registration
+phone
+Default phone AND OTP phone — both shown if different
+region
+Tbilisi (Capital) vs. regions
+registered_vs_guest
+Account type flag
+registration_date
+Date of account creation
+
+LIFECYCLE
+tenure_months
+Months since first order
+active_months
+Calendar months with ≥1 order
+status
+Active / At-risk / Lost / New — auto-calculated. Active = avg daily capsule consumption &gt;= 1.5 capsules/day. Below 1.5 = not active (classified as At-risk if within 45—89 days, Lost if &gt;= 90 days silent).
+last_order_date
+Most recent paid order date
+expected_next_order
+Predicted reorder: last_order + median(reorder_interval)
+return_reason
+Why customer reactivated — promo / reorder / machine launch
+return_period_days
+Days between lapse and reactivation
+
+Inactive = 3 months without order. At-risk triggers at 45 days of silence and initiates a retention workflow automatically.
+
+PURCHASE BEHAVIOUR
+total_orders
+Lifetime paid order count
+avg_packs_per_month
+Avg capsule packs per active month
+avg_packs_per_order
+Avg packs per individual order
+avg_capsule_consumption_per_day
+Avg capsules consumed per day — trailing 90 days. Active threshold: &gt;= 1.5 capsules/day. Calculated as: total capsules ordered / days since first order (capped at 90 days).
+aov_total
+Avg order value — all SKUs
+aov_capsules
+AOV excluding machines and accessories
+avg_capsule_price_range
+Price band typically bought within
+discount_dependency_%
+Orders placed under discount / total orders %
+primary_channel
+E-Commerce or Brand Store — with % share
+
+PRODUCT PROFILE
+top_flavours
+Top 3 SKUs by units — shown as tags
+flavour_subcategories
+Flavoured / Origin / Functional / Classic
+favourite_intensity
+Light / Medium / Strong — from SKU master
+formats_bought
+51mm / 37mm / Both
+never_bought_capsules
+Flag: machine owner with zero capsule orders
+avg_capsule_price_range
+Typical price band per unit
+
+RFM SCORING (AUTO-CALCULATED)
+recency_score
+Days since last order → quintile 1–5 (5 = most recent)
+frequency_score
+Order count vs. base median → quintile 1–5
+monetary_score
+Total spend vs. base median → quintile 1–5
+rfm_segment
+Champion (R≥4,F≥4,M≥4) / Loyal / At-Risk (R≤2,F≥3) / Lost / New
+cluster_tag
+HDBSCAN behavioural cluster — e.g. Capsule Loyalist, Explorer, Gifter
+churn_score
+XGBoost probability of churn in next 30 days (0.0–1.0)
+upsell_tag
+XGBoost: likely to buy machine upgrade / premium SKU (boolean)
+
+MACHINE OWNERSHIP
+has_machine
+Boolean — owns a Meama machine
+machine_model
+Which model — from purchase history
+machine_acquisition_date
+Date of machine purchase
+recommended_capsules
+Compatible SKUs matched to machine model + intensity profile
+recommended_next_machine
+Upgrade suggestion — based on intensity usage pattern
+
+DEMOGRAPHIC &amp; SOCIAL
+FIELD
+DESCRIPTION
+age
+Customer age — entered at registration or inferred from profile; used for targeting segmentation
+gender
+Male / Female / Not specified — from registration or Meta match
+family_machine_users
+How many household members use the Meama machine and capsules — optional field on website/app profile, improves consumption modelling
+payment_method
+Card / Instalments (TBC Leasing / Credo) / Cash — from order history; instalments flag indicates price sensitivity
+acquisition_channel
+First-touch source: Meta Ad / Google / Organic Search / Referral / Brand Store / Call Center / Meama Corner — mapped from UTM or CRM entry
+social_profiles_linked
+Meta / Instagram handle if matched via pixel or email hash (research-level; flagged when available)
+region
+Tbilisi district / Regional city — from delivery address; neighbourhood-level precision for Tbilisi
+
+SESSION &amp; BROWSE BEHAVIOUR
+Populated from website analytics (GA4 / custom pixel). Matched to customer record via logged-in session or phone/email lookup. All fields are per-customer lifetime aggregates unless stated otherwise.
+FIELD
+DESCRIPTION
+total_web_sessions
+Lifetime count of website sessions attributed to this customer (logged-in or matched)
+last_session_date
+Date of most recent website visit
+avg_session_duration_sec
+Average session length in seconds — trailing 90 days; low value may indicate friction
+top_browsed_categories
+Top 3 product categories viewed per session: Capsules / Machines / Accessories / Bundles — shows intent signal
+last_browsed_skus
+Up to 5 SKUs viewed in last session but not added to cart — used for retargeting and personalised recommendations
+cart_abandonment_count
+Lifetime count of sessions where items were added to cart but no order was placed
+last_cart_abandonment_date
+Date of most recent cart abandonment event
+last_abandoned_cart_items
+SKU list + quantities from last abandoned cart — shown to call center and used for automated recovery email
+last_abandoned_cart_value_gel
+Total value (GEL) of last abandoned cart at standard prices
+converted_after_abandonment
+Boolean — did the customer place an order within 7 days of last cart abandonment?
+days_to_convert_post_abandonment
+Days between last abandonment and next completed order; blank if not yet converted
+abandonment_recovery_channel
+Which channel recovered the order: Omnisend email / Call Center / Organic return / Meta retargeting
+scroll_depth_avg_%
+Average page scroll depth % across all sessions — proxy for engagement quality
+order_journey_path
+Typical session-to-order path: e.g. Meta Ad → Homepage → Category page → PDP → Cart → Checkout (AI-reconstructed from session events)
+
+AI INTELLIGENCE
+All AI fields are recalculated nightly. Confidence scores accompany each prediction. Displayed as advisory — final decisions rest with the commercial team.
+FIELD
+DESCRIPTION
+predicted_ltv_12m_gel
+AI-predicted total spend in next 12 months if current behaviour continues — XGBoost regression on tenure, RFM, capsule consumption rate
+predicted_order_frequency
+AI-estimated orders per month going forward — based on trailing reorder intervals
+predicted_churn_date
+If churn_score &gt; 0.6: estimated date customer drops below active threshold — shown as warning flag in Customer 360
+churn_reason_predicted
+Top predicted churn driver: Price sensitivity / Low product variety / Post-machine drop-off / Seasonal lapse / Competitor switch — from cluster analysis
+reactivation_strategy
+If Lost: AI-recommended re-engagement approach — e.g. “Send 6-pack offer; last purchase was Hazelnut, include compatible SKUs”
+untried_skus_recommended
+SKUs the customer has never ordered but which are statistically popular with their behavioural cluster — top 3 upsell/cross-sell targets
+next_best_action
+Single highest-priority action for this customer today — pre-populates Action Queue: e.g. “Offer promo — 45 days silent, mid-LTV”
+
+03
+Product Intelligence
+Full performance view per SKU — revenue, margin, retention, bundling, and promo behaviour.
+
+REVENUE &amp; MARGIN
+revenue_rank
+Ranked by total revenue — current month and lifetime
+monthly_revenue_growth
+MoM revenue change % per SKU
+gross_margin_%
+(Price − COGS) / Price — per SKU
+avg_selling_price
+Blended ASP — E-Com and Brand Store shown separately
+avg_monthly_consumption
+Units per active customer per month — trailing 90 days
+
+PROMOTION BEHAVIOUR
+promo_revenue_share
+Revenue under promo / total revenue for this SKU %
+velocity_in_promo
+Units/day during active promotion
+velocity_baseline
+Units/day with no active promotion
+best_promo_for_sku
+Promo type that generated highest incremental revenue
+worst_promo_for_sku
+Promo with lowest incremental lift — by avg launch-date cohort
+
+CUSTOMER RETENTION BY SKU
+Metric
+Window
+Definition
+Reorder rate
+30 / 40 / 60 / 90 days
+% of first-time buyers of this SKU who reorder
+Retention rate
+Lifetime
+% who have ordered 3+ times
+Return capsule
+—
+Which SKU most drives customers back — ranked
+Purchase sequence
+2nd order
+What customers buy next after this SKU as first purchase
+
+BUNDLING &amp; AFFINITY
+top_bundle_pairs
+Top 3 SKUs most co-purchased with this SKU — with % frequency
+machine_bundle_attach
+% of machine orders that include this SKU
+affinity_score
+count(orders with both SKUs) / count(orders with this SKU)
+
+OPERATIONS
+refund_rate
+Units refunded / units sold %
+stock_status
+In Stock / Low (&lt;2 weeks supply) / Out of Stock
+fulfillment_sla_breach
+Count of orders past avg delivery SLA for this SKU
+
+SEASONAL &amp; GEO INTELLIGENCE
+FIELD
+DESCRIPTION
+peak_months
+Top 3 calendar months by units sold for this SKU — e.g. November, December, February
+peak_days_of_week
+Days with above-average order frequency — useful for flash promo timing
+seasonality_index
+Units this month vs. 12-month average; &gt;1.2 = high season, &lt;0.8 = low season
+top_delivery_districts
+Top 5 Tbilisi districts + top 3 regional cities by unit shipment — informs stock allocation per hub
+understock_flag
+Boolean — current stock &lt; 14-day projected demand; triggers alert to stock manager
+overstock_flag
+Boolean — current stock &gt; 60-day projected demand; triggers markdown or bundle recommendation
+trend_direction
+Rising / Stable / Declining — 3-month MoM unit trend; AI-classified
+
+BUYER PROFILE PER SKU
+Who actually buys this product — used for audience matching on Meta, call targeting, and pricing decisions.
+FIELD
+DESCRIPTION
+buyer_age_distribution
+% breakdown of buyers by age band: 18-24 / 25-34 / 35-44 / 45+ — from customer profiles
+buyer_gender_split
+% Male / Female / Unknown for buyers of this SKU
+buyer_ltv_tier
+% of buyers in High / Mid / Low LTV segment — informs whether discounting this SKU is margin-safe
+buyer_primary_channel
+% split of buyers by channel: Ecommerce / Brand Store / Call Center / Meama Corner
+buyer_avg_monthly_spend
+Average total monthly spend of customers who buy this SKU — proxy for their value tier
+social_web_visibility_score
+Composite score: organic sessions to this PDP + social mentions + Meta ad impressions (normalised 0-100)
+post_purchase_behaviour
+What customers buy next after first ordering this SKU: top 3 subsequent SKUs + % who reorder same SKU within 30 days
+promo_vs_full_price_split_%
+% of total units sold under a promotion vs. at full price — high promo-dependency is a margin risk flag
+avg_units_per_order
+Average quantity of this SKU per order line — e.g. 2.3 packs suggests bulk-buy behaviour
+
+04
+Stock
+Inventory status and consumption forecasting per SKU.
+
+stock_status
+In Stock / Low / Out — threshold: &lt;2 weeks of avg daily sales
+units_on_hand
+Current physical stock count
+days_of_stock_remaining
+Units on hand / avg daily sales — trailing 30 days
+avg_monthly_consumption
+Units sold per month — trailing 90-day average
+reorder_point
+Stock level that triggers purchase order — = 14 × avg daily sales
+top_bundle_skus
+SKUs most co-purchased — for aligned stock planning
+refund_returns
+Units returned this month — affects net available stock
+overdue_orders
+Orders past avg SLA — count for ops team
+
+Low stock threshold: &lt;2 weeks of trailing average daily consumption. This triggers both a dashboard badge and a Telegram alert to the purchasing manager.
+
+05
+Campaign Intelligence
+Closed-loop campaign system. AI suggests, manager approves, platform measures, AI learns.
+
+CAMPAIGN METRICS
+top_promotions
+Ranked by revenue generated — current period
+worst_promotions
+Lowest incremental revenue — by launch-date cohort
+promo_revenue_contribution
+Revenue under promo / total revenue %
+customer_count_per_promo
+Reach and conversion count per code
+who_used_promo
+Customer list per promo — links to Customer 360
+incremental_vs_cannibalised
+Revenue that would not exist without the promo
+discount_dependency_risk
+Customers with &gt;50% of orders under discount — flag
+
+AI CAMPAIGN LOOP
+Step
+Action
+Owner
+1  Suggest
+ML signals trigger a proposal: segment + channel + offer + predicted uplift
+AI
+2  Predict
+Revenue estimate, ROI, margin impact, audience fatigue risk shown
+AI
+3  Approve
+Manager reviews draft copy — approves, edits, or rejects
+Manager
+4  Launch
+Campaign fires to segment via email, SMS, or paid platform
+Platform
+5  Measure
+Actual vs. predicted results tracked per segment and channel
+AI
+6  Learn
+Results fed back to improve next suggestion accuracy
+AI
+
+Capsule loyalists and flavour explorers must never receive discount offers. Use exclusivity and early product access instead. Maximum safe discount: 25%. Absolute floor: 40% gross margin.
+
+PROMO CALCULATOR
+input: sku_list
+Select one SKU or build a multi-SKU bundle
+input: discount_%
+Slider — auto-capped at the 40% margin floor
+output: effective_margin
+Real-time: margin after discount applied
+output: min_safe_price
+= COGS × 1.6667 — shown as hard floor
+output: max_safe_discount
+= 1 − (COGS × 1.6667 / full_price)
+output: status
+Red if margin &lt; 40%. Green if safe. Block if over cap.
+output: estimated_revenue
+Units sold projection × discounted price
+output: roi_estimate
+Incremental revenue / discount cost
+
+CAMPAIGN CALENDAR
+calendar_view
+Monthly grid — planned campaigns by date and type
+georgian_holidays
+Pre-populated: New Year, Shoba, Valentine's, Mother's Day, Tbilisoba, Black Friday
+campaign_fields
+Type, target segment, channel, discount, predicted reach, predicted revenue
+approval_queue
+Pending campaigns awaiting manager sign-off — with AI draft copy
+
+PROMO CALCULATOR &amp; CALENDAR
+Pre-launch simulation tool. Before activating a promotion, the commercial team inputs the SKU(s), discount %, and target segment — the calculator returns projected outcomes and flags margin risk.
+FIELD / OUTPUT
+DESCRIPTION
+Input: SKU(s) + discount %
+Select one or multiple SKUs; enter proposed discount % or absolute GEL reduction
+Input: target segment
+All customers / Active only / At-risk / Specific cluster tag / Channel — narrows projection to realistic audience
+Input: promo duration (days)
+Campaign window — affects velocity projection and total revenue estimate
+Projected units sold
+Estimated units based on velocity_in_promo from comparable past promos for this SKU
+Projected incremental revenue
+Expected revenue above baseline (non-promo velocity x days) — shows true additionality
+Effective margin %
+Real-time margin after discount: (ASP x (1 - discount%) - COGS) / (ASP x (1 - discount%)) — flagged red if &lt; 15%
+Estimated new customers
+Projected first-time buyers based on acquisition rate from past similar promos
+Estimated reactivations
+At-risk / Lost customers likely to return — based on historical response rate to same offer type
+Audience overlap with Meta
+% of target segment matched to active Meta audiences — helps coordinate ad spend with promo
+AI pre-analysis verdict
+AI rating: Strong / Moderate / Weak — based on SKU’s promo history, margin, and segment receptiveness; includes one-line rationale
+Promo calendar entry
+On approval, promo is written to the shared calendar with: SKU(s), dates, discount, target segment, owner, status (Planned / Live / Completed)
+
+PROMO CALENDAR
+All planned and live promotions displayed in a monthly calendar view. Each entry shows: promo name, SKU(s), discount, channel(s), start/end date, status, and owner. Filterable by channel, segment, and SKU.
+
+06
+Social &amp; Email Analytics
+Paid ads, organic social, email marketing, and Meama Corner channel — all in one view.
+
+roas
+Revenue attributed / spend — per campaign and account total
+total_spend
+Current month Meta spend
+new_customers_acquired
+First-time buyers attributed to Meta campaigns
+reactivated_customers
+Lapsed customers returned via Meta ad
+interested_categories
+Product categories with highest Meta engagement
+age_gender_breakdown
+Converting audience demographics
+campaign_statuses
+Active / Paused / Ended — per campaign
+roas_threshold_alert
+Alert fires if ROAS drops below 2.0× on any active spend
+calendar_plan
+Planned campaigns — aligned to promo calendar (Module 05)
+META ORGANIC ANALYTICS (FACEBOOK + INSTAGRAM)
+page_followers_facebook
+Total Facebook page followers — current count + MoM growth
+page_followers_instagram
+Total Instagram followers — current count + MoM growth
+reach_monthly
+Unique accounts reached per month across both platforms
+impressions_monthly
+Total post impressions — Facebook and Instagram combined
+engagement_rate_%
+Likes + comments + shares / reach — benchmark: &gt;3% healthy
+top_post_reach
+Highest-reach organic post of the month + content type tag
+video_views_monthly
+Total Reel and Facebook video views — monthly total
+story_completion_rate_%
+% of story viewers who watch through to the final frame
+link_clicks
+Clicks on bio or story links — measures traffic driven to Shopify
+META PAID ADS PERFORMANCE
+roas
+Revenue attributed / ad spend — per campaign and account total
+total_spend
+Current month Meta ad spend in GEL
+new_customers_acquired
+First-time buyers attributed to Meta paid campaigns
+reactivated_customers
+Lapsed customers returned via Meta retargeting ads
+cpc
+Cost per click — per campaign
+cpm
+Cost per 1,000 impressions — per campaign
+campaign_statuses
+Active / Paused / Ended — per campaign
+roas_threshold_alert
+Alert fires if ROAS drops below 2.0x on any active spend
+TIKTOK ANALYTICS
+tiktok_followers
+Total TikTok followers — current count + MoM change
+video_views_monthly
+Total video views across all posts — current month
+avg_watch_time_s
+Average watch time per video in seconds
+video_completion_rate_%
+% of viewers who watch each video to the end
+engagement_rate_%
+Likes + comments + shares + saves / views — monthly average
+top_video_views
+Highest-view video of the month — view count + content type
+profile_visits
+Monthly profile visits from TikTok content
+link_clicks
+Clicks on bio link leading to Shopify or landing page
+follower_growth_rate_%
+MoM follower growth % — benchmark: &gt;5% per month
+tiktok_shop_orders
+Orders via TikTok Shop (if enabled) — revenue and count
+OMNISEND — EMAIL MARKETING
+total_subscribers
+Active email subscribers — current count + MoM growth
+campaigns_sent_mtd
+Email campaigns sent month-to-date
+open_rate_%
+Emails opened / emails delivered — benchmark: &gt;25% for e-commerce
+click_rate_%
+Clicks on any link / emails delivered — benchmark: &gt;2.5%
+click_to_open_rate_%
+Clicks / opens — measures content relevance after the open
+unsubscribe_rate_%
+Unsubscribes per campaign — alert if &gt;0.5% on any send
+revenue_per_email
+Total attributed revenue / emails delivered — in GEL
+revenue_attributed_mtd
+Total revenue attributed to Omnisend campaigns month-to-date
+automation_revenue
+Revenue from automated flows (welcome, win-back, reorder reminders) vs. broadcasts
+deliverability_rate_%
+Emails delivered / emails sent — alert if below 95%
+top_campaign_by_revenue
+Highest-revenue email campaign of the month — subject line + revenue
+MEAMA CORNER — FACEBOOK GROUP CHANNEL
+corner_tag
+Tag [CORNER] applied to all orders from the Facebook group — set at order level
+group_members
+Total Meama Corner Facebook group members — MoM growth
+corner_orders_mtd
+Orders tagged [CORNER] placed month-to-date
+corner_revenue_mtd
+Revenue from [CORNER]-tagged orders — month-to-date in GEL
+corner_aov
+Average order value for [CORNER] orders vs. all-channel AOV
+corner_conversion_rate_%
+Orders / group members — community-to-buyer conversion proxy
+corner_top_skus
+Top 3 SKUs purchased by Meama Corner members — MTD by units
+corner_new_customers
+First-time buyers who entered via the Corner channel
+corner_repeat_rate_%
+% of Corner buyers who placed a second order within 60 days
+bad_review_recoveries
+Customers recovered via apology offer — count and revenue retained
+prize_campaigns_mtd
+Games and quiz campaigns in Corner — participants and prize cost MTD
+
+07
+Reports
+Time-series and pattern reports. Pre-computed from full order history.
+
+TIME ANALYSIS
+hourly_sales
+Revenue and order count by hour (0–23). Peak window: 12:00–20:00.
+day_of_week
+Revenue, AOV, and order count by day. Friday = peak. Weekend AOV premium.
+holiday_performance
+Revenue indexed to Georgian public holidays. YoY comparison.
+seasonality
+12-month rolling revenue chart. Summer trough (Apr–Jul) highlighted.
+
+BUNDLING &amp; AFFINITY
+product_bundling
+Co-purchase affinity matrix — top 10 pairs by frequency across 121K orders
+machine_bundling
+Capsules added at checkout with each machine model — top 10 by attach rate
+first_buy_retention
+First-time buyers per SKU — % who reorder at 30 / 60 / 90 days
+purchase_sequences
+Second-order analysis — what does a first-time buyer of SKU X buy next?
+sku_cannibalization
+Before/after monthly consumption per customer when new SKU was launched
+
+CHANNEL PERFORMANCE
+channel_split
+4 channels: Brand Store / Ecommerce / Call / Meama Corner — revenue, AOV, top SKUs, order count
+channel_overlap
+Customers who buy across both channels — share and behaviour diff
+avg_capsule_price_by_channel
+ASP for E-Com vs Brand Store — shown side by side
+channel_brand_store
+Brand Store KPIs: orders, revenue, AOV, top SKUs, active customers — updated daily
+channel_ecommerce
+Ecommerce (Shopify) KPIs: orders, revenue, AOV, new vs. returning, delivery SLA — updated hourly
+channel_call
+Call centre KPIs: orders placed by phone, revenue, AOV, call-to-order conversion rate
+channel_corner_kpi
+Meama Corner [CORNER] tag KPIs: orders, revenue, member conversion — linked to Module 06
+channel_revenue_share_%
+Revenue share % — Brand Store / Ecommerce / Call / Corner — current month vs. prior month
+
+08
+Alerts
+Automated early-warning system. Delivered via Telegram and surfaced on dashboard.
+
+Alert
+Trigger condition
+Severity
+Low stock
+SKU below 2-week supply threshold
+Critical
+At-risk customer
+Customer hits 45-day silence
+Critical
+Cancelled orders spike
+Cancel rate &gt;15% in 24h
+Critical
+Margin breach
+Any active promo margin &lt; 40%
+Critical
+Refund share
+Refunds &gt;5% of daily revenue
+High
+Overdue fulfillment
+Orders past SLA delivery window
+High
+Meta ROAS drop
+ROAS drops below 2.0× on active spend
+High
+Highest discount SKU
+Discount depth outlier vs. category avg
+Medium
+Least profitable SKU
+Margin bottom 10% of catalogue
+Medium
+Churn score spike
+Cluster of customers with churn_score &gt;0.7
+Medium
+
+09
+Action Queue
+AI-generated daily task list. Ranked by estimated revenue impact. The commercial team's morning briefing.
+
+ACTION TYPES
+Type
+Trigger signal
+Default action
+WIN-BACK
+Customer silent 45–89 days
+Personalised reactivation offer
+REORDER NUDGE
+Overdue vs predicted next order date
+Reorder reminder — no discount if loyalist
+BUNDLE OFFER
+Affinity: bought SKU A, high probability wants SKU B
+Targeted bundle recommendation
+MACHINE OFFER
+Has machine — zero capsule orders in 30 days
+'Your machine is waiting' email
+STOCK UP
+Popular SKU approaching low-stock threshold
+Subscription or bulk purchase prompt
+PROMO PUSH
+Georgian holiday within 7 days
+Activate holiday campaign from calendar
+CHURN RISK
+churn_score &gt;0.7 from XGBoost model
+Immediate retention offer
+UPSELL
+High LTV + upsell_tag = true
+Premium SKU or machine upgrade suggestion
+
+DISPLAY FIELDS PER ACTION
+priority
+1–5 score — based on revenue at risk or opportunity size
+action_type
+Tag from list above
+customer_or_segment
+Individual customer ID or RFM segment name
+trigger_signal
+Specific data point that generated this action
+suggested_offer
+Pre-populated from affinity / campaign rules
+estimated_revenue_impact
+Projected GEL uplift if action is taken
+deadline
+Date by which action should be completed
+status
+Pending / In Progress / Done — updated by commercial team
+
+CALL CENTER AUTOMATED REPORTS
+Two automated call reports are pre-loaded in the platform each day, giving Call Center agents a prioritised queue with all relevant customer data and the recommended offer pre-selected. Agents do not need to look up any information manually.
+
+REPORT 1 — MACHINE BUYER FOLLOW-UP CALL
+FIELD
+DETAIL
+Purpose
+Onboard new machine owners; convert to active capsule buyers before first-30-day drop-off window
+Trigger
+Customer order contains a machine SKU (any format: cap37 / cap51 / tea / mix)
+Timing
+Call attempted within 24 hours of confirmed delivery (courier status = Delivered)
+Priority
+HIGH — appears at the top of the daily call queue
+SLA
+If unreached on Day 1, retry Day 2 and Day 3; log outcome after each attempt
+Agent data shown
+Customer name, machine model, delivery date, capsule format compatibility, top-3 recommended capsule SKUs (pre-matched to machine format), total capsule orders to date
+Recommended script goal
+Confirm machine is working; offer to send a starter capsule pack; explain subscription / auto-replenishment options
+Offer attached
+Starter capsule bundle matched to machine format at introductory price (configured in Promotions module)
+Outcome tags
+Reached: Interested / Reached: Not interested / No answer / Wrong number / Scheduled callback
+Auto-close rule
+Report line closes when first capsule order is placed or after 3 failed attempts
+
+REPORT 2 — AT-RISK / LAPSED CUSTOMER RETENTION CALL
+FIELD
+DETAIL
+Purpose
+Re-activate customers who are drifting toward churn before the lapsed threshold is crossed
+Trigger
+Customer has not placed any order for 45 consecutive days (at-risk threshold); OR customer is already lapsed (90+ days silence)
+Priority
+MEDIUM — sorted by days-since-last-order descending within queue
+SLA
+Contact within 2 business days of entering the list; max 2 call attempts before switching to Omnisend email flow
+Agent data shown
+Customer name, last order date, days since last order, top 3 purchased SKUs, avg monthly spend (3-month), lifetime value (LTV), LTV tier, pre-selected offer (see offer logic below)
+Outcome tags
+Reached: Order placed / Reached: Will think about it / Reached: Not interested / No answer / Opted out
+Auto-close rule
+Report line closes when next order is placed or customer is flagged as Opted Out
+
+OFFER TIER LOGIC — pre-selected by platform, agent may apply judgment override:
+LTV TIER
+CUSTOMER PROFILE
+PRE-SELECTED OFFER
+HIGH LTV
+Lifetime spend &gt;= GEL 800; avg monthly spend &gt;= GEL 80; purchases 3+ capsule packs/month
+6-pack assorted capsules for GEL 95 (approx. 20% discount vs. retail)
+MID LTV
+Lifetime spend GEL 300-799; avg monthly spend GEL 30-79; moderate capsule frequency
+GEL 50 store credit (redeemable on any order; no minimum)
+LOW LTV
+Lifetime spend &lt; GEL 300; new customer (&lt;6 months) or low purchase frequency
+GEL 25 store credit (redeemable on any order; no minimum)
+
+Note: Offer tiers are recalculated nightly. The platform flags any offer that would result in a negative margin contribution for manual review before the call is made. Agents must log the offer they applied; if a different offer is used, the reason must be selected from a dropdown (customer negotiated / agent discretion / other).
+
+10
+KPI Dashboard &amp; Channel Tracking
+Scorecard across all 9 sales channels. Tracks North Star metrics, channel KPIs, social, email and employee effectiveness. Refreshed daily.
+NORTH STAR &amp; COMPANY SCORECARD
+North Star: Net Revenue from Repeat Customers — MEAMA economics live in recurring capsule consumption, not one-off machine sales. RAG rule: Green = at/above target — Amber = within 10% below — Red = &gt;10% below. Two consecutive Red periods triggers an action plan.
+total_net_revenue
+Top-line health — Gross sales minus discounts and returns — Target: +25% YoY — Cadence: Weekly
+contribution_margin_%
+Profit quality — (Net revenue minus COGS minus variable cost) / net revenue — Target: &gt;= 45% blended — Cadence: Monthly
+blended_aov
+MEAMA MIX &amp; upsell effect — Net revenue divided by orders — Target: +10% YoY — Cadence: Weekly
+customer_retention_rate_%
+Recurring engine — Active both periods / prior customers — Target: &gt;= 55% (12-mo) — Cadence: Monthly
+repeat_purchase_rate_%
+Habit formation — Customers with 2+ orders / total — Target: &gt;= 40% — Cadence: Monthly
+ltv
+Long-term value — Avg order margin x frequency x lifespan — Target: &gt;= 3x CAC — Cadence: Quarterly
+blended_cac
+Cost to grow — Acquisition spend / new customers — Target: LTV:CAC &gt;= 3:1 — Cadence: Monthly
+new_customers_acquired
+Growth pace — Count of first-time buyers — Target: +20% YoY — Cadence: Weekly
+net_revenue_retention_%
+Cohort health — (Start + expansion minus churn) / start — Target: &gt;= 100% — Cadence: Quarterly
+promotion_roi
+Discount discipline — Incremental margin / promo cost — Target: &gt;= 2.0x — Cadence: Per campaign
+CHANNEL SCORECARD — ALL 9 CHANNELS
+One row per channel. Date range toggle: Today / WTD / MTD / Last 30 days / Custom. Each metric shown as actual vs. target with MoM and WoW delta.
+Channel
+Key Headline KPI
+AOV Target
+Cadence
+Ecommerce
+Net revenue / Sessions / CVR
+&gt;= ₾90
+Weekly
+Brand Stores
+Revenue per store / Footfall
++10% YoY basket
+Weekly
+Marketplaces (Wolt)
+GMV / Rating / On-time SLA
+Grow via bundles
+Weekly
+Wholesale (B2B)
+B2B net revenue / Active accounts
++10% YoY per account
+Monthly
+Dropper (Vending)
+Capsules/machine/day / Uptime
+&gt;= 50% gross margin
+Weekly
+Call Center &amp; CX
+Service level / Inbound CVR
+&gt;= web AOV phone orders
+Daily
+Social (IG/TikTok/FB)
+Social-attributed revenue / ROAS
++30% YoY
+Weekly
+Meama Corner
+Group-driven revenue / Member-to-buyer %
++30% YoY
+Monthly
+Acquisition &amp; Retention
+Retail→Ecom CVR / Win-back rate
+MIX AOV uplift +10%
+Monthly
+ECOMMERCE KPIs
+net_revenue
+Gross online sales minus discounts and returns — Target: +30% YoY
+sessions
+Unique site sessions — Target: +25% YoY
+conversion_rate_%
+Orders / Sessions — Target: &gt;= 2.5%
+aov
+Revenue / Orders — Target: &gt;= ₾90 (crosses ₾89 free-delivery threshold)
+cart_abandonment_%
+1 minus (Orders / Carts) — Target: &lt;= 70%
+accessory_attach_rate_%
+Orders with accessory / Orders — Target: &gt;= 20%
+returning_revenue_%
+Returning-customer revenue / total revenue — Target: &gt;= 40%
+roas_mer
+Revenue / marketing spend — Target: &gt;= 4.0x
+welcome_credit_cvr_%
+First orders with ₾10 credit / registrations — Target: &gt;= 30%
+BRAND STORES KPIs
+revenue_per_store
+Net store sales — Target: +15% YoY
+like_for_like_growth_%
+This-year vs. last-year same stores — Target: &gt;= +8%
+footfall
+Counted store visitors — Target: +10% YoY
+conversion_rate_%
+Transactions / Footfall — Target: &gt;= 25%
+aov_basket_size
+Revenue / Transactions — Target: +10% YoY
+units_per_transaction
+Units / Transactions — Target: &gt;= 2.2
+retail_to_ecom_conversion_%
+Card registrations / store customers — Target: &gt;= 15%
+stock_availability_%
+In-stock SKUs / total SKUs — Target: &gt;= 97%
+in_store_nps
+Survey NPS score — Target: &gt;= 50
+CALL CENTER &amp; CX KPIs
+service_level_%
+Calls answered in 20s / calls offered — Target: &gt;= 80% in 20 seconds
+abandoned_call_rate_%
+Abandoned / offered — Target: &lt;= 5%
+first_contact_resolution_%
+Resolved first contact / total — Target: &gt;= 80%
+inbound_order_conversion_%
+Orders / sales calls — Target: &gt;= 30%
+phone_aov
+Phone revenue / phone orders — Target: &gt;= web AOV
+win_back_reactivation_%
+Reactivated / contacted (90-day lapsed) — Target: &gt;= 15%
+balance_redemption_%
+₾25 win-back redemptions / offers sent — Target: &gt;= 20%
+csat_%
+Satisfied / responses — Target: &gt;= 90%
+save_retention_rate_%
+Cancellations saved / cancellation requests — Target: &gt;= 30%
+SOCIAL (INSTAGRAM / TIKTOK / FACEBOOK) KPIs
+followers_total
+Total followers across all 3 platforms — tracked per platform
+follower_growth_rate_%
+Net new / start followers — Target: &gt;= +5% per month
+engagement_rate_%
+(Likes + comments + shares + saves) / reach — Target: &gt;= 4%
+social_attributed_revenue
+Revenue from social UTM tracking — Target: +30% YoY
+social_conversion_rate_%
+Social orders / social sessions — Target: &gt;= 1.5%
+facebook_retargeting_roas
+FB revenue / FB spend — Target: &gt;= 4x
+tiktok_completion_rate_%
+Completed views / views — Target: Grow
+instagram_saves
+IG saves per post — Target: Grow
+content_cadence_%
+Posts published / plan — Target: &gt;= 100% of plan
+MEAMA CORNER KPIs
+group_members
+Total Facebook group members — Target: Grow — Cadence: Weekly
+member_growth_rate_%
+Net new / start members — Target: &gt;= +5% per month
+active_member_rate_%
+Active (30-day) / total members — Target: &gt;= 30%
+quiz_activity_participation_%
+Participants / active members — Target: &gt;= 25% per activity
+exclusive_offer_redemption_%
+Redemptions / active members — Target: &gt;= 12% per offer
+member_to_buyer_conversion_%
+Members ordering / total members — Target: &gt;= 6%
+group_driven_revenue
+Revenue from group codes and links — Target: +30% YoY
+corner_tag_[CORNER]
+% of Corner-sourced orders correctly tagged [CORNER] — ops quality check
+WEBSITE ANALYTICS
+Source: Google Analytics 4 (or equivalent). Data pulled via API. Refreshed daily. All metrics shown per page, per session, and as site-wide aggregates. Heatmap and scroll data sourced from session recording tool (e.g. Hotjar / Microsoft Clarity).
+sessions_total
+Total website sessions — unique visits in the selected period. Broken out by source: Organic / Paid / Social / Email / Direct / Referral
+users_total
+Unique users (new vs. returning) — new user % tracked weekly as a growth signal
+pageviews_total
+Total pages viewed — pages per session = pageviews / sessions. Target: &gt;= 3 pages per session
+avg_session_duration
+Average total time a user spends on the site per visit — in seconds. Benchmark: &gt;= 90 seconds
+avg_time_on_page
+Average time spent on each individual page — sorted to surface highest and lowest engagement pages
+top_pages_by_time
+Top 10 pages where customers spend the most time — updated daily. Product pages vs. blog vs. landing pages shown separately
+top_exit_pages
+Pages where customers leave most often — high exit rate signals friction or missing CTA
+avg_scroll_depth_%
+How far down the page an average user scrolls — shown as a % of page height. Per-page breakdown available
+scroll_depth_50_%_reach
+% of sessions that reach the 50% scroll mark on key pages (homepage, product page, checkout) — measures content visibility
+scroll_depth_90_%_reach
+% of sessions that reach 90% scroll — high score = content is compelling to the end
+rage_clicks
+Clicks on non-interactive elements — signals broken expectations or missing links. Per-page heatmap
+dead_clicks_%
+Clicks that lead to no page change — % of total clicks. Alert if &gt;15% on a key page
+landing_page_bounce_rate_%
+Sessions with only one page view / total sessions for that landing page — Target: &lt;= 50%
+product_page_to_cart_%
+Add-to-cart clicks / product page views — measures product page conversion. Target: &gt;= 8%
+cart_to_checkout_%
+Checkout starts / cart views — Target: &gt;= 60%
+checkout_to_order_%
+Completed orders / checkout starts — Target: &gt;= 70%
+funnel_drop_off_step
+Step in the checkout funnel with highest abandonment — pinpointed per session analysis
+most_common_user_paths
+Top 5 navigation paths from landing to purchase — shows how customers actually move through the site
+site_search_queries
+What customers type in the site search bar — reveals unmet demand and navigation gaps
+internal_search_to_purchase_%
+Sessions using site search that result in an order / all search sessions — Target: &gt;= 15%
+device_split_%
+Mobile / Desktop / Tablet breakdown — by sessions and conversion rate per device
+mobile_bounce_rate_%
+Bounce rate on mobile specifically — alert if &gt;60% (signals mobile UX issues)
+top_regions
+Sessions and revenue by region — Tbilisi vs. regions breakdown
+page_load_time_s
+Average page load time in seconds — Target: &lt;= 2.5s. Alert if any key page exceeds 4s
+core_web_vitals
+LCP / FID / CLS scores from Google — all three must be in 'Good' range to avoid search ranking penalty
+EMPLOYEE EFFECTIVENESS &amp; PERSON OF THE MONTH
+Final Score = 70% own results + 30% peer standing. Every employee scored 0—100 against their own channel target, then ranked against peers. Pillar weights: Goal Attainment 40% / Growth 20% / Quality 15% / Retention 15% / Collaboration 10%. Eligibility: no integrity flag, min 80% goal attainment, min quality score 60.
+goal_attainment_pts
+Actual / target on channel headline KPI — capped at 120% — Weight: 40%
+growth_pts
+Improvement vs. prior period — Weight: 20%
+quality_cx_pts
+CSAT / NPS, low returns / errors — Weight: 15%
+retention_contribution_pts
+Repeat rate, win-back, reorder contribution — Weight: 15%
+behaviors_collaboration_pts
+Manager + peer rating 0—100 — Weight: 10%
+effectiveness_index
+Weighted sum of 5 pillars — own-results component (70% of final score)
+peer_percentile
+Percentile rank vs. all eligible employees — peer-standing component (30% of final score)
+final_score
+(Effectiveness Index x 0.70) + (Peer percentile x 0.30) — winner = highest eligible score
+person_of_the_month
+Employee with highest Final Score who meets all eligibility gates — starred automatically
+KPI REVIEW CADENCE
+daily_check
+Commercial team opens KPI Dashboard each morning — Action Queue (Module 09) pre-loaded with channel alerts
+weekly_review
+Every Monday: WoW channel scorecard. Flag any channel below target for 2+ consecutive weeks.
+monthly_review
+First working day of month: full channel P&amp;L vs. targets. Reset targets. Employee effectiveness scores computed. Person of the Month announced.
+target_setting
+Targets set at start of each month — entered in Inputs sheet and auto-propagated to all channel scorecards
+rag_rule
+Green = at/above target — Amber = within 10% below — Red = &gt;10% below — Two consecutive Red periods triggers action plan owned by channel lead
+escalation_rule
+Any metric &gt;20% below target for 7 consecutive days triggers an Alert (Module 08) to the commercial manager
+
+— END OF SPECIFICATION — Meama Georgia · Confidential · June 2026 —

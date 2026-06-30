@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --gray-0:#FFFFFF;--gray-25:#FAFBFA;--gray-50:#F5F7F5;--gray-100:#ECEFEC;--gray-200:#E0E4E1;--gray-300:#CBD1CC;--gray-400:#9BA39C;--gray-500:#727B73;--gray-600:#525B53;--gray-700:#3A423B;--gray-800:#222823;--gray-900:#121712;--gray-950:#0A0D0A;
+  --green-50:#E9F8EE;--green-100:#CFF0DA;--green-200:#A5E2BB;--green-300:#6FCB90;--green-400:#3DAE68;--green-500:#1F9D52;--green-600:#16823F;--green-700:#0F662F;--green-800:#0A4D24;--green-900:#063318;
+  --signal-100:#F2FAC9;--signal-300:#E4F784;--signal-500:#D2F03C;--signal-600:#B6D81F;--signal-700:#8FAA12;
+  --success-50:#E9F8EE;--success-600:#16823F;--danger-50:#FDECEC;--danger-500:#E5484D;--danger-600:#CC2E33;--danger-700:#A31C20;--warning-50:#FFF6E6;--warning-500:#F5A314;--warning-600:#C97E08;--info-50:#EAF3FE;--info-500:#2E84F0;--info-600:#1A68CC;--critical-50:#FCE9E9;--critical-500:#C2181E;--critical-600:#9E1115;--critical-700:#6E0B0E;
+  --seg-champions:#0F662F;--seg-loyal:#15998A;--seg-potential:#3DAE68;--seg-new:#2E84F0;--seg-promising:#7A5AF0;--seg-attention:#F5A314;--seg-atrisk:#EF6820;--seg-cantlose:#C2181E;--seg-hibernating:#727B73;--seg-lost:#9BA39C;
+  --violet-50:#F0ECFE;--violet-600:#5B3FD6;--teal-50:#E2F6F3;--teal-600:#0E8C7E;
+  --font-ui:"Hanken Grotesk",system-ui,sans-serif;--font-mono:"Geist Mono",ui-monospace,monospace;
+  --shadow-xs:0 1px 2px rgba(18,23,18,.05);
+  --shadow-sm:0 1px 3px rgba(18,23,18,.07),0 1px 2px rgba(18,23,18,.04);
+  --shadow-md:0 4px 12px rgba(18,23,18,.07),0 2px 4px rgba(18,23,18,.04);
+  --shadow-pop:0 16px 40px rgba(18,23,18,.16);
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:var(--font-ui);background:var(--gray-50);color:var(--gray-900);-webkit-font-smoothing:antialiased}
+::-webkit-scrollbar{width:10px;height:10px}::-webkit-scrollbar-thumb{background:var(--gray-300);border:3px solid var(--gray-50)}
+.tnum{font-feature-settings:"tnum" 1,"lnum" 1}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.45;transform:scale(.7)}}
+@keyframes shimmer{0%{opacity:1}50%{opacity:.45}100%{opacity:1}}
+.skel{animation:shimmer 1.4s ease-in-out infinite}
+</style>
+</helmet>
+<div style="display:flex;min-height:100vh;width:100%;font-family:var(--font-ui)">
+
+  <aside style="width:236px;flex:none;background:var(--gray-0);border-right:1px solid var(--gray-200);position:sticky;top:0;height:100vh;overflow-y:auto;padding:0">
+    <div style="display:flex;align-items:center;gap:10px;padding:20px 18px 18px;border-bottom:1px solid var(--gray-100)">
+      <div style="width:34px;height:34px;background:var(--gray-900);display:flex;align-items:center;justify-content:center;flex:none">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M4 19V8.5a2 2 0 0 1 2-2h3l2-2.5 2 2.5h3a2 2 0 0 1 2 2V19" stroke="var(--signal-500)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><rect x="10" y="11" width="4" height="4" fill="var(--signal-500)"/></svg>
+      </div>
+      <div><div style="font-weight:800;font-size:15px;letter-spacing:-0.01em">PRMTR</div><div style="font-size:11px;color:var(--gray-500);font-weight:500">Visual Language</div></div>
+    </div>
+    <nav style="padding:14px 12px;display:flex;flex-direction:column;gap:1px">
+      <div style="font-size:11px;font-weight:600;letter-spacing:0.06em;color:var(--gray-400);text-transform:uppercase;padding:6px 12px">Foundations</div>
+      <a href="#principles" style="padding:8px 12px;font-size:13px;font-weight:600;color:var(--gray-600);text-decoration:none" style-hover="background:var(--gray-50);color:var(--gray-900)">Principles</a>
+      <a href="#color" style="padding:8px 12px;font-size:13px;font-weight:600;color:var(--gray-600);text-decoration:none" style-hover="background:var(--gray-50);color:var(--gray-900)">Color</a>
+      <a href="#type" style="padding:8px 12px;font-size:13px;font-weight:600;color:var(--gray-600);text-decoration:none" style-hover="background:var(--gray-50);color:var(--gray-900)">Typography</a>
+      <a href="#space" style="padding:8px 12px;font-size:13px;font-weight:600;color:var(--gray-600);text-decoration:none" style-hover="background:var(--gray-50);color:var(--gray-900)">Space, radius &amp; elevation</a>
+      <a href="#icons" style="padding:8px 12px;font-size:13px;font-weight:600;color:var(--gray-600);text-decoration:none" style-hover="background:var(--gray-50);color:var(--gray-900)">Iconography</a>
+      <div style="font-size:11px;font-weight:600;letter-spacing:0.06em;color:var(--gray-400);text-transform:uppercase;padding:14px 12px 6px">Components</div>
+      <a href="#buttons" style="padding:8px 12px;font-size:13px;font-weight:600;color:var(--gray-600);text-decoration:none" style-hover="background:var(--gray-50);color:var(--gray-900)">Buttons</a>
+      <a href="#forms" style="padding:8px 12px;font-size:13px;font-weight:600;color:var(--gray-600);text-decoration:none" style-hover="background:var(--gray-50);color:var(--gray-900)">Forms &amp; controls</a>
+      <a href="#badges" style="padding:8px 12px;font-size:13px;font-weight:600;color:var(--gray-600);text-decoration:none" style-hover="background:var(--gray-50);color:var(--gray-900)">Badges &amp; status</a>
+      <a href="#cards" style="padding:8px 12px;font-size:13px;font-weight:600;color:var(--gray-600);text-decoration:none" style-hover="background:var(--gray-50);color:var(--gray-900)">Cards &amp; KPIs</a>
+      <a href="#data" style="padding:8px 12px;font-size:13px;font-weight:600;color:var(--gray-600);text-decoration:none" style-hover="background:var(--gray-50);color:var(--gray-900)">Data display</a>
+      <a href="#tables" style="padding:8px 12px;font-size:13px;font-weight:600;color:var(--gray-600);text-decoration:none" style-hover="background:var(--gray-50);color:var(--gray-900)">Tables</a>
+      <a href="#nav" style="padding:8px 12px;font-size:13px;font-weight:600;color:var(--gray-600);text-decoration:none" style-hover="background:var(--gray-50);color:var(--gray-900)">Navigation</a>
+      <div style="font-size:11px;font-weight:600;letter-spacing:0.06em;color:var(--gray-400);text-transform:uppercase;padding:14px 12px 6px">Overlays</div>
+      <a href="#overlays" style="padding:8px 12px;font-size:13px;font-weight:600;color:var(--gray-600);text-decoration:none" style-hover="background:var(--gray-50);color:var(--gray-900)">Modals, drawers, toasts</a>
+      <a href="#states" style="padding:8px 12px;font-size:13px;font-weight:600;color:var(--gray-600);text-decoration:none" style-hover="background:var(--gray-50);color:var(--gray-900)">States</a>
+      <div style="font-size:11px;font-weight:600;letter-spacing:0.06em;color:var(--gray-400);text-transform:uppercase;padding:14px 12px 6px">Patterns</div>
+      <a href="#patterns" style="padding:8px 12px;font-size:13px;font-weight:600;color:var(--gray-600);text-decoration:none" style-hover="background:var(--gray-50);color:var(--gray-900)">Section mockups</a>
+      <a href="#governance" style="padding:8px 12px;font-size:13px;font-weight:600;color:var(--gray-600);text-decoration:none" style-hover="background:var(--gray-50);color:var(--gray-900)">Governance</a>
+    </nav>
+  </aside>
+
+  <main style="flex:1;min-width:0;max-width:1080px;margin:0 auto;padding:48px 56px 100px">
+
+    <div style="margin-bottom:14px;display:flex;align-items:center;gap:10px">
+      <span style="font:600 11px var(--font-mono);background:var(--gray-900);color:#fff;padding:4px 9px">v2.0</span>
+      <span style="font:600 11px var(--font-mono);background:var(--signal-300);color:var(--gray-900);padding:4px 9px">SQUARE · SIGNAL-DRIVEN</span>
+    </div>
+    <h1 style="margin:0;font-size:44px;font-weight:800;letter-spacing:-0.03em;line-height:1.05">PRMTR Visual Language</h1>
+    <p style="margin:14px 0 0;font-size:17px;line-height:1.6;color:var(--gray-600);max-width:680px">The complete visual identity for the PRMTR commercial-intelligence platform — foundations, every component and state, overlays, and section mockups. This document is the living render of <code style="font-family:var(--font-mono);font-size:14px;background:var(--gray-100);padding:2px 6px">design.md</code>. Everything you build must follow it; anything missing must be composed from these same foundations.</p>
+
+    <!-- PRINCIPLES -->
+    <section id="principles" style="scroll-margin-top:24px;margin-top:48px">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px"><span style="font:600 12px var(--font-mono);color:var(--gray-400)">01</span><h2 style="margin:0;font-size:24px;font-weight:700;letter-spacing:-0.01em">Principles</h2><span style="flex:1;height:1px;background:var(--gray-200)"></span></div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px">
+        <div style="background:var(--gray-0);border:1px solid var(--gray-200);padding:20px"><div style="font-size:15px;font-weight:700;margin-bottom:7px">One screen, one decision</div><div style="font-size:13px;color:var(--gray-600);line-height:1.55">Lead with the answer — the KPI, the ranked action — then progressive detail.</div></div>
+        <div style="background:var(--gray-0);border:1px solid var(--gray-200);padding:20px"><div style="font-size:15px;font-weight:700;margin-bottom:7px">Numbers are the hero</div><div style="font-size:13px;color:var(--gray-600);line-height:1.55">Big, tabular, monospaced figures. Labels quiet; values loud.</div></div>
+        <div style="background:var(--gray-0);border:1px solid var(--gray-200);padding:20px"><div style="font-size:15px;font-weight:700;margin-bottom:7px">Color = consequence</div><div style="font-size:13px;color:var(--gray-600);line-height:1.55">Green money/safe, red loss/blocked, amber caution, lime "act now". Never decorative.</div></div>
+        <div style="background:var(--gray-0);border:1px solid var(--gray-200);padding:20px"><div style="font-size:15px;font-weight:700;margin-bottom:7px">Square &amp; serious</div><div style="font-size:13px;color:var(--gray-600);line-height:1.55">Radius is always 0. Calm off-white canvas, hairline borders, soft shadows.</div></div>
+      </div>
+    </section>
+
+    <!-- COLOR -->
+    <section id="color" style="scroll-margin-top:24px;margin-top:52px">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px"><span style="font:600 12px var(--font-mono);color:var(--gray-400)">02</span><h2 style="margin:0;font-size:24px;font-weight:700;letter-spacing:-0.01em">Color</h2><span style="flex:1;height:1px;background:var(--gray-200)"></span></div>
+      <p style="margin:0 0 20px;font-size:14px;color:var(--gray-600);max-width:680px">Two-tier model: primitives feed semantic tokens. Components consume <strong>semantic tokens only</strong>. Most of any screen is neutral; saturated color is rationed and always carries meaning.</p>
+
+      <div style="font-size:12px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:var(--gray-400);margin-bottom:10px">Neutrals · canvas → ink</div>
+      <div style="display:flex;flex-wrap:wrap;gap:0;border:1px solid var(--gray-200);margin-bottom:24px">
+        <div style="flex:1;min-width:74px"><div style="height:56px;background:var(--gray-0);border-right:1px solid var(--gray-100)"></div><div style="padding:7px 8px;border-right:1px solid var(--gray-100)"><div style="font:600 11px var(--font-mono)">0</div><div style="font-size:10px;color:var(--gray-400)">#FFFFFF</div></div></div>
+        <div style="flex:1;min-width:74px"><div style="height:56px;background:var(--gray-50)"></div><div style="padding:7px 8px"><div style="font:600 11px var(--font-mono)">50</div><div style="font-size:10px;color:var(--gray-400)">canvas</div></div></div>
+        <div style="flex:1;min-width:74px"><div style="height:56px;background:var(--gray-100)"></div><div style="padding:7px 8px"><div style="font:600 11px var(--font-mono)">100</div><div style="font-size:10px;color:var(--gray-400)">fill</div></div></div>
+        <div style="flex:1;min-width:74px"><div style="height:56px;background:var(--gray-200)"></div><div style="padding:7px 8px"><div style="font:600 11px var(--font-mono)">200</div><div style="font-size:10px;color:var(--gray-400)">border</div></div></div>
+        <div style="flex:1;min-width:74px"><div style="height:56px;background:var(--gray-300)"></div><div style="padding:7px 8px"><div style="font:600 11px var(--font-mono)">300</div></div></div>
+        <div style="flex:1;min-width:74px"><div style="height:56px;background:var(--gray-400)"></div><div style="padding:7px 8px"><div style="font:600 11px var(--font-mono)">400</div></div></div>
+        <div style="flex:1;min-width:74px"><div style="height:56px;background:var(--gray-500)"></div><div style="padding:7px 8px"><div style="font:600 11px var(--font-mono)">500</div></div></div>
+        <div style="flex:1;min-width:74px"><div style="height:56px;background:var(--gray-600)"></div><div style="padding:7px 8px"><div style="font:600 11px var(--font-mono);color:var(--gray-700)">600</div></div></div>
+        <div style="flex:1;min-width:74px"><div style="height:56px;background:var(--gray-700)"></div><div style="padding:7px 8px"><div style="font:600 11px var(--font-mono);color:var(--gray-700)">700</div></div></div>
+        <div style="flex:1;min-width:74px"><div style="height:56px;background:var(--gray-900)"></div><div style="padding:7px 8px"><div style="font:600 11px var(--font-mono)">900</div><div style="font-size:10px;color:var(--gray-400)">ink</div></div></div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin-bottom:24px">
+        <div>
+          <div style="font-size:12px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:var(--gray-400);margin-bottom:10px">Brand green · money &amp; growth</div>
+          <div style="display:flex;border:1px solid var(--gray-200)"><div style="flex:1;height:48px;background:var(--green-100)"></div><div style="flex:1;height:48px;background:var(--green-300)"></div><div style="flex:1;height:48px;background:var(--green-500)"></div><div style="flex:1;height:48px;background:var(--green-600)"></div><div style="flex:1;height:48px;background:var(--green-700)"></div><div style="flex:1;height:48px;background:var(--green-900)"></div></div>
+          <div style="font:500 11px var(--font-mono);color:var(--gray-400);margin-top:6px">100 · 300 · 500 brand · 600 text · 700 · 900</div>
+        </div>
+        <div>
+          <div style="font-size:12px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:var(--gray-400);margin-bottom:10px">Signal lime · "now / live / act"</div>
+          <div style="display:flex;border:1px solid var(--gray-200)"><div style="flex:1;height:48px;background:var(--signal-100)"></div><div style="flex:1;height:48px;background:var(--signal-300)"></div><div style="flex:1;height:48px;background:var(--signal-500)"></div><div style="flex:1;height:48px;background:var(--signal-600)"></div><div style="flex:1;height:48px;background:var(--signal-700)"></div></div>
+          <div style="font:500 11px var(--font-mono);color:var(--gray-400);margin-top:6px">Rationed — one accent per screen. Text uses 700.</div>
+        </div>
+      </div>
+
+      <div style="font-size:12px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:var(--gray-400);margin-bottom:10px">Semantic status</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:24px">
+        <div style="border:1px solid var(--gray-200)"><div style="height:44px;background:var(--success-600)"></div><div style="padding:9px 12px;background:var(--success-50)"><div style="font-size:13px;font-weight:700;color:var(--success-600)">Success</div><div style="font-size:11px;color:var(--gray-500)">positive · safe · up</div></div></div>
+        <div style="border:1px solid var(--gray-200)"><div style="height:44px;background:var(--danger-600)"></div><div style="padding:9px 12px;background:var(--danger-50)"><div style="font-size:13px;font-weight:700;color:var(--danger-600)">Danger</div><div style="font-size:11px;color:var(--gray-500)">metric down</div></div></div>
+        <div style="border:1px solid var(--gray-200)"><div style="height:44px;background:var(--warning-600)"></div><div style="padding:9px 12px;background:var(--warning-50)"><div style="font-size:13px;font-weight:700;color:var(--warning-600)">Warning</div><div style="font-size:11px;color:var(--gray-500)">caution · near</div></div></div>
+        <div style="border:1px solid var(--gray-200)"><div style="height:44px;background:var(--info-600)"></div><div style="padding:9px 12px;background:var(--info-50)"><div style="font-size:13px;font-weight:700;color:var(--info-600)">Info</div><div style="font-size:11px;color:var(--gray-500)">neutral signal</div></div></div>
+        <div style="border:1px solid var(--gray-200)"><div style="height:44px;background:var(--critical-600)"></div><div style="padding:9px 12px;background:var(--critical-50)"><div style="font-size:13px;font-weight:700;color:var(--critical-600)">Critical</div><div style="font-size:11px;color:var(--gray-500)">floor breach · blocked</div></div></div>
+      </div>
+
+      <div style="font-size:12px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:var(--gray-400);margin-bottom:10px">RFM segment palette · identity colors</div>
+      <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:24px">
+        <span style="display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:600;color:var(--gray-700);border:1px solid var(--gray-200);padding:6px 11px"><span style="width:11px;height:11px;background:var(--seg-champions)"></span>Champions</span>
+        <span style="display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:600;color:var(--gray-700);border:1px solid var(--gray-200);padding:6px 11px"><span style="width:11px;height:11px;background:var(--seg-loyal)"></span>Loyal</span>
+        <span style="display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:600;color:var(--gray-700);border:1px solid var(--gray-200);padding:6px 11px"><span style="width:11px;height:11px;background:var(--seg-potential)"></span>Potential</span>
+        <span style="display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:600;color:var(--gray-700);border:1px solid var(--gray-200);padding:6px 11px"><span style="width:11px;height:11px;background:var(--seg-new)"></span>New</span>
+        <span style="display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:600;color:var(--gray-700);border:1px solid var(--gray-200);padding:6px 11px"><span style="width:11px;height:11px;background:var(--seg-promising)"></span>Promising</span>
+        <span style="display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:600;color:var(--gray-700);border:1px solid var(--gray-200);padding:6px 11px"><span style="width:11px;height:11px;background:var(--seg-attention)"></span>Need attention</span>
+        <span style="display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:600;color:var(--gray-700);border:1px solid var(--gray-200);padding:6px 11px"><span style="width:11px;height:11px;background:var(--seg-atrisk)"></span>At Risk</span>
+        <span style="display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:600;color:var(--gray-700);border:1px solid var(--gray-200);padding:6px 11px"><span style="width:11px;height:11px;background:var(--seg-cantlose)"></span>Can't Lose</span>
+        <span style="display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:600;color:var(--gray-700);border:1px solid var(--gray-200);padding:6px 11px"><span style="width:11px;height:11px;background:var(--seg-hibernating)"></span>Hibernating</span>
+        <span style="display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:600;color:var(--gray-700);border:1px solid var(--gray-200);padding:6px 11px"><span style="width:11px;height:11px;background:var(--seg-lost)"></span>Lost</span>
+      </div>
+
+      <div style="font-size:12px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:var(--gray-400);margin-bottom:10px">Action-type signals</div>
+      <div style="display:flex;flex-wrap:wrap;gap:10px">
+        <span style="font-size:12px;font-weight:600;background:var(--violet-50);color:var(--violet-600);padding:5px 11px">Reactivation</span>
+        <span style="font-size:12px;font-weight:600;background:var(--info-50);color:var(--info-600);padding:5px 11px">Reorder</span>
+        <span style="font-size:12px;font-weight:600;background:var(--green-50);color:var(--green-600);padding:5px 11px">Upsell / growth</span>
+        <span style="font-size:12px;font-weight:600;background:var(--teal-50);color:var(--teal-600);padding:5px 11px">Ad budget</span>
+        <span style="font-size:12px;font-weight:600;background:var(--warning-50);color:var(--warning-600);padding:5px 11px">Stock alert</span>
+        <span style="font-size:12px;font-weight:600;background:var(--critical-50);color:var(--critical-600);padding:5px 11px">Margin / blocked</span>
+      </div>
+    </section>
+
+    <!-- TYPE -->
+    <section id="type" style="scroll-margin-top:24px;margin-top:52px">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px"><span style="font:600 12px var(--font-mono);color:var(--gray-400)">03</span><h2 style="margin:0;font-size:24px;font-weight:700;letter-spacing:-0.01em">Typography</h2><span style="flex:1;height:1px;background:var(--gray-200)"></span></div>
+      <p style="margin:0 0 20px;font-size:14px;color:var(--gray-600);max-width:680px"><strong>Hanken Grotesk</strong> for UI, <strong>Geist Mono</strong> for every figure in a column, KPI, or delta — always tabular.</p>
+      <div style="background:var(--gray-0);border:1px solid var(--gray-200)">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;padding:16px 22px;border-bottom:1px solid var(--gray-100)"><span style="font-size:40px;font-weight:700;letter-spacing:-0.02em">Display 40</span><span style="font:500 11px var(--font-mono);color:var(--gray-400)">700 · -0.02em</span></div>
+        <div style="display:flex;align-items:baseline;justify-content:space-between;padding:16px 22px;border-bottom:1px solid var(--gray-100)"><span style="font-size:30px;font-weight:700;letter-spacing:-0.02em">Heading 1 · 30</span><span style="font:500 11px var(--font-mono);color:var(--gray-400)">700</span></div>
+        <div style="display:flex;align-items:baseline;justify-content:space-between;padding:16px 22px;border-bottom:1px solid var(--gray-100)"><span style="font-size:24px;font-weight:650">Heading 2 · 24</span><span style="font:500 11px var(--font-mono);color:var(--gray-400)">650</span></div>
+        <div style="display:flex;align-items:baseline;justify-content:space-between;padding:16px 22px;border-bottom:1px solid var(--gray-100)"><span style="font-size:20px;font-weight:650">Heading 3 · card title · 20</span><span style="font:500 11px var(--font-mono);color:var(--gray-400)">650</span></div>
+        <div style="display:flex;align-items:baseline;justify-content:space-between;padding:16px 22px;border-bottom:1px solid var(--gray-100)"><span style="font-size:14px;font-weight:400">Body · default UI text · 14 / 20</span><span style="font:500 11px var(--font-mono);color:var(--gray-400)">400</span></div>
+        <div style="display:flex;align-items:baseline;justify-content:space-between;padding:16px 22px;border-bottom:1px solid var(--gray-100)"><span style="font-size:12px;font-weight:500;color:var(--gray-600)">Caption · labels &amp; meta · 12</span><span style="font:500 11px var(--font-mono);color:var(--gray-400)">500</span></div>
+        <div style="display:flex;align-items:baseline;justify-content:space-between;padding:16px 22px;border-bottom:1px solid var(--gray-100)"><span style="font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--gray-500)">Overline · eyebrow · 11</span><span style="font:500 11px var(--font-mono);color:var(--gray-400)">600 · 0.06em</span></div>
+        <div style="display:flex;align-items:baseline;justify-content:space-between;padding:16px 22px"><span style="font:600 44px var(--font-mono);letter-spacing:-0.02em" class="tnum">₾98,643.24</span><span style="font:500 11px var(--font-mono);color:var(--gray-400)">Metric XL · mono · tnum</span></div>
+      </div>
+    </section>
+
+    <!-- SPACE -->
+    <section id="space" style="scroll-margin-top:24px;margin-top:52px">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px"><span style="font:600 12px var(--font-mono);color:var(--gray-400)">04</span><h2 style="margin:0;font-size:24px;font-weight:700;letter-spacing:-0.01em">Space, radius &amp; elevation</h2><span style="flex:1;height:1px;background:var(--gray-200)"></span></div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px">
+        <div style="background:var(--gray-0);border:1px solid var(--gray-200);padding:20px">
+          <div style="font-size:13px;font-weight:700;margin-bottom:14px">Spacing · 4px base</div>
+          <div style="display:flex;flex-direction:column;gap:9px">
+            <div style="display:flex;align-items:center;gap:12px"><span style="font:500 11px var(--font-mono);color:var(--gray-400);width:54px">space-1</span><div style="height:14px;width:4px;background:var(--green-500)"></div><span style="font-size:11px;color:var(--gray-400)">4</span></div>
+            <div style="display:flex;align-items:center;gap:12px"><span style="font:500 11px var(--font-mono);color:var(--gray-400);width:54px">space-2</span><div style="height:14px;width:8px;background:var(--green-500)"></div><span style="font-size:11px;color:var(--gray-400)">8</span></div>
+            <div style="display:flex;align-items:center;gap:12px"><span style="font:500 11px var(--font-mono);color:var(--gray-400);width:54px">space-4</span><div style="height:14px;width:16px;background:var(--green-500)"></div><span style="font-size:11px;color:var(--gray-400)">16</span></div>
+            <div style="display:flex;align-items:center;gap:12px"><span style="font:500 11px var(--font-mono);color:var(--gray-400);width:54px">space-6</span><div style="height:14px;width:24px;background:var(--green-500)"></div><span style="font-size:11px;color:var(--gray-400)">24 · card</span></div>
+            <div style="display:flex;align-items:center;gap:12px"><span style="font:500 11px var(--font-mono);color:var(--gray-400);width:54px">space-8</span><div style="height:14px;width:32px;background:var(--green-500)"></div><span style="font-size:11px;color:var(--gray-400)">32</span></div>
+          </div>
+        </div>
+        <div style="background:var(--gray-0);border:1px solid var(--gray-200);padding:20px">
+          <div style="font-size:13px;font-weight:700;margin-bottom:14px">Radius · always 0</div>
+          <div style="display:flex;gap:14px;align-items:flex-end">
+            <div style="text-align:center"><div style="width:60px;height:60px;background:var(--gray-100);border:1px solid var(--gray-300)"></div><div style="font:500 11px var(--font-mono);color:var(--gray-400);margin-top:8px">--radius: 0</div></div>
+            <div style="font-size:13px;color:var(--gray-600);line-height:1.55;padding-bottom:4px">Every element is square. Even status dots are squares and avatars are squares — rounding reads soft; PRMTR signals precision.</div>
+          </div>
+        </div>
+        <div style="background:var(--gray-0);border:1px solid var(--gray-200);padding:20px">
+          <div style="font-size:13px;font-weight:700;margin-bottom:16px">Elevation</div>
+          <div style="display:flex;gap:16px;flex-wrap:wrap">
+            <div style="text-align:center"><div style="width:60px;height:48px;background:var(--gray-0);box-shadow:var(--shadow-xs)"></div><div style="font:500 11px var(--font-mono);color:var(--gray-400);margin-top:8px">xs</div></div>
+            <div style="text-align:center"><div style="width:60px;height:48px;background:var(--gray-0);box-shadow:var(--shadow-sm)"></div><div style="font:500 11px var(--font-mono);color:var(--gray-400);margin-top:8px">sm</div></div>
+            <div style="text-align:center"><div style="width:60px;height:48px;background:var(--gray-0);box-shadow:var(--shadow-md)"></div><div style="font:500 11px var(--font-mono);color:var(--gray-400);margin-top:8px">md</div></div>
+            <div style="text-align:center"><div style="width:60px;height:48px;background:var(--gray-0);box-shadow:var(--shadow-pop)"></div><div style="font:500 11px var(--font-mono);color:var(--gray-400);margin-top:8px">pop</div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ICONS -->
+    <section id="icons" style="scroll-margin-top:24px;margin-top:52px">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px"><span style="font:600 12px var(--font-mono);color:var(--gray-400)">05</span><h2 style="margin:0;font-size:24px;font-weight:700;letter-spacing:-0.01em">Iconography</h2><span style="flex:1;height:1px;background:var(--gray-200)"></span></div>
+      <p style="margin:0 0 18px;font-size:14px;color:var(--gray-600);max-width:680px">Line icons, 1.5px stroke, round caps. 20px default. Inherit <code style="font-family:var(--font-mono);font-size:13px;background:var(--gray-100);padding:1px 5px">currentColor</code>; semantic color only when the icon <em>is</em> the status. Domain vocabulary stays consistent.</p>
+      <div style="background:var(--gray-0);border:1px solid var(--gray-200);padding:22px;display:grid;grid-template-columns:repeat(auto-fit,minmax(116px,1fr));gap:18px">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:8px;color:var(--gray-700)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M4 16l5-5 4 3 7-8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg><span style="font-size:11px;color:var(--gray-500)">revenue</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:8px;color:var(--gray-700)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><circle cx="9" cy="8" r="3" stroke="currentColor" stroke-width="1.7"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0M17 7l4 4M21 7l-4 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg><span style="font-size:11px;color:var(--gray-500)">churn risk</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:8px;color:var(--gray-700)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M4 7l8-4 8 4v10l-8 4-8-4V7z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M4 7l8 4 8-4" stroke="currentColor" stroke-width="1.7"/></svg><span style="font-size:11px;color:var(--gray-500)">reorder</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:8px;color:var(--gray-700)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6l7-3z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg><span style="font-size:11px;color:var(--gray-500)">margin</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:8px;color:var(--gray-700)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M7 17L17 7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><rect x="6" y="6" width="4" height="4" stroke="currentColor" stroke-width="1.7"/><rect x="14" y="14" width="4" height="4" stroke="currentColor" stroke-width="1.7"/></svg><span style="font-size:11px;color:var(--gray-500)">promotion</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:8px;color:var(--gray-700)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M3 10v4a1 1 0 0 0 1 1h2l5 4V5L6 9H4a1 1 0 0 0-1 1z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M16 9a4 4 0 0 1 0 6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg><span style="font-size:11px;color:var(--gray-500)">ads</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:8px;color:var(--gray-700)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M11 6h9M11 12h9M11 18h9" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M3.5 6l1.2 1.2L7 4.8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg><span style="font-size:11px;color:var(--gray-500)">queue</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:8px;color:var(--critical-600)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="5" y="11" width="14" height="9" stroke="currentColor" stroke-width="1.7"/><path d="M8 11V8a4 4 0 0 1 8 0v3" stroke="currentColor" stroke-width="1.7"/></svg><span style="font-size:11px;color:var(--gray-500)">blocked</span></div>
+      </div>
+    </section>
+
+    <!-- BUTTONS -->
+    <section id="buttons" style="scroll-margin-top:24px;margin-top:52px">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px"><span style="font:600 12px var(--font-mono);color:var(--gray-400)">06</span><h2 style="margin:0;font-size:24px;font-weight:700;letter-spacing:-0.01em">Buttons</h2><span style="flex:1;height:1px;background:var(--gray-200)"></span></div>
+      <div style="background:var(--gray-0);border:1px solid var(--gray-200);padding:24px;display:flex;flex-direction:column;gap:18px">
+        <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center">
+          <button style="height:40px;padding:0 16px;border:none;background:var(--gray-900);color:#fff;font:600 14px var(--font-ui);cursor:pointer" style-hover="background:var(--gray-800)">Primary</button>
+          <button style="height:40px;padding:0 16px;border:none;background:var(--green-500);color:#fff;font:600 14px var(--font-ui);cursor:pointer;display:flex;align-items:center;gap:7px" style-hover="background:var(--green-600)">Run action<svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M6 12h12M13 7l5 5-5 5" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          <button style="height:40px;padding:0 16px;border:1px solid var(--gray-200);background:var(--gray-0);color:var(--gray-900);font:600 14px var(--font-ui);cursor:pointer" style-hover="background:var(--gray-50);border-color:var(--gray-300)">Secondary</button>
+          <button style="height:40px;padding:0 16px;border:none;background:transparent;color:var(--gray-600);font:600 14px var(--font-ui);cursor:pointer" style-hover="background:var(--gray-100)">Ghost</button>
+          <button style="height:40px;padding:0 16px;border:none;background:var(--danger-600);color:#fff;font:600 14px var(--font-ui);cursor:pointer" style-hover="background:var(--danger-700)">Destructive</button>
+          <span style="display:inline-flex;align-items:center;gap:6px;height:40px;padding:0 16px;background:var(--gray-100);color:var(--gray-400);font:600 14px var(--font-ui);cursor:not-allowed"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><rect x="5" y="11" width="14" height="9" stroke="var(--gray-400)" stroke-width="1.7"/><path d="M8 11V8a4 4 0 0 1 8 0v3" stroke="var(--gray-400)" stroke-width="1.7"/></svg>Blocked</span>
+        </div>
+        <div style="height:1px;background:var(--gray-100)"></div>
+        <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center">
+          <span style="font-size:12px;color:var(--gray-500);margin-right:4px">Sizes &amp; states</span>
+          <button style="height:32px;padding:0 12px;border:none;background:var(--gray-900);color:#fff;font:600 12px var(--font-ui);cursor:pointer">Small 32</button>
+          <button style="height:40px;padding:0 16px;border:none;background:var(--gray-900);color:#fff;font:600 14px var(--font-ui);cursor:pointer">Medium 40</button>
+          <button style="height:48px;padding:0 20px;border:none;background:var(--gray-900);color:#fff;font:600 16px var(--font-ui);cursor:pointer">Large 48</button>
+          <span style="display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 16px;background:var(--gray-900);color:#fff;font:600 14px var(--font-ui)"><span style="width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:999px;animation:pulse 1s linear infinite"></span>Loading</span>
+          <span style="height:40px;padding:0 16px;display:inline-flex;align-items:center;background:var(--gray-200);color:var(--gray-400);font:600 14px var(--font-ui);cursor:not-allowed">Disabled</span>
+          <button style="width:40px;height:40px;border:1px solid var(--gray-200);background:var(--gray-0);display:flex;align-items:center;justify-content:center;cursor:pointer" style-hover="background:var(--gray-50)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="var(--gray-700)" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+        </div>
+      </div>
+    </section>
+
+    <!-- FORMS -->
+    <section id="forms" style="scroll-margin-top:24px;margin-top:52px">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px"><span style="font:600 12px var(--font-mono);color:var(--gray-400)">07</span><h2 style="margin:0;font-size:24px;font-weight:700;letter-spacing:-0.01em">Forms &amp; controls</h2><span style="flex:1;height:1px;background:var(--gray-200)"></span></div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px">
+        <div style="background:var(--gray-0);border:1px solid var(--gray-200);padding:22px;display:flex;flex-direction:column;gap:16px">
+          <div><label style="display:block;font-size:12px;font-weight:600;color:var(--gray-600);margin-bottom:6px">Default</label><input value="Espresso Intenso 51mm" style="width:100%;height:40px;border:1px solid var(--gray-200);padding:0 14px;font:500 14px var(--font-ui);color:var(--gray-900);background:var(--gray-0)"/></div>
+          <div><label style="display:block;font-size:12px;font-weight:600;color:var(--gray-600);margin-bottom:6px">Focused</label><input value="focus ring · signal" style="width:100%;height:40px;border:1px solid var(--green-500);padding:0 14px;font:500 14px var(--font-ui);color:var(--gray-900);box-shadow:0 0 0 3px color-mix(in srgb,var(--signal-500) 55%,transparent)"/></div>
+          <div><label style="display:block;font-size:12px;font-weight:600;color:var(--gray-600);margin-bottom:6px">Error</label><input value="-5" style="width:100%;height:40px;border:1px solid var(--danger-500);padding:0 14px;font:500 14px var(--font-mono);color:var(--gray-900)"/><div style="display:flex;align-items:center;gap:5px;margin-top:6px;font-size:12px;color:var(--danger-600)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="var(--danger-600)" stroke-width="1.7"/><path d="M12 7v6M12 16h.01" stroke="var(--danger-600)" stroke-width="1.8" stroke-linecap="round"/></svg>Discount cannot be negative.</div></div>
+          <div><label style="display:block;font-size:12px;font-weight:600;color:var(--gray-400);margin-bottom:6px">Disabled</label><input value="Locked field" disabled style="width:100%;height:40px;border:1px solid var(--gray-200);padding:0 14px;font:500 14px var(--font-ui);color:var(--gray-400);background:var(--gray-50)"/></div>
+          <div><label style="display:block;font-size:12px;font-weight:600;color:var(--gray-600);margin-bottom:6px">Select</label><div style="display:flex;align-items:center;height:40px;border:1px solid var(--gray-200);padding:0 14px;background:var(--gray-0)"><span style="flex:1;font-size:14px;color:var(--gray-900)">Email · Omnisend</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M7 10l5 5 5-5" stroke="var(--gray-500)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div>
+        </div>
+        <div style="background:var(--gray-0);border:1px solid var(--gray-200);padding:22px;display:flex;flex-direction:column;gap:20px">
+          <div>
+            <div style="font-size:12px;font-weight:600;color:var(--gray-600);margin-bottom:10px">Toggles</div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px"><span style="font-size:13px;color:var(--gray-700)">Auto-replenishment (on)</span><div style="width:36px;height:20px;background:var(--green-500);position:relative"><span style="position:absolute;top:2px;left:18px;width:16px;height:16px;background:#fff"></span></div></div>
+            <div style="display:flex;align-items:center;justify-content:space-between"><span style="font-size:13px;color:var(--gray-700)">Block sub-floor promos (off)</span><div style="width:36px;height:20px;background:var(--gray-300);position:relative"><span style="position:absolute;top:2px;left:2px;width:16px;height:16px;background:#fff"></span></div></div>
+          </div>
+          <div>
+            <div style="font-size:12px;font-weight:600;color:var(--gray-600);margin-bottom:10px">Checkbox &amp; radio</div>
+            <div style="display:flex;gap:18px;align-items:center;flex-wrap:wrap">
+              <span style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--gray-700)"><span style="width:18px;height:18px;background:var(--gray-900);display:flex;align-items:center;justify-content:center"><svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M5 12l4 4 10-10" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Checked</span>
+              <span style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--gray-700)"><span style="width:18px;height:18px;border:1.5px solid var(--gray-300)"></span>Empty</span>
+              <span style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--gray-700)"><span style="width:18px;height:18px;border-radius:999px;border:5px solid var(--gray-900)"></span>Radio</span>
+            </div>
+          </div>
+          <div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:8px"><span style="font-size:12px;font-weight:600;color:var(--gray-600)">Slider · discount (25% cap)</span><span style="font:600 13px var(--font-mono);color:var(--gray-900)">18%</span></div>
+            <input type="range" min="0" max="25" value="18" style="width:100%;accent-color:var(--green-600);height:6px"/>
+            <div style="display:flex;justify-content:space-between;font:500 11px var(--font-mono);color:var(--gray-400);margin-top:6px"><span>0%</span><span>25% hard cap</span></div>
+          </div>
+          <div>
+            <div style="font-size:12px;font-weight:600;color:var(--gray-600);margin-bottom:8px">Segmented control</div>
+            <div style="display:inline-flex;background:var(--gray-100);padding:3px;gap:2px">
+              <span style="height:30px;padding:0 14px;display:inline-flex;align-items:center;background:var(--gray-0);color:var(--gray-900);box-shadow:var(--shadow-xs);font:600 12px var(--font-ui)">30 days</span>
+              <span style="height:30px;padding:0 14px;display:inline-flex;align-items:center;color:var(--gray-500);font:600 12px var(--font-ui)">WTD</span>
+              <span style="height:30px;padding:0 14px;display:inline-flex;align-items:center;color:var(--gray-500);font:600 12px var(--font-ui)">MTD</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- BADGES -->
+    <section id="badges" style="scroll-margin-top:24px;margin-top:52px">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px"><span style="font:600 12px var(--font-mono);color:var(--gray-400)">08</span><h2 style="margin:0;font-size:24px;font-weight:700;letter-spacing:-0.01em">Badges &amp; status</h2><span style="flex:1;height:1px;background:var(--gray-200)"></span></div>
+      <div style="background:var(--gray-0);border:1px solid var(--gray-200);padding:24px;display:flex;flex-direction:column;gap:16px">
+        <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center"><span style="font-size:12px;color:var(--gray-500);width:110px">Deltas</span>
+          <span style="font:600 12px var(--font-mono);background:var(--success-50);color:var(--success-600);padding:4px 8px" class="tnum">▲ 8.2%</span>
+          <span style="font:600 12px var(--font-mono);background:var(--danger-50);color:var(--danger-600);padding:4px 8px" class="tnum">▼ 1.2%</span>
+          <span style="font:600 12px var(--font-mono);background:var(--gray-100);color:var(--gray-600);padding:4px 8px" class="tnum">▲ 4s</span>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center"><span style="font-size:12px;color:var(--gray-500);width:110px">Priority</span>
+          <span style="font:600 11px var(--font-mono);background:var(--critical-50);color:var(--critical-600);padding:4px 9px">P1</span>
+          <span style="font:600 11px var(--font-mono);background:var(--warning-50);color:var(--warning-600);padding:4px 9px">P2</span>
+          <span style="font:600 11px var(--font-mono);background:var(--gray-100);color:var(--gray-600);padding:4px 9px">P3</span>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center"><span style="font-size:12px;color:var(--gray-500);width:110px">Status dots</span>
+          <span style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--green-600)"><span style="width:7px;height:7px;background:var(--green-500)"></span>Active</span>
+          <span style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--warning-600)"><span style="width:7px;height:7px;background:var(--warning-500)"></span>At-risk</span>
+          <span style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--gray-500)"><span style="width:7px;height:7px;background:var(--gray-400)"></span>Lost</span>
+          <span style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--gray-700)"><span style="width:7px;height:7px;background:var(--signal-600);animation:pulse 1.8s ease-in-out infinite"></span>Live</span>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center"><span style="font-size:12px;color:var(--gray-500);width:110px">Margin chips</span>
+          <span style="font-size:12px;font-weight:600;color:var(--green-600);background:var(--green-50);padding:4px 9px">Margin 47% · Safe</span>
+          <span style="font-size:12px;font-weight:600;color:var(--warning-600);background:var(--warning-50);padding:4px 9px">Margin 42% · Near floor</span>
+          <span style="font-size:12px;font-weight:600;color:var(--critical-600);background:var(--critical-50);padding:4px 9px">Margin 37% · Below floor</span>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center"><span style="font-size:12px;color:var(--gray-500);width:110px">Count &amp; tags</span>
+          <span style="font:600 11px var(--font-mono);background:var(--signal-500);color:var(--gray-900);padding:4px 8px">14</span>
+          <span style="font:600 11px var(--font-mono);background:var(--critical-500);color:#fff;padding:4px 8px">3</span>
+          <span style="font-size:12px;font-weight:600;color:#fff;background:var(--seg-cantlose);padding:4px 10px">Can't Lose Them</span>
+          <span style="font-size:12px;font-weight:600;color:var(--violet-600);background:var(--violet-50);padding:4px 10px">Capsule Loyalist</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- CARDS / KPI -->
+    <section id="cards" style="scroll-margin-top:24px;margin-top:52px">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px"><span style="font:600 12px var(--font-mono);color:var(--gray-400)">09</span><h2 style="margin:0;font-size:24px;font-weight:700;letter-spacing:-0.01em">Cards &amp; KPIs</h2><span style="flex:1;height:1px;background:var(--gray-200)"></span></div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:16px;margin-bottom:16px">
+        <div style="background:var(--gray-0);border:1px solid var(--gray-200);padding:18px">
+          <div style="display:flex;align-items:center;justify-content:space-between"><span style="font-size:12px;font-weight:500;color:var(--gray-600)">Revenue today</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M4 16l5-5 4 3 7-8" stroke="var(--green-500)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <div style="font:600 30px var(--font-mono);letter-spacing:-0.02em;margin:12px 0 10px" class="tnum">₾12,480</div>
+          <div style="display:flex;align-items:center;gap:8px"><span style="font:600 12px var(--font-mono);background:var(--success-50);color:var(--success-600);padding:3px 7px" class="tnum">▲ 8.2%</span><span style="font-size:12px;color:var(--gray-500)">vs yesterday</span></div>
+        </div>
+        <div style="background:var(--gray-0);border:1px solid var(--gray-200);padding:18px">
+          <div style="display:flex;align-items:center;justify-content:space-between"><span style="font-size:12px;font-weight:500;color:var(--gray-600)">Churn rate</span></div>
+          <div style="font:600 30px var(--font-mono);letter-spacing:-0.02em;margin:12px 0 10px" class="tnum">5.8%</div>
+          <div style="display:flex;align-items:center;gap:8px"><span style="font:600 12px var(--font-mono);background:var(--danger-50);color:var(--danger-600);padding:3px 7px" class="tnum">▲ 0.4%</span><span style="font-size:12px;color:var(--gray-500)">needs attention</span></div>
+        </div>
+        <div style="background:var(--gray-900);color:#fff;padding:18px">
+          <div style="font-size:12px;color:var(--gray-400)">★ North Star · repeat revenue</div>
+          <div style="font:600 30px var(--font-mono);letter-spacing:-0.02em;margin:12px 0 10px" class="tnum">₾1.42M</div>
+          <span style="font:600 11px var(--font-mono);background:var(--success-600);color:#fff;padding:3px 7px">ON TARGET</span>
+        </div>
+        <div style="background:var(--gray-0);border:1px solid var(--green-200);border-left:3px solid var(--green-600);padding:18px">
+          <div style="font-size:12px;color:var(--gray-600)">Margin health</div>
+          <div style="font:600 30px var(--font-mono);letter-spacing:-0.02em;margin:12px 0 10px;color:var(--green-600)" class="tnum">47.2%</div>
+          <span style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:var(--green-600)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6l7-3z" stroke="var(--green-600)" stroke-width="1.7" stroke-linejoin="round"/><path d="M9 12l2 2 4-4" stroke="var(--green-600)" stroke-width="1.7" stroke-linecap="round"/></svg>7.2 pts above floor</span>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px">
+        <div style="background:var(--gray-0);border:1px solid var(--gray-200);overflow:hidden;cursor:pointer" style-hover="border-color:var(--gray-300);box-shadow:var(--shadow-md)">
+          <div style="aspect-ratio:5/3;background:var(--gray-100);display:flex;align-items:center;justify-content:center;color:var(--gray-300);border-bottom:1px solid var(--gray-200);position:relative"><svg width="36" height="36" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="16" stroke="currentColor" stroke-width="1.4"/><circle cx="8.5" cy="9.5" r="1.7" fill="currentColor"/><path d="M4.5 18.5l4.5-5 3 3 3-3.5L19.5 18.5" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg><span style="position:absolute;top:10px;left:10px;font-size:11px;font-weight:600;background:var(--green-50);color:var(--green-600);padding:4px 8px">Bestseller</span></div>
+          <div style="padding:14px 16px"><div style="font-size:14px;font-weight:700">Espresso Intenso 51mm</div><div style="font-size:12px;color:var(--gray-500);margin-top:2px">Strong · Classic</div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px"><span style="font:600 16px var(--font-mono)" class="tnum">₾62</span><span style="display:flex;align-items:center;gap:4px;font-size:12px;font-weight:600;color:var(--warning-600)"><svg width="12" height="12" viewBox="0 0 24 24" fill="var(--warning-500)"><path d="M12 2l2.9 6.2 6.6.7-4.9 4.5 1.3 6.5L12 17.8 6 19.9l1.3-6.5L2.4 8.9l6.6-.7z"/></svg>4.8</span></div></div>
+        </div>
+        <div style="background:var(--gray-0);border:1px solid var(--gray-200);padding:20px">
+          <div style="font-size:12px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:var(--gray-400);margin-bottom:14px">Interactive card · hover state →</div>
+          <div style="font-size:13px;color:var(--gray-600);line-height:1.6">Cards default to <strong>either</strong> a 1px border <strong>or</strong> shadow-sm — not both. Interactive cards lift to shadow-md on hover (try the product card). Padding 20px, square corners, 16px grid gaps.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- DATA DISPLAY -->
+    <section id="data" style="scroll-margin-top:24px;margin-top:52px">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px"><span style="font:600 12px var(--font-mono);color:var(--gray-400)">10</span><h2 style="margin:0;font-size:24px;font-weight:700;letter-spacing:-0.01em">Data display</h2><span style="flex:1;height:1px;background:var(--gray-200)"></span></div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px">
+        <div style="background:var(--gray-0);border:1px solid var(--gray-200);padding:20px">
+          <div style="font-size:13px;font-weight:700;margin-bottom:16px">Progress &amp; goals</div>
+          <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px"><span style="color:var(--gray-700)">Monthly target</span><span style="font-family:var(--font-mono);font-weight:600">86%</span></div>
+          <div style="height:8px;background:var(--gray-100);position:relative;margin-bottom:14px"><div style="position:absolute;inset:0;width:86%;background:var(--green-500)"></div></div>
+          <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px"><span style="color:var(--gray-700)">Reorder window</span><span style="font-family:var(--font-mono);font-weight:600;color:var(--warning-600)">54%</span></div>
+          <div style="height:8px;background:var(--gray-100);position:relative"><div style="position:absolute;inset:0;width:54%;background:var(--warning-500)"></div></div>
+        </div>
+        <div style="background:var(--gray-0);border:1px solid var(--gray-200);padding:20px;display:flex;flex-direction:column;align-items:center">
+          <div style="font-size:13px;font-weight:700;align-self:flex-start;margin-bottom:14px">Score gauge</div>
+          <svg width="130" height="74" viewBox="0 0 130 74"><path d="M12 70 A53 53 0 0 1 118 70" fill="none" stroke="var(--gray-100)" stroke-width="11"/><path d="M12 70 A53 53 0 0 1 104 34" fill="none" stroke="var(--green-500)" stroke-width="11"/></svg>
+          <div style="font:600 26px var(--font-mono);margin-top:-8px" class="tnum">78</div>
+          <div style="font-size:11px;color:var(--gray-500)">Business health</div>
+        </div>
+        <div style="background:var(--gray-0);border:1px solid var(--gray-200);padding:20px">
+          <div style="font-size:13px;font-weight:700;margin-bottom:14px">Churn meter · 0–1</div>
+          <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:12px"><span style="font:600 26px var(--font-mono);color:var(--danger-600)" class="tnum">0.68</span><span style="font-size:12px;font-weight:600;color:var(--danger-600)">High</span></div>
+          <div style="position:relative;height:10px;background:linear-gradient(90deg,var(--green-400),var(--warning-500),var(--danger-500))"><div style="position:absolute;left:68%;top:-4px;transform:translateX(-50%);width:4px;height:18px;background:var(--gray-900);border:2px solid #fff"></div></div>
+          <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--gray-400);margin-top:7px"><span>0.0</span><span>0.6 threshold</span><span>1.0</span></div>
+        </div>
+        <div style="background:var(--gray-0);border:1px solid var(--gray-200);padding:20px">
+          <div style="font-size:13px;font-weight:700;margin-bottom:14px">Segment distribution</div>
+          <div style="display:flex;height:14px;margin-bottom:14px"><div style="width:15%;background:var(--seg-champions)"></div><div style="width:26%;background:var(--seg-loyal)"></div><div style="width:22%;background:var(--seg-potential)"></div><div style="width:16%;background:var(--seg-new)"></div><div style="width:12%;background:var(--seg-atrisk)"></div><div style="width:9%;background:var(--seg-hibernating)"></div></div>
+          <div style="display:flex;flex-wrap:wrap;gap:7px 14px;font-size:11px;color:var(--gray-600)"><span style="display:flex;align-items:center;gap:5px"><span style="width:8px;height:8px;background:var(--seg-champions)"></span>Champions</span><span style="display:flex;align-items:center;gap:5px"><span style="width:8px;height:8px;background:var(--seg-loyal)"></span>Loyal</span><span style="display:flex;align-items:center;gap:5px"><span style="width:8px;height:8px;background:var(--seg-atrisk)"></span>At Risk</span></div>
+        </div>
+        <div style="background:var(--gray-0);border:1px solid var(--gray-200);padding:20px">
+          <div style="font-size:13px;font-weight:700;margin-bottom:14px">Sparkline · 7-day</div>
+          <svg viewBox="0 0 200 60" preserveAspectRatio="none" style="width:100%;height:60px"><polyline points="0,46 33,40 66,44 100,30 133,34 166,18 200,12" fill="none" stroke="var(--green-600)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="200" cy="12" r="3.5" fill="var(--green-700)"/></svg>
+          <div style="display:flex;justify-content:space-between;margin-top:10px"><span style="font-size:12px;color:var(--gray-500)">Units / day</span><span style="font:600 13px var(--font-mono);color:var(--green-600)" class="tnum">▲ 34%</span></div>
+        </div>
+        <div style="background:var(--gray-0);border:1px solid var(--gray-200);padding:20px">
+          <div style="font-size:13px;font-weight:700;margin-bottom:14px">Stock status scale</div>
+          <div style="display:flex;flex-direction:column;gap:9px">
+            <span style="display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--gray-700)"><span style="width:9px;height:9px;background:var(--green-500)"></span>Healthy · 22d cover</span>
+            <span style="display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--gray-700)"><span style="width:9px;height:9px;background:var(--warning-500)"></span>Watch · 11d</span>
+            <span style="display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--gray-700)"><span style="width:9px;height:9px;background:var(--danger-500)"></span>Reorder now · 6d</span>
+            <span style="display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--gray-700)"><span style="width:9px;height:9px;background:var(--critical-600)"></span>Out of stock</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TABLES -->
+    <section id="tables" style="scroll-margin-top:24px;margin-top:52px">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px"><span style="font:600 12px var(--font-mono);color:var(--gray-400)">11</span><h2 style="margin:0;font-size:24px;font-weight:700;letter-spacing:-0.01em">Tables</h2><span style="flex:1;height:1px;background:var(--gray-200)"></span></div>
+      <div style="background:var(--gray-0);border:1px solid var(--gray-200);overflow:hidden">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--gray-100)"><span style="font-size:15px;font-weight:600">Customers</span><span style="font-size:13px;color:var(--gray-500)">Numeric cells right-aligned, mono, tabular</span></div>
+        <table style="width:100%;border-collapse:collapse">
+          <thead><tr>
+            <th style="text-align:left;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;color:var(--gray-500);padding:10px 20px">Customer</th>
+            <th style="text-align:left;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;color:var(--gray-500);padding:10px 12px">Segment</th>
+            <th style="text-align:right;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;color:var(--gray-500);padding:10px 12px">Orders</th>
+            <th style="text-align:right;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;color:var(--gray-500);padding:10px 12px">LTV</th>
+            <th style="text-align:right;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;color:var(--gray-500);padding:10px 20px">Churn</th>
+          </tr></thead>
+          <tbody>
+            <tr style="border-top:1px solid var(--gray-100);background:var(--green-50)"><td style="padding:12px 20px"><div style="display:flex;align-items:center;gap:11px"><span style="width:18px;height:18px;background:var(--gray-900);display:flex;align-items:center;justify-content:center"><svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M5 12l4 4 10-10" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><div style="font-size:13px;font-weight:600">Davit Gelashvili</div><div style="font:500 11px var(--font-mono);color:var(--gray-400)">SHOP-3310</div></div></div></td><td style="padding:12px 12px"><span style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--gray-700)"><span style="width:9px;height:9px;background:var(--seg-champions)"></span>Champion</span></td><td style="text-align:right;font:500 13px var(--font-mono);color:var(--gray-700);padding:12px 12px" class="tnum">51</td><td style="text-align:right;font:600 13px var(--font-mono);padding:12px 12px" class="tnum">₾6,140</td><td style="text-align:right;font:600 13px var(--font-mono);color:var(--green-600);padding:12px 20px" class="tnum">9%</td></tr>
+            <tr style="border-top:1px solid var(--gray-100)" style-hover="background:var(--gray-50)"><td style="padding:12px 20px"><div style="display:flex;align-items:center;gap:11px"><span style="width:18px;height:18px;border:1.5px solid var(--gray-300)"></span><div><div style="font-size:13px;font-weight:600">Tamar Kvirikashvili</div><div style="font:500 11px var(--font-mono);color:var(--gray-400)">SHOP-118034</div></div></div></td><td style="padding:12px 12px"><span style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--gray-700)"><span style="width:9px;height:9px;background:var(--seg-atrisk)"></span>At-Risk</span></td><td style="text-align:right;font:500 13px var(--font-mono);color:var(--gray-700);padding:12px 12px" class="tnum">31</td><td style="text-align:right;font:600 13px var(--font-mono);padding:12px 12px" class="tnum">₾1,240</td><td style="text-align:right;font:600 13px var(--font-mono);color:var(--danger-600);padding:12px 20px" class="tnum">68%</td></tr>
+            <tr style="border-top:1px solid var(--gray-100)" style-hover="background:var(--gray-50)"><td style="padding:12px 20px"><div style="display:flex;align-items:center;gap:11px"><span style="width:18px;height:18px;border:1.5px solid var(--gray-300)"></span><div><div style="font-size:13px;font-weight:600">Giorgi Kapanadze</div><div style="font:500 11px var(--font-mono);color:var(--gray-400)">SHOP-5102</div></div></div></td><td style="padding:12px 12px"><span style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--gray-700)"><span style="width:9px;height:9px;background:var(--seg-loyal)"></span>Loyal</span></td><td style="text-align:right;font:500 13px var(--font-mono);color:var(--gray-700);padding:12px 12px" class="tnum">29</td><td style="text-align:right;font:600 13px var(--font-mono);padding:12px 12px" class="tnum">₾3,210</td><td style="text-align:right;font:600 13px var(--font-mono);color:var(--warning-600);padding:12px 20px" class="tnum">22%</td></tr>
+          </tbody>
+        </table>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 20px;border-top:1px solid var(--gray-100)"><span style="font-size:12px;color:var(--gray-500)">Selected row uses green-50 + checkbox · hover uses gray-50</span><div style="display:flex;gap:6px"><span style="width:30px;height:30px;border:1px solid var(--gray-200);display:flex;align-items:center;justify-content:center;font:600 12px var(--font-mono);color:var(--gray-400)">‹</span><span style="width:30px;height:30px;border:1px solid var(--gray-300);background:var(--gray-900);color:#fff;display:flex;align-items:center;justify-content:center;font:600 12px var(--font-mono)">1</span><span style="width:30px;height:30px;border:1px solid var(--gray-200);display:flex;align-items:center;justify-content:center;font:600 12px var(--font-mono);color:var(--gray-600)">2</span><span style="width:30px;height:30px;border:1px solid var(--gray-200);display:flex;align-items:center;justify-content:center;font:600 12px var(--font-mono);color:var(--gray-400)">›</span></div></div>
+      </div>
+    </section>
+
+    <!-- NAV -->
+    <section id="nav" style="scroll-margin-top:24px;margin-top:52px">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px"><span style="font:600 12px var(--font-mono);color:var(--gray-400)">12</span><h2 style="margin:0;font-size:24px;font-weight:700;letter-spacing:-0.01em">Navigation</h2><span style="flex:1;height:1px;background:var(--gray-200)"></span></div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px">
+        <div style="background:var(--gray-0);border:1px solid var(--gray-200);padding:16px">
+          <div style="font-size:12px;font-weight:600;color:var(--gray-500);margin-bottom:12px">Sidebar item states</div>
+          <div style="display:flex;align-items:center;gap:11px;height:40px;padding:0 12px;background:var(--gray-100);box-shadow:inset 3px 0 0 var(--green-600);font-size:14px;font-weight:600;color:var(--gray-900);margin-bottom:4px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="7" height="7" stroke="currentColor" stroke-width="1.7"/><rect x="14" y="3" width="7" height="7" stroke="currentColor" stroke-width="1.7"/><rect x="3" y="14" width="7" height="7" stroke="currentColor" stroke-width="1.7"/></svg><span style="flex:1">Active</span><span style="width:6px;height:6px;background:var(--green-500)"></span></div>
+          <div style="display:flex;align-items:center;gap:11px;height:40px;padding:0 12px;background:var(--gray-50);font-size:14px;font-weight:600;color:var(--gray-700);margin-bottom:4px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M11 6h9M11 12h9M11 18h9" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg><span style="flex:1">Hover</span><span style="font:600 11px var(--font-mono);background:var(--signal-500);color:var(--gray-900);padding:4px 7px">14</span></div>
+          <div style="display:flex;align-items:center;gap:11px;height:40px;padding:0 12px;font-size:14px;font-weight:600;color:var(--gray-600)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="3.4" stroke="currentColor" stroke-width="1.7"/><path d="M5.5 19.5a6.5 6.5 0 0 1 13 0" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg><span style="flex:1">Rest</span></div>
+        </div>
+        <div style="background:var(--gray-0);border:1px solid var(--gray-200);overflow:hidden">
+          <div style="font-size:12px;font-weight:600;color:var(--gray-500);padding:16px 16px 0">Underline tabs</div>
+          <div style="display:flex;border-bottom:1px solid var(--gray-200);padding:0 12px;margin-top:8px">
+            <span style="height:42px;padding:0 14px;display:inline-flex;align-items:center;font:600 13px var(--font-ui);color:var(--gray-900);box-shadow:inset 0 -2px 0 var(--green-600)">Overview</span>
+            <span style="height:42px;padding:0 14px;display:inline-flex;align-items:center;font:600 13px var(--font-ui);color:var(--gray-500)">Orders <span style="font:600 10px var(--font-mono);background:var(--gray-100);color:var(--gray-500);padding:2px 6px;margin-left:5px">31</span></span>
+            <span style="height:42px;padding:0 14px;display:inline-flex;align-items:center;font:600 13px var(--font-ui);color:var(--gray-500)">Notes</span>
+          </div>
+          <div style="padding:18px 16px;font-size:13px;color:var(--gray-600);line-height:1.55">Active tab carries a 2px green inset underline. Optional per-tab count badge. Breadcrumb pattern below.</div>
+          <div style="padding:0 16px 16px;display:flex;align-items:center;gap:8px;font-size:13px;color:var(--gray-500)"><span>MEAMA</span><span style="color:var(--gray-300)">/</span><span>Intelligence</span><span style="color:var(--gray-300)">/</span><span style="color:var(--gray-900);font-weight:600">Customer 360</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- OVERLAYS -->
+    <section id="overlays" style="scroll-margin-top:24px;margin-top:52px">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px"><span style="font:600 12px var(--font-mono);color:var(--gray-400)">13</span><h2 style="margin:0;font-size:24px;font-weight:700;letter-spacing:-0.01em">Overlays &amp; feedback</h2><span style="flex:1;height:1px;background:var(--gray-200)"></span></div>
+      <p style="margin:0 0 20px;font-size:14px;color:var(--gray-600);max-width:680px">Shown here as static representations. The fully wired, clickable versions live on the <strong>Components</strong> page in PRMTR Dashboard v2 (⌘K, Open drawer, toasts). Z-ladder: dropdown 5 · modal 50 · drawer 55 · palette 58 · toast 60.</p>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px">
+        <!-- modal -->
+        <div>
+          <div style="font-size:12px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:var(--gray-400);margin-bottom:10px">Modal · confirm-with-consequence</div>
+          <div style="background:var(--gray-0);border:1px solid var(--gray-200);box-shadow:var(--shadow-pop)">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid var(--gray-100)"><span style="font-size:15px;font-weight:700">Confirm action</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="var(--gray-400)" stroke-width="2" stroke-linecap="round"/></svg></div>
+            <div style="padding:18px"><p style="margin:0 0 14px;font-size:13px;color:var(--gray-700);line-height:1.5">Send early-access offer for <strong>Origin Single 51mm</strong> to <strong>Tamar K.</strong>?</p><div style="background:var(--gray-50);border:1px solid var(--gray-200);padding:12px;display:flex;flex-direction:column;gap:8px"><div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:var(--gray-500)">Revenue at stake</span><span style="font-family:var(--font-mono);font-weight:600">₾1,240</span></div><div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:var(--gray-500)">Margin impact</span><span style="font-weight:600;color:var(--green-600)">None · loyalist</span></div></div></div>
+            <div style="display:flex;justify-content:flex-end;gap:8px;padding:14px 18px;border-top:1px solid var(--gray-100)"><span style="height:36px;padding:0 14px;display:inline-flex;align-items:center;border:1px solid var(--gray-200);font:600 13px var(--font-ui)">Cancel</span><span style="height:36px;padding:0 16px;display:inline-flex;align-items:center;background:var(--green-500);color:#fff;font:600 13px var(--font-ui)">Confirm &amp; send</span></div>
+          </div>
+        </div>
+        <!-- toasts -->
+        <div>
+          <div style="font-size:12px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:var(--gray-400);margin-bottom:10px">Toasts · auto-dismiss</div>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div style="background:var(--gray-0);border:1px solid var(--gray-200);border-left:3px solid var(--green-600);box-shadow:var(--shadow-pop);padding:13px 14px;display:flex;gap:11px;align-items:flex-start"><span style="width:8px;height:8px;background:var(--green-600);margin-top:4px"></span><div style="flex:1"><div style="font-size:13px;font-weight:700">Action completed</div><div style="font-size:12px;color:var(--gray-600);margin-top:2px">Early-access email queued to Tamar K.</div></div><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="var(--gray-400)" stroke-width="2" stroke-linecap="round"/></svg></div>
+            <div style="background:var(--gray-0);border:1px solid var(--gray-200);border-left:3px solid var(--critical-600);box-shadow:var(--shadow-pop);padding:13px 14px;display:flex;gap:11px;align-items:flex-start"><span style="width:8px;height:8px;background:var(--critical-600);margin-top:4px"></span><div style="flex:1"><div style="font-size:13px;font-weight:700">Margin floor breach</div><div style="font-size:12px;color:var(--gray-600);margin-top:2px">Promo blocked at 37.2% — revise discount.</div></div><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="var(--gray-400)" stroke-width="2" stroke-linecap="round"/></svg></div>
+          </div>
+          <div style="font-size:12px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:var(--gray-400);margin:18px 0 10px">Dropdown menu</div>
+          <div style="background:var(--gray-0);border:1px solid var(--gray-200);box-shadow:var(--shadow-pop);width:200px">
+            <div style="padding:10px 14px;font-size:13px;font-weight:500;color:var(--gray-700);background:var(--gray-50)">Edit profile</div>
+            <div style="padding:10px 14px;font-size:13px;font-weight:500;color:var(--gray-700)">Add to segment</div>
+            <div style="height:1px;background:var(--gray-100)"></div>
+            <div style="padding:10px 14px;font-size:13px;font-weight:500;color:var(--danger-600)">Remove</div>
+          </div>
+        </div>
+      </div>
+      <!-- command palette -->
+      <div style="font-size:12px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:var(--gray-400);margin:20px 0 10px">Command palette · ⌘K</div>
+      <div style="background:var(--gray-0);border:1px solid var(--gray-200);box-shadow:var(--shadow-pop);max-width:540px">
+        <div style="display:flex;align-items:center;gap:11px;padding:14px 16px;border-bottom:1px solid var(--gray-100)"><svg width="17" height="17" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="var(--gray-400)" stroke-width="1.7"/><path d="M20 20l-3.5-3.5" stroke="var(--gray-400)" stroke-width="1.7" stroke-linecap="round"/></svg><span style="flex:1;font-size:14px;color:var(--gray-400)">Search customers, SKUs, actions…</span><span style="font:600 11px var(--font-mono);color:var(--gray-400);border:1px solid var(--gray-200);padding:3px 6px">ESC</span></div>
+        <div style="padding:8px"><div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--gray-400);padding:8px 12px 4px">Quick actions</div><div style="display:flex;align-items:center;gap:11px;padding:9px 12px;background:var(--gray-50)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M11 6h9M11 12h9M11 18h9" stroke="var(--gray-600)" stroke-width="1.7" stroke-linecap="round"/></svg><span style="flex:1;font-size:14px;color:var(--gray-800)">Open Action Queue</span><span style="font:600 10px var(--font-mono);color:var(--gray-400)">↵</span></div><div style="display:flex;align-items:center;gap:11px;padding:9px 12px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M7 17L17 7M9 7h8v8" stroke="var(--gray-600)" stroke-width="1.7" stroke-linecap="round"/></svg><span style="flex:1;font-size:14px;color:var(--gray-800)">New promotion (margin-checked)</span></div></div>
+      </div>
+    </section>
+
+    <!-- STATES -->
+    <section id="states" style="scroll-margin-top:24px;margin-top:52px">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px"><span style="font:600 12px var(--font-mono);color:var(--gray-400)">14</span><h2 style="margin:0;font-size:24px;font-weight:700;letter-spacing:-0.01em">States &amp; feedback</h2><span style="flex:1;height:1px;background:var(--gray-200)"></span></div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-bottom:16px">
+        <div style="background:var(--gray-0);border:1px solid var(--gray-200);padding:20px"><div style="font-size:13px;font-weight:700;margin-bottom:14px">Loading skeleton</div><div class="skel" style="height:14px;width:60%;background:var(--gray-100);margin-bottom:12px"></div><div class="skel" style="height:28px;width:80%;background:var(--gray-100);margin-bottom:12px"></div><div class="skel" style="height:10px;width:40%;background:var(--gray-100)"></div></div>
+        <div style="background:var(--gray-0);border:1px solid var(--gray-200);padding:26px 20px;display:flex;flex-direction:column;align-items:center;text-align:center;justify-content:center"><div style="width:42px;height:42px;background:var(--gray-100);display:flex;align-items:center;justify-content:center;color:var(--gray-400);margin-bottom:12px"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M5 7l1.5 12h11L19 7M4 4h16l-1 3H5L4 4z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg></div><div style="font-size:14px;font-weight:600">Queue is clear</div><div style="font-size:12px;color:var(--gray-500);margin-top:4px;max-width:180px">No actions outstanding — you're caught up today.</div></div>
+        <div style="background:var(--gray-0);border:1px solid var(--gray-200);padding:20px"><div style="font-size:13px;font-weight:700;margin-bottom:14px">Error state</div><div style="display:flex;gap:10px;padding:12px 14px;background:var(--danger-50);border:1px solid var(--danger-500)"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" style="flex:none;margin-top:1px"><circle cx="12" cy="12" r="9" stroke="var(--danger-600)" stroke-width="1.7"/><path d="M12 7v6M12 16h.01" stroke="var(--danger-600)" stroke-width="1.8" stroke-linecap="round"/></svg><div><div style="font-size:13px;font-weight:600;color:var(--danger-600)">Failed to sync Shopify</div><div style="font-size:12px;color:var(--gray-600);margin-top:2px">Retry in a moment.</div></div></div></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="display:flex;gap:11px;padding:13px 14px;background:var(--info-50);border:1px solid var(--info-500);border-left:3px solid var(--info-600);align-items:center"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" style="flex:none"><circle cx="12" cy="12" r="9" stroke="var(--info-600)" stroke-width="1.7"/><path d="M12 11v5M12 8h.01" stroke="var(--info-600)" stroke-width="1.8" stroke-linecap="round"/></svg><span style="flex:1;font-size:13px;color:var(--gray-700)"><strong style="color:var(--info-600)">Info · </strong>Reorder window opens in 2 days for 3 SKUs.</span></div>
+        <div style="display:flex;gap:11px;padding:13px 14px;background:var(--warning-50);border:1px solid var(--warning-500);border-left:3px solid var(--warning-600);align-items:center"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" style="flex:none"><circle cx="12" cy="12" r="9" stroke="var(--warning-600)" stroke-width="1.7"/><path d="M12 8v5M12 16h.01" stroke="var(--warning-600)" stroke-width="1.8" stroke-linecap="round"/></svg><span style="flex:1;font-size:13px;color:var(--gray-700)"><strong style="color:var(--warning-600)">High · </strong>Meta ROAS dropped to 1.8× on active spend.</span></div>
+        <div style="display:flex;gap:11px;padding:13px 14px;background:var(--critical-50);border:1px solid var(--critical-500);border-left:3px solid var(--critical-600);align-items:center"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" style="flex:none"><path d="M12 3l9 16H3l9-16z" stroke="var(--critical-600)" stroke-width="1.7" stroke-linejoin="round"/><path d="M12 10v4M12 16.5h.01" stroke="var(--critical-600)" stroke-width="1.8" stroke-linecap="round"/></svg><span style="flex:1;font-size:13px;color:var(--gray-700)"><strong style="color:var(--critical-600)">Critical · </strong>This promotion breaches the 40% margin floor and cannot be launched.</span><span style="font:600 11px var(--font-mono);color:var(--critical-600);border:1px solid var(--critical-500);padding:4px 8px">Blocked</span></div>
+      </div>
+    </section>
+
+    <!-- PATTERNS -->
+    <section id="patterns" style="scroll-margin-top:24px;margin-top:52px">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px"><span style="font:600 12px var(--font-mono);color:var(--gray-400)">15</span><h2 style="margin:0;font-size:24px;font-weight:700;letter-spacing:-0.01em">Section mockups</h2><span style="flex:1;height:1px;background:var(--gray-200)"></span></div>
+      <p style="margin:0 0 20px;font-size:14px;color:var(--gray-600);max-width:680px">How components compose into real platform sections.</p>
+
+      <div style="font-size:12px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:var(--gray-400);margin-bottom:10px">Action Queue row</div>
+      <div style="background:var(--gray-0);border:1px solid var(--gray-200);border-left:3px solid var(--signal-500);background:var(--signal-100);padding:16px 18px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:12px">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:7px;width:40px"><span style="font:600 13px var(--font-mono);color:var(--gray-400)">1</span><span style="font:600 11px var(--font-mono);background:var(--critical-50);color:var(--critical-600);padding:3px 0;width:34px;text-align:center">P1</span></div>
+        <span style="font-size:12px;font-weight:600;background:var(--violet-50);color:var(--violet-600);padding:5px 10px;width:108px;text-align:center">Reactivation</span>
+        <div style="flex:1 1 240px;min-width:0"><div style="font-size:14px;font-weight:600">Nino Beridze</div><div style="font-size:13px;color:var(--gray-500)">Overdue 41 days — send win-back. Margin 46% ✓ Safe</div></div>
+        <div style="text-align:right"><div style="font-size:11px;color:var(--gray-400)">At stake</div><div style="font:600 16px var(--font-mono)" class="tnum">₾4,820</div></div>
+        <span style="height:38px;padding:0 15px;display:inline-flex;align-items:center;gap:6px;background:var(--green-500);color:#fff;font:600 13px var(--font-ui)">Run<svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M6 12h12M13 7l5 5-5 5" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+      </div>
+      <div style="background:var(--gray-0);border:1px solid var(--gray-200);border-left:3px solid var(--critical-500);padding:16px 18px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:7px;width:40px"><span style="font:600 13px var(--font-mono);color:var(--gray-400)">2</span><span style="font:600 11px var(--font-mono);background:var(--critical-50);color:var(--critical-600);padding:3px 0;width:34px;text-align:center">P1</span></div>
+        <span style="font-size:12px;font-weight:600;background:var(--critical-50);color:var(--critical-600);padding:5px 10px;width:108px;text-align:center">Margin alert</span>
+        <div style="flex:1 1 240px;min-width:0"><div style="font-size:14px;font-weight:600">Holiday 3-Pack promo</div><div style="font-size:13px;color:var(--gray-500)">Blocked: 28% discount breaches floor (37.2%). Cap at 18%.</div></div>
+        <div style="text-align:right"><div style="font-size:11px;color:var(--gray-400)">Margin</div><div style="font:600 16px var(--font-mono);color:var(--critical-600)" class="tnum">−2.8%</div></div>
+        <span style="height:38px;padding:0 14px;display:inline-flex;align-items:center;gap:6px;background:var(--gray-100);color:var(--gray-400);font:600 13px var(--font-ui)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><rect x="5" y="11" width="14" height="9" stroke="var(--gray-400)" stroke-width="1.7"/><path d="M8 11V8a4 4 0 0 1 8 0v3" stroke="var(--gray-400)" stroke-width="1.7"/></svg>Blocked</span>
+      </div>
+
+      <div style="font-size:12px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:var(--gray-400);margin:22px 0 10px">KPI strip</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px">
+        <div style="background:var(--gray-0);border:1px solid var(--gray-200);padding:16px"><div style="font-size:12px;color:var(--gray-600)">Active buyers · 90d</div><div style="font:600 24px var(--font-mono);margin:9px 0 7px" class="tnum">24,600</div><span style="font:600 11px var(--font-mono);background:var(--success-50);color:var(--success-600);padding:3px 6px" class="tnum">▲ 2.1%</span></div>
+        <div style="background:var(--gray-0);border:1px solid var(--gray-200);padding:16px"><div style="font-size:12px;color:var(--gray-600)">AOV · capsules</div><div style="font:600 24px var(--font-mono);margin:9px 0 7px" class="tnum">₾62.10</div><span style="font:600 11px var(--font-mono);background:var(--success-50);color:var(--success-600);padding:3px 6px" class="tnum">▲ 1.8%</span></div>
+        <div style="background:var(--gray-0);border:1px solid var(--gray-200);padding:16px"><div style="font-size:12px;color:var(--gray-600)">Contribution margin</div><div style="font:600 24px var(--font-mono);margin:9px 0 7px;color:var(--green-600)" class="tnum">46.8%</div><span style="font:600 11px var(--font-mono);background:var(--success-50);color:var(--success-600);padding:3px 6px">Above 45%</span></div>
+        <div style="background:var(--gray-0);border:1px solid var(--gray-200);padding:16px"><div style="font-size:12px;color:var(--gray-600)">Monthly churn</div><div style="font:600 24px var(--font-mono);margin:9px 0 7px;color:var(--warning-600)" class="tnum">6.2%</div><span style="font:600 11px var(--font-mono);background:var(--warning-50);color:var(--warning-600);padding:3px 6px" class="tnum">▲ 0.4%</span></div>
+      </div>
+    </section>
+
+    <!-- GOVERNANCE -->
+    <section id="governance" style="scroll-margin-top:24px;margin-top:52px">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px"><span style="font:600 12px var(--font-mono);color:var(--gray-400)">16</span><h2 style="margin:0;font-size:24px;font-weight:700;letter-spacing:-0.01em">Governance</h2><span style="flex:1;height:1px;background:var(--gray-200)"></span></div>
+      <div style="background:var(--gray-900);color:#fff;padding:26px;margin-bottom:16px">
+        <div style="font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;color:var(--signal-500);margin-bottom:12px">The rule for missing components</div>
+        <p style="margin:0;font-size:16px;line-height:1.65;color:var(--gray-100);max-width:720px">When development needs a component this system hasn't specified yet, <strong style="color:#fff">do not invent a new style.</strong> Compose it from these foundations — radius 0, the 40px control height, 1px <code style="font-family:var(--font-mono);font-size:14px;color:var(--signal-500)">--color-border</code>, the <code style="font-family:var(--font-mono);font-size:14px;color:var(--signal-500)">--space-*</code> scale, the <code style="font-family:var(--font-mono);font-size:14px;color:var(--signal-500)">--shadow-*</code> elevation, the type scale, and the semantic color roles — using the nearest documented component as precedent. Then add it back to <code style="font-family:var(--font-mono);font-size:14px;color:var(--signal-500)">design.md</code> and this page so the next person inherits it. Additive only — never fork the palette or the type scale.</p>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px">
+        <div style="background:var(--gray-0);border:1px solid var(--gray-200);border-left:3px solid var(--green-600);padding:18px"><div style="font-size:13px;font-weight:700;color:var(--green-700);margin-bottom:8px">Always</div><ul style="margin:0;padding-left:18px;font-size:13px;color:var(--gray-700);line-height:1.7"><li>Consume semantic tokens</li><li>Square corners (radius 0)</li><li>Mono + tabular for figures</li><li>Color only as consequence</li><li>Surface the margin floor &amp; 25% cap</li></ul></div>
+        <div style="background:var(--gray-0);border:1px solid var(--gray-200);border-left:3px solid var(--critical-600);padding:18px"><div style="font-size:13px;font-weight:700;color:var(--critical-600);margin-bottom:8px">Never</div><ul style="margin:0;padding-left:18px;font-size:13px;color:var(--gray-700);line-height:1.7"><li>Hard-code hex or pixels</li><li>Add rounding or new fonts</li><li>Decorate with status colors</li><li>Stack multiple signal accents</li><li>Show a Run CTA on a breaching action</li></ul></div>
+        <div style="background:var(--gray-0);border:1px solid var(--gray-200);border-left:3px solid var(--gray-900);padding:18px"><div style="font-size:13px;font-weight:700;margin-bottom:8px">Naming</div><div style="font-size:13px;color:var(--gray-700);line-height:1.6">3-tier: primitive → semantic → component. kebab-case, role-before-variant-before-state. New tokens override semantics only.</div></div>
+      </div>
+      <div style="margin-top:24px;padding-top:20px;border-top:1px solid var(--gray-200);font-size:13px;color:var(--gray-500)">PRMTR Visual Language v2.0 · the living render of design.md · square · signal-driven · MEAMA</div>
+    </section>
+
+  </main>
+</div>
+</x-dc>
+</body>
+</html>

@@ -34,7 +34,11 @@ interface MetricVal { current: number | null; previous: number | null; delta_pct
 // ── Data helpers ────────────────────────────────────────────────────────────
 const fmt = (val: number | null | undefined, type: 'currency' | 'pct' | 'number' = 'number'): string => {
   if (val === null || val === undefined) return '—';
-  if (type === 'currency') return `₾${val >= 1000 ? (val / 1000).toFixed(0) + 'K' : val.toFixed(0)}`;
+  if (type === 'currency') {
+    if (val >= 1000) return `₾${(val / 1000).toFixed(0)}K`;
+    if (val >= 100)  return `₾${val.toFixed(0)}`;
+    return `₾${val.toFixed(2)}`;           // small values (e.g. capsule price) keep cents
+  }
   if (type === 'pct') return `${val.toFixed(1)}%`;
   return val >= 1000 ? val.toLocaleString() : val.toString();
 };
@@ -205,6 +209,8 @@ export default function KpiDashboard() {
   const ec = kpiData?.ecommerce;
   const bs = kpiData?.brand_stores;
   const cs = kpiData?.call_sales;
+  const wh = kpiData?.wholesale;
+  const dr = kpiData?.dropper;
 
   const ecRev = metric('revenue', ec);
   const ecSt  = channelSt(ecRev.delta_pct);
@@ -254,6 +260,45 @@ export default function KpiDashboard() {
     cell('Phone AOV',             metric('aov', cs),        'currency', true),
     cell('Upsell Rate',           metric('upsell_rate', cs),'pct',      true),
     cell('New Customers Reached', metric('new_customers', cs),'number', true),
+  ];
+
+  // ── Wholesale (B2B) ────────────────────────────────────────────────────────
+  const whRev = metric('revenue', wh);
+  const whSt  = channelSt(whRev.delta_pct);
+
+  // Append a static target reference to a cell's prev line (targets come from spec, not data).
+  const tgt = (c: McProps, t: string): McProps =>
+    ({ ...c, prev: c.prev === '—' ? `target ${t}` : `${c.prev} · target ${t}` });
+  // COGS-backed margin can't be computed reliably yet — show as pending, not a fake number.
+  const pendingCell = (label: string, target: string): McProps =>
+    ({ label, value: '—', vt: 'pos', prev: `COGS pending · target ${target}`, delta: '', dt: 'neu' });
+
+  const whRow1: McProps[] = [
+    tgt(cell('B2B Net Revenue', whRev, 'currency', true, { primary: true }), '₾225K/mo'),
+    cell('Active Accounts',     metric('active_accounts', wh), 'number', true),
+    cell('New Accounts',        metric('new_accounts', wh),    'number', true),
+    tgt(cell('Reorder Rate',    metric('reorder_rate', wh),    'pct',    true), '≥70%'),
+  ];
+  const whRow2: McProps[] = [
+    cell('AOV per Account',         metric('aov_per_account', wh), 'currency', true),
+    cell('AOV — Capsules Only',     metric('capsule_aov', wh),     'currency', true),
+    cell('Order Frequency / Account', metric('order_frequency', wh), 'number', true),
+    pendingCell('Gross Margin on B2B', '≥25%'),
+  ];
+
+  // ── Dropper (Vending) ──────────────────────────────────────────────────────
+  const drCaps = metric('caps_per_machine_day', dr);
+  const drSt   = channelSt(drCaps.delta_pct);
+
+  const drRow1: McProps[] = [
+    cell('Caps / Machine / Day', drCaps,                           'number', true, { primary: true }),
+    cell('Active Machines',      metric('active_machines', dr),    'number', true),
+    cell('New Placements',       metric('new_placements', dr),     'number', true),
+  ];
+  const drRow2: McProps[] = [
+    cell('Revenue / Machine',    metric('rev_per_machine', dr),    'currency', true),
+    cell('AOV — Capsule Price',  metric('capsule_price', dr),      'currency', true),
+    pendingCell('Gross Margin / Machine', '≥50%'),
   ];
 
   const tbtn = (t: Tab) => ({
@@ -347,32 +392,19 @@ export default function KpiDashboard() {
 
         {/* Wholesale */}
         <Ch>
-          <ChHeader name="Wholesale" sub="B2B" dot="#C97E08" st="behind"
-            status="↓ Behind target · –₾16K MoM" />
-          <MGrid cols={5} cells={[
-            { label: 'B2B Net Revenue',  value: '₾210K',  vt: 'neg',  prev: 'prev ₾226K · target ₾225K', delta: '↓ –7% MoM',    dt: 'neg', bar: { w: '93%', bt: 'neg' }, primary: true },
-            { label: 'Active Accounts',  value: '87',     vt: 'pos',  prev: 'prev 82',                    delta: '↑ +5 accounts', dt: 'pos' },
-            { label: 'New Accounts',     value: '6',      vt: 'warn', prev: 'prev 8',                     delta: '↓ –2 accounts', dt: 'neg' },
-            { label: 'Reorder Rate',     value: '64%',    vt: 'neg',  prev: 'prev 70% · target ≥70%',     delta: '↓ –6pp',        dt: 'neg', bar: { w: '91%', bt: 'neg' } },
-            { label: 'AOV / Account',    value: '₾2,414', vt: 'pos',  prev: 'prev ₾2,294',               delta: '↑ +₾120',       dt: 'pos' },
-          ]} />
+          <ChHeader name="Wholesale" sub="B2B" dot="#C97E08"
+            st={whSt.st} status={whSt.status} />
+          <MGrid cols={4} cells={whRow1} />
+          <MGrid cols={4} cells={whRow2} />
         </Ch>
 
         {/* Dropper + Call Sales — side by side */}
         <Side>
           <Ch noMb>
-            <ChHeader name="Dropper" sub="Vending · B2B" dot="#7C3AED" st="growing"
-              status="↑ Growing · +0.4/day" />
-            <MGrid cols={3} cells={[
-              { label: 'Caps / Machine / Day', value: '14.2',   vt: 'warn', prev: 'prev 13.8',          delta: '↑ +0.4 · growing', dt: 'pos', primary: true },
-              { label: 'Active Machines',      value: '38',     vt: 'pos',  prev: 'prev 35',             delta: '↑ +3',             dt: 'pos' },
-              { label: 'Rev / Machine / Mo',   value: '₾1,631', vt: 'pos',  prev: 'prev ₾1,544',        delta: '↑ +₾87',           dt: 'pos' },
-            ]} />
-            <MGrid cols={3} cells={[
-              { label: 'New Placements',       value: '3',     vt: 'pos', prev: 'tracking vs target',    delta: '→ target/mo', dt: 'neu' },
-              { label: 'AOV Capsule Price',    value: '₾2.41', vt: 'pos', prev: 'tracking',              delta: '→ MoM',       dt: 'neu' },
-              { label: 'Gross Margin / Mach.', value: '48%',   vt: 'neg', prev: 'prev 50% · target ≥50%',delta: '↓ –2pp',      dt: 'neg', bar: { w: '96%', bt: 'warn' } },
-            ]} />
+            <ChHeader name="Dropper" sub="Vending · B2B" dot="#7C3AED"
+              st={drSt.st} status={drSt.status} />
+            <MGrid cols={3} cells={drRow1} />
+            <MGrid cols={3} cells={drRow2} />
           </Ch>
 
           <Ch noMb>
