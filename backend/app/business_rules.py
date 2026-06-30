@@ -6,10 +6,21 @@ values elsewhere; import them. See CLAUDE.md for the narrative version.
 from __future__ import annotations
 
 # ---- Margin / pricing guardrails ----
-MARGIN_FLOOR = 0.40           # minimum gross margin allowed on any promo
-MIN_PRICE_MULTIPLIER = 1.6667  # min_safe_price = COGS * MIN_PRICE_MULTIPLIER
-MAX_DISCOUNT = 0.25           # hard cap across all campaign types
+# All margins are NET OF VAT: a price P (gross, incl. VAT) yields ex-VAT revenue
+# P / (1 + GEO_VAT_RATE), and margin is measured against that. The 40% floor is a
+# net floor; this matches the commercial-master sheet (whose stored full_margin is
+# already net of VAT) and the Bundles/B2B tabs labelled "net of VAT".
+MARGIN_FLOOR = 0.40           # minimum NET-of-VAT margin allowed on any promo
+MIN_PRICE_MULTIPLIER = 1.6667  # net price at the floor = COGS * MIN_PRICE_MULTIPLIER
+MAX_DISCOUNT = 0.25           # consumer-deal guideline / B2B entry marker — NOT a hard
+                              # block; the binding rule is net_margin < MARGIN_FLOOR
 GEO_VAT_RATE = 0.18           # Georgian VAT 18%; revenue / (1 + GEO_VAT_RATE) = ex-VAT revenue
+
+# ---- B2B wholesale (gated channel; never combines with B2C offers) ----
+B2B_CAP_TIER_THRESHOLD = 500   # capsules per order; tier boundary
+B2B_CAP_DISCOUNT_UNDER = 0.25  # capsule discount under the threshold
+B2B_CAP_DISCOUNT_OVER = 0.30   # capsule discount at/over the threshold
+B2B_ACCESSORY_DISCOUNT = 0.15  # flat accessory wholesale discount (machines = ecom)
 
 # ---- Customer lifecycle (calendar days since last order) ----
 CHURN_DAYS = 90               # lost: no order for >= 3 calendar months
@@ -53,17 +64,32 @@ LTV_REGISTERED_ONLY = True
 
 
 def min_safe_price(cogs: float) -> float:
-    """Lowest price that preserves the margin floor for a SKU."""
-    return cogs * MIN_PRICE_MULTIPLIER
+    """Lowest GROSS price (incl. VAT) that preserves the net margin floor.
+
+    At net price COGS * 1.6667 the net margin is exactly 40%; expressed as a gross
+    price that is COGS * MIN_PRICE_MULTIPLIER * (1 + GEO_VAT_RATE).
+    """
+    return cogs * MIN_PRICE_MULTIPLIER * (1 + GEO_VAT_RATE)
 
 
 def max_safe_discount(full_price: float, cogs: float) -> float:
-    """Largest discount fraction allowed before breaching the margin floor.
+    """Largest discount fraction allowed before breaching the net margin floor.
 
-    max_safe_discount = 1 - (COGS * MIN_PRICE_MULTIPLIER / full_price)
-    Clamped to [0, MAX_DISCOUNT].
+    max_safe_discount = 1 - (min_safe_price(cogs) / full_price), floored at 0.
+    NOT capped at MAX_DISCOUNT — the true ceiling can exceed 25% (e.g. high-margin
+    categories); 25% is only an advisory guideline, never the binding constraint.
     """
     if full_price <= 0:
         return 0.0
-    raw = 1.0 - (min_safe_price(cogs) / full_price)
-    return max(0.0, min(raw, MAX_DISCOUNT))
+    return max(0.0, 1.0 - (min_safe_price(cogs) / full_price))
+
+
+def net_margin(price: float, cogs: float) -> float:
+    """Net-of-VAT margin at a given gross price.
+
+    net_margin = (price/(1+VAT) - COGS) / (price/(1+VAT)).
+    """
+    if price <= 0:
+        return 0.0
+    net = price / (1 + GEO_VAT_RATE)
+    return (net - cogs) / net if net > 0 else 0.0

@@ -1,0 +1,1396 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --gray-0:#FFFFFF;--gray-25:#FAFBFA;--gray-50:#F5F7F5;--gray-100:#ECEFEC;--gray-200:#E0E4E1;--gray-300:#CBD1CC;--gray-400:#9BA39C;--gray-500:#727B73;--gray-600:#525B53;--gray-700:#3A423B;--gray-800:#222823;--gray-900:#121712;--gray-950:#0A0D0A;
+  --green-50:#E9F8EE;--green-100:#CFF0DA;--green-200:#A5E2BB;--green-300:#6FCB90;--green-400:#3DAE68;--green-500:#1F9D52;--green-600:#16823F;--green-700:#0F662F;--green-800:#0A4D24;--green-900:#063318;
+  --signal-100:#F2FAC9;--signal-300:#E4F784;--signal-500:#D2F03C;--signal-600:#B6D81F;--signal-700:#8FAA12;
+  --success-50:#E9F8EE;--success-600:#16823F;--danger-50:#FDECEC;--danger-500:#E5484D;--danger-600:#CC2E33;--danger-700:#A31C20;--warning-50:#FFF6E6;--warning-500:#F5A314;--warning-600:#C97E08;--info-50:#EAF3FE;--info-500:#2E84F0;--info-600:#1A68CC;--critical-50:#FCE9E9;--critical-500:#C2181E;--critical-600:#9E1115;--critical-700:#6E0B0E;
+  --seg-champions:#0F662F;--seg-loyal:#15998A;--seg-atrisk:#EF6820;--seg-cantlose:#C2181E;
+  --violet-50:#F0ECFE;--violet-600:#5B3FD6;--teal-50:#E2F6F3;--teal-600:#0E8C7E;
+  --font-ui:"Hanken Grotesk",system-ui,sans-serif;--font-mono:"Geist Mono",ui-monospace,monospace;
+  --shadow-sm:0 1px 3px rgba(18,23,18,.07),0 1px 2px rgba(18,23,18,.04);
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:var(--font-ui);background:var(--gray-50);color:var(--gray-900);-webkit-font-smoothing:antialiased}
+::-webkit-scrollbar{width:10px;height:10px}::-webkit-scrollbar-thumb{background:var(--gray-300);border-radius:0;border:3px solid var(--gray-50)}
+.tnum{font-feature-settings:"tnum" 1,"lnum" 1}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.45;transform:scale(.7)}}
+</style>
+</helmet>
+<div style="display:flex;height:100vh;width:100%;overflow:hidden;font-family:var(--font-ui)">
+
+  <aside style="width:264px;flex:none;background:var(--gray-0);border-right:1px solid var(--gray-200);display:flex;flex-direction:column;height:100%">
+    <div style="display:flex;align-items:center;gap:10px;padding:18px 18px 16px;border-bottom:1px solid var(--gray-100)">
+      <div style="width:34px;height:34px;border-radius:0;background:var(--gray-900);display:flex;align-items:center;justify-content:center;flex:none">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M4 19V8.5a2 2 0 0 1 2-2h3l2-2.5 2 2.5h3a2 2 0 0 1 2 2V19" stroke="var(--signal-500)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="13" r="2.2" fill="var(--signal-500)"/></svg>
+      </div>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:800;font-size:16px;letter-spacing:-0.01em;color:var(--gray-900)">PRMTR</div>
+        <div style="font-size:11px;color:var(--gray-500);font-weight:500">Kalo Coffee Co.</div>
+      </div>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M8 9l4-4 4 4M8 15l4 4 4-4" stroke="var(--gray-400)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+
+    <nav style="flex:1;overflow-y:auto;padding:14px 12px;display:flex;flex-direction:column;gap:2px">
+      <div style="font-size:11px;font-weight:600;letter-spacing:0.06em;color:var(--gray-400);text-transform:uppercase;padding:6px 12px 6px">Main</div>
+      <a onClick="{{ goOverview }}" style="display:flex;align-items:center;gap:11px;height:40px;padding:0 12px;border-radius:0;cursor:pointer;font-size:14px;font-weight:600;text-decoration:none;{{ nav_overview }}" style-hover="background:var(--gray-50)">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.7"/><rect x="14" y="3" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.7"/><rect x="3" y="14" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.7"/><rect x="14" y="14" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.7"/></svg>
+        <span style="flex:1">Overview</span>
+      </a>
+      <a onClick="{{ goQueue }}" style="display:flex;align-items:center;gap:11px;height:40px;padding:0 12px;border-radius:0;cursor:pointer;font-size:14px;font-weight:600;text-decoration:none;{{ nav_queue }}" style-hover="background:var(--gray-50)">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none"><path d="M11 6h9M11 12h9M11 18h9" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M3.5 6l1.2 1.2L7 4.8M3.5 12l1.2 1.2L7 10.8M3.5 18l1.2 1.2L7 16.8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span style="flex:1">Action Queue</span>
+        <span style="font:600 11px/1 var(--font-mono);background:var(--signal-500);color:var(--gray-900);padding:4px 8px;border-radius:0">12</span>
+      </a>
+      <a onClick="{{ goHunter }}" style="display:flex;align-items:center;gap:11px;height:40px;padding:0 12px;border-radius:0;cursor:pointer;font-size:14px;font-weight:600;text-decoration:none;{{ nav_hunter }}" style-hover="background:var(--gray-50)">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.7"/><path d="M11 8.2v5.6M9 11h4a1.3 1.3 0 0 1 0 2.6h-2a1.3 1.3 0 0 0 0 2.6h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M20 20l-3-3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+        <span style="flex:1">Money Hunter</span>
+        <span style="font:600 11px/1 var(--font-mono);background:var(--green-600);color:#fff;padding:4px 8px;border-radius:0">7</span>
+      </a>
+      <div style="font-size:11px;font-weight:600;letter-spacing:0.06em;color:var(--gray-400);text-transform:uppercase;padding:14px 12px 6px">Intelligence</div>
+      <a onClick="{{ goCustomers }}" style="display:flex;align-items:center;gap:11px;height:40px;padding:0 12px;border-radius:0;cursor:pointer;font-size:14px;font-weight:600;text-decoration:none;{{ nav_customers }}" style-hover="background:var(--gray-50)">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none"><circle cx="9" cy="9" r="3" stroke="currentColor" stroke-width="1.7"/><path d="M3.5 18a5.5 5.5 0 0 1 11 0M16 7a3 3 0 0 1 0 5.5M20.5 18a5.2 5.2 0 0 0-3-4.7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+        <span style="flex:1">Customers</span>
+      </a>
+      <a onClick="{{ goProduct }}" style="display:flex;align-items:center;gap:11px;height:40px;padding:0 12px;border-radius:0;cursor:pointer;font-size:14px;font-weight:600;text-decoration:none;{{ nav_product }}" style-hover="background:var(--gray-50)">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M4 7.5l8 4.5 8-4.5M12 12v9" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+        <span style="flex:1">Product Intelligence</span>
+      </a>
+      <a onClick="{{ goAds }}" style="display:flex;align-items:center;gap:11px;height:40px;padding:0 12px;border-radius:0;cursor:pointer;font-size:14px;font-weight:600;text-decoration:none;{{ nav_ads }}" style-hover="background:var(--gray-50)">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none"><path d="M3 10v4a1 1 0 0 0 1 1h2l5 4V5L6 9H4a1 1 0 0 0-1 1z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M16 9a4 4 0 0 1 0 6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+        <span style="flex:1">Ads Intelligence</span>
+      </a>
+      <a onClick="{{ goWebsite }}" style="display:flex;align-items:center;gap:11px;height:40px;padding:0 12px;border-radius:0;cursor:pointer;font-size:14px;font-weight:600;text-decoration:none;{{ nav_website }}" style-hover="background:var(--gray-50)">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.7"/><path d="M3 12h18M12 3c2.5 2.5 2.5 15 0 18M12 3c-2.5 2.5-2.5 15 0 18" stroke="currentColor" stroke-width="1.5"/></svg>
+        <span style="flex:1">Website Analytics</span>
+      </a>
+      <div style="font-size:11px;font-weight:600;letter-spacing:0.06em;color:var(--gray-400);text-transform:uppercase;padding:14px 12px 6px">Tools</div>
+      <a onClick="{{ goPromo }}" style="display:flex;align-items:center;gap:11px;height:40px;padding:0 12px;border-radius:0;cursor:pointer;font-size:14px;font-weight:600;text-decoration:none;{{ nav_promo }}" style-hover="background:var(--gray-50)">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none"><path d="M7 17L17 7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.7"/><circle cx="16" cy="16" r="2" stroke="currentColor" stroke-width="1.7"/></svg>
+        <span style="flex:1">Promotion &amp; Margin</span>
+      </a>
+    </nav>
+
+    <div style="padding:12px;border-top:1px solid var(--gray-100)">
+      <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:0;background:var(--gray-50)">
+        <div style="width:8px;height:8px;border-radius:0;background:var(--green-500);flex:none"></div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:12px;font-weight:600;color:var(--gray-800)">Margin floor active</div>
+          <div style="font-size:11px;color:var(--gray-500)">Enforced at 40%</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <main style="flex:1;min-width:0;display:flex;flex-direction:column;height:100%">
+    <header style="height:64px;flex:none;background:var(--gray-0);border-bottom:1px solid var(--gray-200);display:flex;align-items:center;gap:16px;padding:0 28px">
+      <div style="display:flex;align-items:center;gap:9px;font-size:14px;color:var(--gray-500);font-weight:500">
+        <span>PRMTR</span><span style="color:var(--gray-300)">/</span><span style="color:var(--gray-900);font-weight:600">{{ pageTitle }}</span>
+      </div>
+      <div style="flex:1"></div>
+      <div style="display:flex;align-items:center;gap:8px;width:280px;height:40px;padding:0 12px;border:1px solid var(--gray-200);border-radius:0;background:var(--gray-50)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="var(--gray-400)" stroke-width="1.7"/><path d="M20 20l-3.5-3.5" stroke="var(--gray-400)" stroke-width="1.7" stroke-linecap="round"/></svg>
+        <span style="font-size:13px;color:var(--gray-400);flex:1">Search customers, products…</span>
+        <span style="font:600 11px/1 var(--font-mono);color:var(--gray-400);border:1px solid var(--gray-200);border-radius:0;padding:3px 5px;background:var(--gray-0)">⌘K</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:7px;padding:0 11px;height:32px;border-radius:0;background:var(--signal-100);border:1px solid var(--signal-300)">
+        <span style="width:7px;height:7px;border-radius:0;background:var(--signal-600);animation:pulse 1.8s ease-in-out infinite"></span>
+        <span style="font-size:12px;font-weight:600;color:var(--gray-800)">Live</span>
+      </div>
+      <button style="width:40px;height:40px;border-radius:0;border:1px solid var(--gray-200);background:var(--gray-0);display:flex;align-items:center;justify-content:center;position:relative;cursor:pointer">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6z" stroke="var(--gray-600)" stroke-width="1.7" stroke-linejoin="round"/><path d="M10 19a2 2 0 0 0 4 0" stroke="var(--gray-600)" stroke-width="1.7" stroke-linecap="round"/></svg>
+        <span style="position:absolute;top:7px;right:8px;width:7px;height:7px;border-radius:0;background:var(--danger-500);border:1.5px solid var(--gray-0)"></span>
+      </button>
+      <div style="display:flex;align-items:center;gap:9px;padding-left:6px">
+        <div style="width:36px;height:36px;border-radius:0;background:var(--green-700);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px">TL</div>
+        <div style="line-height:1.2">
+          <div style="font-size:13px;font-weight:600;color:var(--gray-900)">Tamar L.</div>
+          <div style="font-size:11px;color:var(--gray-500)">Owner</div>
+        </div>
+      </div>
+    </header>
+
+    <div style="flex:1;overflow-y:auto;padding:28px 28px 56px">
+
+      <sc-if value="{{ is_overview }}" hint-placeholder-val="{{ true }}">
+      <section data-screen-label="Overview" style="max-width:1240px;margin:0 auto">
+        <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:22px">
+          <div>
+            <h1 style="margin:0;font-size:30px;font-weight:700;letter-spacing:-0.02em;color:var(--gray-900)">Good morning, Tamar</h1>
+            <p style="margin:6px 0 0;font-size:14px;color:var(--gray-500)">Tuesday, 24 June 2026 · Here's the pulse of Kalo Coffee today.</p>
+          </div>
+          <div style="display:flex;gap:10px">
+            <button style="height:40px;padding:0 16px;border-radius:0;border:1px solid var(--gray-200);background:var(--gray-0);font:600 14px var(--font-ui);color:var(--gray-900);display:flex;align-items:center;gap:8px;cursor:pointer">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="4" y="4" width="16" height="16" rx="2" stroke="var(--gray-500)" stroke-width="1.7"/><path d="M8 9h8M8 13h8M8 17h5" stroke="var(--gray-500)" stroke-width="1.7" stroke-linecap="round"/></svg>
+              Last 30 days</button>
+            <button style="height:40px;padding:0 16px;border-radius:0;border:none;background:var(--gray-900);font:600 14px var(--font-ui);color:#fff;display:flex;align-items:center;gap:8px;cursor:pointer">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 4v10m0 0l-3.5-3.5M12 14l3.5-3.5M5 18h14" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Export</button>
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:center;flex-wrap:wrap;gap:9px 16px;background:var(--gray-0);border:1px solid var(--gray-200);border-radius:0;padding:12px 18px;margin-bottom:16px">
+          <span style="font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--gray-400)">Signal legend</span>
+          <span style="width:1px;height:14px;background:var(--gray-200)"></span>
+          <span style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--gray-700)"><span style="width:10px;height:10px;border-radius:0;background:var(--violet-600)"></span>Reactivation</span>
+          <span style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--gray-700)"><span style="width:10px;height:10px;border-radius:0;background:var(--info-600)"></span>Reorder</span>
+          <span style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--gray-700)"><span style="width:10px;height:10px;border-radius:0;background:var(--green-600)"></span>Upsell / growth</span>
+          <span style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--gray-700)"><span style="width:10px;height:10px;border-radius:0;background:var(--teal-600)"></span>Ad budget</span>
+          <span style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--gray-700)"><span style="width:10px;height:10px;border-radius:0;background:var(--warning-500)"></span>Stock alert</span>
+          <span style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--gray-700)"><span style="width:10px;height:10px;border-radius:0;background:var(--critical-600)"></span>Margin / blocked</span>
+          <span style="width:1px;height:14px;background:var(--gray-200)"></span>
+          <span style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--gray-700)"><span style="font:700 10px var(--font-mono);color:var(--critical-600);background:var(--critical-50);padding:2px 6px;border-radius:0">P1</span>Critical</span>
+          <span style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--gray-700)"><span style="font:700 10px var(--font-mono);color:var(--warning-600);background:var(--warning-50);padding:2px 6px;border-radius:0">P2</span>High</span>
+          <span style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--gray-700)"><span style="font:700 10px var(--font-mono);color:var(--gray-600);background:var(--gray-100);padding:2px 6px;border-radius:0">P3</span>Standard</span>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(168px,1fr));gap:16px;margin-bottom:16px">
+          <div style="background:var(--gray-0);border:1px solid var(--gray-200);border-radius:0;padding:20px">
+            <div style="display:flex;align-items:center;justify-content:space-between"><span style="font-size:12px;font-weight:500;color:var(--gray-600)">Revenue today</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M4 16l5-5 4 3 7-8" stroke="var(--green-500)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            <div style="font:600 30px/1.05 var(--font-mono);letter-spacing:-0.02em;color:var(--gray-900);margin:12px 0 10px" class="tnum">₾12,480</div>
+            <div style="display:flex;align-items:center;gap:8px"><span style="display:inline-flex;align-items:center;gap:3px;font:600 12px var(--font-mono);background:var(--success-50);color:var(--success-600);padding:4px 8px;border-radius:0" class="tnum">▲ 8.2%</span><span style="font-size:12px;color:var(--gray-500)">vs yesterday</span></div>
+          </div>
+          <div style="background:var(--gray-0);border:1px solid var(--gray-200);border-radius:0;padding:20px">
+            <div style="display:flex;align-items:center;justify-content:space-between"><span style="font-size:12px;font-weight:500;color:var(--gray-600)">Active customers</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="9" cy="9" r="3" stroke="var(--gray-400)" stroke-width="1.7"/><path d="M3.5 18a5.5 5.5 0 0 1 11 0M16 7a3 3 0 0 1 0 5.5M20.5 18a5.2 5.2 0 0 0-3-4.7" stroke="var(--gray-400)" stroke-width="1.7" stroke-linecap="round"/></svg></div>
+            <div style="font:600 30px/1.05 var(--font-mono);letter-spacing:-0.02em;color:var(--gray-900);margin:12px 0 10px" class="tnum">2,847</div>
+            <div style="display:flex;align-items:center;gap:8px"><span style="display:inline-flex;align-items:center;gap:3px;font:600 12px var(--font-mono);background:var(--success-50);color:var(--success-600);padding:4px 8px;border-radius:0" class="tnum">▲ 1.9%</span><span style="font-size:12px;color:var(--gray-500)">vs last week</span></div>
+          </div>
+          <div style="background:var(--gray-0);border:1px solid var(--gray-200);border-radius:0;padding:20px">
+            <div style="display:flex;align-items:center;justify-content:space-between"><span style="font-size:12px;font-weight:500;color:var(--gray-600)">Orders · 30d</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 7h14l-1.2 9.5a2 2 0 0 1-2 1.7H8.2a2 2 0 0 1-2-1.7L5 7z" stroke="var(--gray-400)" stroke-width="1.7" stroke-linejoin="round"/><path d="M9 7V5.5a3 3 0 0 1 6 0V7" stroke="var(--gray-400)" stroke-width="1.7"/></svg></div>
+            <div style="font:600 30px/1.05 var(--font-mono);letter-spacing:-0.02em;color:var(--gray-900);margin:12px 0 10px" class="tnum">1,206</div>
+            <div style="display:flex;align-items:center;gap:8px"><span style="display:inline-flex;align-items:center;gap:3px;font:600 12px var(--font-mono);background:var(--success-50);color:var(--success-600);padding:4px 8px;border-radius:0" class="tnum">▲ 4.3%</span><span style="font-size:12px;color:var(--gray-500)">vs prev 30d</span></div>
+          </div>
+          <div style="background:var(--gray-0);border:1px solid var(--gray-200);border-radius:0;padding:20px">
+            <div style="display:flex;align-items:center;justify-content:space-between"><span style="font-size:12px;font-weight:500;color:var(--gray-600)">Avg order value</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="var(--gray-400)" stroke-width="1.7"/><path d="M12 8v8M9.5 9.5h4a1.5 1.5 0 0 1 0 3h-3a1.5 1.5 0 0 0 0 3h4" stroke="var(--gray-400)" stroke-width="1.6" stroke-linecap="round"/></svg></div>
+            <div style="font:600 30px/1.05 var(--font-mono);letter-spacing:-0.02em;color:var(--gray-900);margin:12px 0 10px" class="tnum">₾103.40</div>
+            <div style="display:flex;align-items:center;gap:8px"><span style="display:inline-flex;align-items:center;gap:3px;font:600 12px var(--font-mono);background:var(--danger-50);color:var(--danger-600);padding:4px 8px;border-radius:0" class="tnum">▼ 1.2%</span><span style="font-size:12px;color:var(--gray-500)">vs prev 30d</span></div>
+          </div>
+          <div style="background:var(--gray-0);border:1px solid var(--gray-200);border-radius:0;padding:20px">
+            <div style="display:flex;align-items:center;justify-content:space-between"><span style="font-size:12px;font-weight:500;color:var(--gray-600)">Churn rate</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M4 8l5 5 4-3 7 8" stroke="var(--danger-500)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            <div style="font:600 30px/1.05 var(--font-mono);letter-spacing:-0.02em;color:var(--gray-900);margin:12px 0 10px" class="tnum">5.8%</div>
+            <div style="display:flex;align-items:center;gap:8px"><span style="display:inline-flex;align-items:center;gap:3px;font:600 12px var(--font-mono);background:var(--danger-50);color:var(--danger-600);padding:4px 8px;border-radius:0" class="tnum">▲ 0.4%</span><span style="font-size:12px;color:var(--gray-500)">needs attention</span></div>
+          </div>
+        </div>
+
+        <div style="background:var(--gray-0);border:1px solid var(--gray-200);border-radius:0;padding:22px 24px;margin-bottom:16px">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:18px">
+            <div>
+              <div style="font-size:16px;font-weight:600;color:var(--gray-900)">Revenue trend · last 30 days</div>
+              <div style="display:flex;align-items:baseline;gap:12px;margin-top:8px"><span style="font:600 28px var(--font-mono);letter-spacing:-0.02em" class="tnum">₾342,180</span><span style="display:inline-flex;align-items:center;gap:3px;font:600 12px var(--font-mono);background:var(--success-50);color:var(--success-600);padding:4px 8px;border-radius:0" class="tnum">▲ 6.4%</span></div>
+            </div>
+            <div style="display:flex;gap:18px;align-items:center">
+              <span style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--gray-600)"><span style="width:10px;height:10px;border-radius:0;background:var(--green-700)"></span>This period</span>
+              <span style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--gray-600)"><span style="width:10px;height:10px;border-radius:0;background:var(--green-200)"></span>Previous</span>
+            </div>
+          </div>
+          <div style="display:flex;gap:14px">
+            <div style="display:flex;flex-direction:column;justify-content:space-between;font:500 11px var(--font-mono);color:var(--gray-400);height:220px;padding:4px 0" class="tnum"><span>₾16k</span><span>₾12k</span><span>₾8k</span><span>₾4k</span><span>₾0</span></div>
+            <div style="flex:1">
+              <svg viewBox="0 0 746 220" preserveAspectRatio="none" style="width:100%;height:220px;display:block">
+                <defs><linearGradient id="rev" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--green-700)" stop-opacity="0.55"/><stop offset="1" stop-color="var(--green-700)" stop-opacity="0.04"/></linearGradient></defs>
+                <line x1="0" y1="2" x2="746" y2="2" stroke="var(--gray-100)" stroke-width="1"/><line x1="0" y1="56" x2="746" y2="56" stroke="var(--gray-100)" stroke-width="1"/><line x1="0" y1="110" x2="746" y2="110" stroke="var(--gray-100)" stroke-width="1"/><line x1="0" y1="164" x2="746" y2="164" stroke="var(--gray-100)" stroke-width="1"/><line x1="0" y1="218" x2="746" y2="218" stroke="var(--gray-200)" stroke-width="1"/>
+                <path d="M0,220 L0,190 L53,196 L106,182 L160,186 L213,170 L266,162 L320,176 L373,158 L426,150 L480,160 L533,142 L586,150 L640,132 L693,126 L746,118 L746,220 Z" fill="var(--green-100)"/>
+                <path d="M0,220 L0,168 L53,176 L106,150 L160,158 L213,138 L266,128 L320,142 L373,118 L426,108 L480,120 L533,96 L586,104 L640,82 L693,72 L746,58 L746,220 Z" fill="url(#rev)"/>
+                <polyline points="0,168 53,176 106,150 160,158 213,138 266,128 320,142 373,118 426,108 480,120 533,96 586,104 640,82 693,72 746,58" fill="none" stroke="var(--green-700)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+                <circle cx="746" cy="58" r="4.5" fill="var(--green-700)" stroke="#fff" stroke-width="2"/>
+              </svg>
+              <div style="display:flex;justify-content:space-between;font:500 11px var(--font-mono);color:var(--gray-400);margin-top:8px" class="tnum"><span>26 May</span><span>2 Jun</span><span>9 Jun</span><span>16 Jun</span><span>24 Jun</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px;margin-bottom:16px">
+          <div style="background:var(--gray-0);border:1px solid var(--gray-200);border-radius:0;padding:20px">
+            <div style="font-size:12px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:var(--gray-400);margin-bottom:14px">Top product · this week</div>
+            <div style="display:flex;align-items:center;gap:12px">
+              <div style="width:46px;height:46px;border-radius:0;background:var(--green-50);display:flex;align-items:center;justify-content:center;flex:none">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M6 9h9a3 3 0 0 1 0 6h-1M6 9v7a3 3 0 0 0 3 3h2a3 3 0 0 0 3-3v-1" stroke="var(--green-700)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 3v2M11 3v2" stroke="var(--green-700)" stroke-width="1.7" stroke-linecap="round"/></svg>
+              </div>
+              <div><div style="font-size:15px;font-weight:600;color:var(--gray-900)">Kazbegi Single Origin</div><div style="font-size:12px;color:var(--gray-500)">312 units sold</div></div>
+            </div>
+            <div style="display:flex;align-items:baseline;gap:8px;margin-top:16px"><span style="font:600 22px var(--font-mono)" class="tnum">₾18,240</span><span style="font:600 12px var(--font-mono);color:var(--success-600)" class="tnum">▲ 14%</span></div>
+          </div>
+          <div style="background:var(--gray-0);border:1px solid var(--gray-200);border-radius:0;padding:20px">
+            <div style="font-size:12px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:var(--gray-400);margin-bottom:14px">Highest-value segment</div>
+            <div style="display:flex;align-items:center;gap:12px">
+              <div style="width:46px;height:46px;border-radius:0;background:var(--green-50);display:flex;align-items:center;justify-content:center;flex:none">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M5 18l3-8 4 4 4-7 3 11" stroke="var(--seg-champions)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </div>
+              <div><div style="display:inline-flex;font-size:12px;font-weight:600;color:var(--seg-champions);background:var(--green-50);padding:4px 9px;border-radius:0">Champions</div><div style="font-size:12px;color:var(--gray-500);margin-top:5px">184 customers · 41% of revenue</div></div>
+            </div>
+            <div style="display:flex;align-items:baseline;gap:8px;margin-top:16px"><span style="font:600 22px var(--font-mono)" class="tnum">₾62,100</span><span style="font-size:12px;color:var(--gray-500)">lifetime value</span></div>
+          </div>
+          <div style="background:var(--gray-0);border:1px solid var(--gray-200);border-radius:0;padding:20px">
+            <div style="font-size:12px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:var(--gray-400);margin-bottom:14px">Margin health</div>
+            <div style="display:flex;align-items:baseline;gap:8px"><span style="font:600 22px var(--font-mono)" class="tnum">47.2%</span><span style="display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:600;color:var(--green-600);background:var(--green-50);padding:4px 9px;border-radius:0"><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6l7-3z" stroke="var(--green-600)" stroke-width="1.7" stroke-linejoin="round"/><path d="M9 12l2 2 4-4" stroke="var(--green-600)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>Safe</span></div>
+            <div style="position:relative;height:10px;border-radius:0;background:var(--gray-100);margin-top:18px;overflow:hidden">
+              <div style="position:absolute;left:0;top:0;bottom:0;width:78.6%;background:var(--green-500);border-radius:0"></div>
+            </div>
+            <div style="position:relative;height:18px;margin-top:2px">
+              <div style="position:absolute;left:66.7%;top:0;transform:translateX(-50%);font:600 10px var(--font-mono);color:var(--critical-600)" class="tnum">40% floor</div>
+            </div>
+            <div style="font-size:12px;color:var(--gray-500);margin-top:4px">7.2 pts of headroom above the floor.</div>
+          </div>
+        </div>
+
+        <div style="background:var(--gray-0);border:1px solid var(--gray-200);border-radius:0;overflow:hidden">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid var(--gray-100)">
+            <div style="display:flex;align-items:center;gap:10px">
+              <span style="font-size:16px;font-weight:600;color:var(--gray-900)">Today's Action Queue</span>
+              <span style="font:600 11px var(--font-mono);background:var(--signal-300);color:var(--gray-900);padding:4px 9px;border-radius:0">Top 5 of 12</span>
+            </div>
+            <a onClick="{{ goQueue }}" style="font-size:13px;font-weight:600;color:var(--green-600);cursor:pointer;display:flex;align-items:center;gap:5px">Open queue <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M7 17L17 7M9 7h8v8" stroke="var(--green-600)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+          </div>
+          <div>
+            <div style="display:flex;align-items:center;gap:16px;padding:14px 22px;border-bottom:1px solid var(--gray-100);position:relative;background:var(--signal-100)">
+              <div style="position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--signal-500)"></div>
+              <span style="font:600 13px var(--font-mono);color:var(--gray-400);width:22px" class="tnum">1</span>
+              <span style="font:600 11px var(--font-mono);background:var(--critical-50);color:var(--critical-600);padding:4px 9px;border-radius:0;width:34px;text-align:center">P1</span>
+              <span style="font-size:12px;font-weight:600;color:var(--violet-600);background:var(--violet-50);padding:4px 9px;border-radius:0;width:118px;text-align:center">Reactivation</span>
+              <div style="flex:1;min-width:0"><span style="font-size:14px;font-weight:600;color:var(--gray-900)">Nino Beridze</span><span style="font-size:13px;color:var(--gray-500)"> — overdue 41 days, send 15% single-origin win-back offer.</span></div>
+              <span style="font-size:12px;color:var(--gray-500);display:flex;align-items:center;gap:5px">Email</span>
+              <span style="font:600 15px var(--font-mono);color:var(--gray-900);width:88px;text-align:right" class="tnum">₾4,820</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:16px;padding:14px 22px;border-bottom:1px solid var(--gray-100)">
+              <span style="font:600 13px var(--font-mono);color:var(--gray-400);width:22px" class="tnum">2</span>
+              <span style="font:600 11px var(--font-mono);background:var(--critical-50);color:var(--critical-600);padding:4px 9px;border-radius:0;width:34px;text-align:center">P1</span>
+              <span style="font-size:12px;font-weight:600;color:var(--critical-600);background:var(--critical-50);padding:4px 9px;border-radius:0;width:118px;text-align:center">Margin alert</span>
+              <div style="flex:1;min-width:0"><span style="font-size:14px;font-weight:600;color:var(--gray-900)">Holiday 3-Pack promo</span><span style="font-size:13px;color:var(--gray-500)"> — blocked: 28% discount breaches floor (37.2%). Cap at 18%.</span></div>
+              <span style="font-size:12px;color:var(--gray-400);display:flex;align-items:center;gap:5px">Blocked</span>
+              <span style="font:600 15px var(--font-mono);color:var(--critical-600);width:88px;text-align:right" class="tnum">−2.8%</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:16px;padding:14px 22px;border-bottom:1px solid var(--gray-100)">
+              <span style="font:600 13px var(--font-mono);color:var(--gray-400);width:22px" class="tnum">3</span>
+              <span style="font:600 11px var(--font-mono);background:var(--warning-50);color:var(--warning-600);padding:4px 9px;border-radius:0;width:34px;text-align:center">P2</span>
+              <span style="font-size:12px;font-weight:600;color:var(--info-600);background:var(--info-50);padding:4px 9px;border-radius:0;width:118px;text-align:center">Reorder prompt</span>
+              <div style="flex:1;min-width:0"><span style="font-size:14px;font-weight:600;color:var(--gray-900)">Giorgi Kapanadze</span><span style="font-size:13px;color:var(--gray-500)"> — predicted reorder in 2 days, nudge with cold brew restock.</span></div>
+              <span style="font-size:12px;color:var(--gray-500)">SMS</span>
+              <span style="font:600 15px var(--font-mono);color:var(--gray-900);width:88px;text-align:right" class="tnum">₾1,240</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:16px;padding:14px 22px;border-bottom:1px solid var(--gray-100)">
+              <span style="font:600 13px var(--font-mono);color:var(--gray-400);width:22px" class="tnum">4</span>
+              <span style="font:600 11px var(--font-mono);background:var(--warning-50);color:var(--warning-600);padding:4px 9px;border-radius:0;width:34px;text-align:center">P2</span>
+              <span style="font-size:12px;font-weight:600;color:var(--warning-600);background:var(--warning-50);padding:4px 9px;border-radius:0;width:118px;text-align:center">Stock alert</span>
+              <div style="flex:1;min-width:0"><span style="font-size:14px;font-weight:600;color:var(--gray-900)">Ethiopia Yirgacheffe</span><span style="font-size:13px;color:var(--gray-500)"> — 6 days of cover left, reorder 120kg now to avoid stockout.</span></div>
+              <span style="font-size:12px;color:var(--gray-500)">Ops</span>
+              <span style="font:600 15px var(--font-mono);color:var(--gray-900);width:88px;text-align:right" class="tnum">₾2,160</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:16px;padding:14px 22px">
+              <span style="font:600 13px var(--font-mono);color:var(--gray-400);width:22px" class="tnum">5</span>
+              <span style="font:600 11px var(--font-mono);background:var(--gray-100);color:var(--gray-600);padding:4px 9px;border-radius:0;width:34px;text-align:center">P3</span>
+              <span style="font-size:12px;font-weight:600;color:var(--green-600);background:var(--green-50);padding:4px 9px;border-radius:0;width:118px;text-align:center">Upsell</span>
+              <div style="flex:1;min-width:0"><span style="font-size:14px;font-weight:600;color:var(--gray-900)">Loyal segment · 212</span><span style="font-size:13px;color:var(--gray-500)"> — cross-sell V60 dripper to filter-coffee repeat buyers.</span></div>
+              <span style="font-size:12px;color:var(--gray-500)">App push</span>
+              <span style="font:600 15px var(--font-mono);color:var(--gray-900);width:88px;text-align:right" class="tnum">₾3,480</span>
+            </div>
+          </div>
+        </div>
+        <div style="margin:26px 0 14px;display:flex;align-items:center;gap:12px">
+          <h2 style="margin:0;font-size:18px;font-weight:700;letter-spacing:-0.01em;color:var(--gray-900)">Operations &amp; growth</h2>
+          <span style="flex:1;height:1px;background:var(--gray-200)"></span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(168px,1fr));gap:16px;margin-bottom:16px">
+          <sc-for list="{{ statTiles }}" as="t" hint-placeholder-count="5">
+            <div style="background:var(--gray-0);border:1px solid var(--gray-200);padding:16px 18px">
+              <div style="font-size:12px;color:var(--gray-600);font-weight:500">{{ t.label }}</div>
+              <div style="display:flex;align-items:baseline;justify-content:space-between;margin-top:12px;gap:8px">
+                <span style="font:600 22px var(--font-mono);letter-spacing:-0.01em" class="tnum">{{ t.value }}</span>
+                <span style="font:600 11px var(--font-mono);padding:3px 7px;{{ t.deltaStyle }}" class="tnum">{{ t.delta }}</span>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-bottom:16px">
+          <sc-for list="{{ goals }}" as="g" hint-placeholder-count="3">
+            <div style="background:var(--gray-0);border:1px solid var(--gray-200);padding:20px">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+                <span style="font-size:13px;font-weight:600;color:var(--gray-900)">{{ g.label }}</span>
+                <span style="font:600 12px var(--font-mono);color:var(--green-600)" class="tnum">{{ g.pct }}</span>
+              </div>
+              <div style="height:8px;background:var(--gray-100);position:relative;overflow:hidden;margin-bottom:10px"><div style="position:absolute;left:0;top:0;bottom:0;width:{{ g.barW }};background:var(--green-500)"></div></div>
+              <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--gray-500)"><span style="font-family:var(--font-mono);font-weight:600;color:var(--gray-900)" class="tnum">{{ g.cur }}</span><span>of {{ g.tgt }}</span></div>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:16px;margin-bottom:16px">
+          <div style="background:var(--gray-0);border:1px solid var(--gray-200);padding:20px">
+            <div style="font-size:15px;font-weight:600;color:var(--gray-900);margin-bottom:3px">Revenue by category</div>
+            <div style="font-size:12px;color:var(--gray-500);margin-bottom:18px">Last 30 days · ₾342,180 total</div>
+            <div style="display:flex;flex-direction:column;gap:13px">
+              <sc-for list="{{ catRevenue }}" as="c" hint-placeholder-count="5">
+                <div>
+                  <div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="font-size:13px;font-weight:600;color:var(--gray-800)">{{ c.name }}</span><span style="font:600 13px var(--font-mono);color:var(--gray-900)" class="tnum">{{ c.value }}</span></div>
+                  <div style="display:flex;align-items:center;gap:9px"><div style="flex:1;height:8px;background:var(--gray-100);position:relative;overflow:hidden"><div style="position:absolute;left:0;top:0;bottom:0;width:{{ c.barW }};background:{{ c.color }}"></div></div><span style="font:600 11px var(--font-mono);color:var(--gray-500);width:30px;text-align:right" class="tnum">{{ c.pct }}</span></div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+          <div style="background:var(--gray-0);border:1px solid var(--gray-200);padding:20px">
+            <div style="font-size:15px;font-weight:600;color:var(--gray-900);margin-bottom:3px">Customer segments</div>
+            <div style="font-size:12px;color:var(--gray-500);margin-bottom:18px">1,200 active customers · RFM model</div>
+            <div style="display:flex;height:14px;overflow:hidden;margin-bottom:18px;border:1px solid var(--gray-0)">
+              <sc-for list="{{ segDist }}" as="s" hint-placeholder-count="6">
+                <div style="width:{{ s.barW }};background:{{ s.color }}"></div>
+              </sc-for>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:11px 16px">
+              <sc-for list="{{ segDist }}" as="s" hint-placeholder-count="6">
+                <div style="display:flex;align-items:center;gap:8px"><span style="width:10px;height:10px;background:{{ s.color }};flex:none"></span><span style="font-size:12px;color:var(--gray-700);flex:1;min-width:0">{{ s.name }}</span><span style="font:600 12px var(--font-mono);color:var(--gray-900)" class="tnum">{{ s.count }}</span></div>
+              </sc-for>
+            </div>
+          </div>
+          <div style="background:var(--gray-0);border:1px solid var(--gray-200);padding:20px">
+            <div style="font-size:15px;font-weight:600;color:var(--gray-900);margin-bottom:3px">Sales by channel</div>
+            <div style="font-size:12px;color:var(--gray-500);margin-bottom:18px">Revenue share · last 30 days</div>
+            <div style="display:flex;flex-direction:column;gap:13px">
+              <sc-for list="{{ channels }}" as="c" hint-placeholder-count="4">
+                <div>
+                  <div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="font-size:13px;font-weight:600;color:var(--gray-800)">{{ c.name }}</span><span style="font:600 13px var(--font-mono);color:var(--gray-900)" class="tnum">{{ c.value }}</span></div>
+                  <div style="display:flex;align-items:center;gap:9px"><div style="flex:1;height:8px;background:var(--gray-100);position:relative;overflow:hidden"><div style="position:absolute;left:0;top:0;bottom:0;width:{{ c.barW }};background:var(--gray-900)"></div></div><span style="font:600 11px var(--font-mono);color:var(--gray-500);width:30px;text-align:right" class="tnum">{{ c.pct }}</span></div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:16px;margin-bottom:16px">
+          <div style="background:var(--gray-0);border:1px solid var(--gray-200);padding:20px">
+            <div style="font-size:15px;font-weight:600;color:var(--gray-900);margin-bottom:3px">Orders by time of day</div>
+            <div style="font-size:12px;color:var(--gray-500);margin-bottom:18px">This week · darker = more orders</div>
+            <div style="display:flex;flex-direction:column;gap:5px">
+              <div style="display:flex;gap:5px;padding-left:42px">
+                <span style="flex:1;text-align:center;font:600 10px var(--font-mono);color:var(--gray-400)">Mon</span>
+                <span style="flex:1;text-align:center;font:600 10px var(--font-mono);color:var(--gray-400)">Tue</span>
+                <span style="flex:1;text-align:center;font:600 10px var(--font-mono);color:var(--gray-400)">Wed</span>
+                <span style="flex:1;text-align:center;font:600 10px var(--font-mono);color:var(--gray-400)">Thu</span>
+                <span style="flex:1;text-align:center;font:600 10px var(--font-mono);color:var(--gray-400)">Fri</span>
+                <span style="flex:1;text-align:center;font:600 10px var(--font-mono);color:var(--gray-400)">Sat</span>
+                <span style="flex:1;text-align:center;font:600 10px var(--font-mono);color:var(--gray-400)">Sun</span>
+              </div>
+              <sc-for list="{{ heat }}" as="h" hint-placeholder-count="6">
+                <div style="display:flex;gap:5px;align-items:center">
+                  <span style="width:38px;flex:none;font:500 10px var(--font-mono);color:var(--gray-400);text-align:right;padding-right:4px" class="tnum">{{ h.label }}</span>
+                  <sc-for list="{{ h.cells }}" as="cell" hint-placeholder-count="7">
+                    <div style="flex:1;height:24px;background:{{ cell.bg }}"></div>
+                  </sc-for>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+          <div style="background:var(--gray-0);border:1px solid var(--gray-200);padding:20px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+              <div><div style="font-size:15px;font-weight:600;color:var(--gray-900)">Activity today</div><div style="font-size:12px;color:var(--gray-500);margin-top:3px">What the platform flagged</div></div>
+              <span style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:var(--gray-600);border:1px solid var(--gray-200);padding:5px 10px"><span style="width:7px;height:7px;background:var(--signal-600);animation:pulse 1.8s ease-in-out infinite"></span>Live feed</span>
+            </div>
+            <div>
+              <sc-for list="{{ activity }}" as="a" hint-placeholder-count="5">
+                <div style="display:flex;gap:12px;padding:11px 0;border-top:1px solid var(--gray-100)">
+                  <span style="font:600 11px var(--font-mono);color:var(--gray-400);width:34px;flex:none;padding-top:2px" class="tnum">{{ a.time }}</span>
+                  <span style="width:8px;height:8px;background:{{ a.color }};flex:none;margin-top:5px"></span>
+                  <div style="flex:1;min-width:0;line-height:1.45"><span style="font-size:11px;font-weight:700;color:{{ a.color }};text-transform:uppercase;letter-spacing:0.04em;margin-right:7px">{{ a.tag }}</span><span style="font-size:13px;color:var(--gray-700)">{{ a.text }}</span></div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin:26px 0 14px;display:flex;align-items:center;gap:12px">
+          <h2 style="margin:0;font-size:18px;font-weight:700;letter-spacing:-0.01em;color:var(--gray-900)">Customers &amp; signals</h2>
+          <span style="flex:1;height:1px;background:var(--gray-200)"></span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:16px;margin-bottom:16px">
+          <div style="background:var(--gray-0);border:1px solid var(--gray-200);overflow:hidden">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid var(--gray-100)"><span style="font-size:15px;font-weight:600;color:var(--gray-900)">Top customers by value</span><a onClick="{{ goCustomer }}" style="font-size:13px;font-weight:600;color:var(--green-600);cursor:pointer">View all</a></div>
+            <table style="width:100%;border-collapse:collapse">
+              <thead><tr>
+                <th style="text-align:left;font-size:11px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:var(--gray-500);padding:10px 20px">Customer</th>
+                <th style="text-align:left;font-size:11px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:var(--gray-500);padding:10px 12px">Segment</th>
+                <th style="text-align:right;font-size:11px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:var(--gray-500);padding:10px 12px">Orders</th>
+                <th style="text-align:right;font-size:11px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:var(--gray-500);padding:10px 20px">LTV</th>
+              </tr></thead>
+              <tbody>
+                <sc-for list="{{ topCustomers }}" as="c" hint-placeholder-count="5">
+                  <tr style="border-top:1px solid var(--gray-100)">
+                    <td style="font-size:13px;font-weight:600;color:var(--gray-900);padding:12px 20px">{{ c.name }}</td>
+                    <td style="padding:12px 12px"><span style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--gray-700)"><span style="width:9px;height:9px;background:{{ c.segColor }};flex:none"></span>{{ c.seg }}</span></td>
+                    <td style="font-size:13px;color:var(--gray-700);text-align:right;font-family:var(--font-mono);padding:12px 12px" class="tnum">{{ c.orders }}</td>
+                    <td style="font-size:13px;font-weight:600;color:var(--gray-900);text-align:right;font-family:var(--font-mono);padding:12px 20px" class="tnum">{{ c.ltv }}</td>
+                  </tr>
+                </sc-for>
+              </tbody>
+            </table>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;gap:11px;padding:13px 14px;background:var(--info-50);border:1px solid var(--info-500);border-left:3px solid var(--info-600)">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style="flex:none;margin-top:1px"><circle cx="12" cy="12" r="9" stroke="var(--info-600)" stroke-width="1.7"/><path d="M12 11v5M12 8h.01" stroke="var(--info-600)" stroke-width="1.8" stroke-linecap="round"/></svg>
+              <div><div style="font-size:13px;font-weight:600;color:var(--info-600)">Reorder window opens in 2 days</div><div style="font-size:12px;color:var(--gray-600);margin-top:2px">3 SKUs are due for restock based on predicted demand.</div></div>
+            </div>
+            <div style="display:flex;gap:11px;padding:13px 14px;background:var(--success-50);border:1px solid var(--green-500);border-left:3px solid var(--green-600)">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style="flex:none;margin-top:1px"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6l7-3z" stroke="var(--green-600)" stroke-width="1.7" stroke-linejoin="round"/><path d="M9 12l2 2 4-4" stroke="var(--green-600)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <div><div style="font-size:13px;font-weight:600;color:var(--green-600)">Blended margin is healthy</div><div style="font-size:12px;color:var(--gray-600);margin-top:2px">47.2% across all active SKUs — 7.2 pts above the floor.</div></div>
+            </div>
+            <div style="display:flex;gap:11px;padding:13px 14px;background:var(--warning-50);border:1px solid var(--warning-500);border-left:3px solid var(--warning-600)">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style="flex:none;margin-top:1px"><circle cx="12" cy="12" r="9" stroke="var(--warning-600)" stroke-width="1.7"/><path d="M12 8v5M12 16h.01" stroke="var(--warning-600)" stroke-width="1.8" stroke-linecap="round"/></svg>
+              <div><div style="font-size:13px;font-weight:600;color:var(--warning-600)">2 products stocking out this week</div><div style="font-size:12px;color:var(--gray-600);margin-top:2px">Ethiopia Yirgacheffe and Colombia Huila have under 7 days of cover.</div></div>
+            </div>
+            <div style="display:flex;gap:11px;padding:13px 14px;background:var(--critical-50);border:1px solid var(--critical-500);border-left:3px solid var(--critical-600)">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style="flex:none;margin-top:1px"><path d="M12 3l9 16H3l9-16z" stroke="var(--critical-600)" stroke-width="1.7" stroke-linejoin="round"/><path d="M12 10v4M12 17h.01" stroke="var(--critical-600)" stroke-width="1.8" stroke-linecap="round"/></svg>
+              <div><div style="font-size:13px;font-weight:600;color:var(--critical-600)">1 promotion blocked by margin floor</div><div style="font-size:12px;color:var(--gray-600);margin-top:2px">Holiday 3-Pack at 28% off resolves to 37.2% — revise to continue.</div></div>
+            </div>
+          </div>
+        </div>
+
+      </section>
+      </sc-if>
+
+      <sc-if value="{{ is_queue }}" hint-placeholder-val="{{ false }}">
+      <section data-screen-label="Action Queue" style="max-width:1240px;margin:0 auto">
+        <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:20px">
+          <div>
+            <h1 style="margin:0;font-size:30px;font-weight:700;letter-spacing:-0.02em;color:var(--gray-900)">Action Queue</h1>
+            <p style="margin:6px 0 0;font-size:14px;color:var(--gray-500)">12 open actions for today, ranked by revenue impact. Work top to bottom.</p>
+          </div>
+          <button style="height:40px;padding:0 16px;border-radius:0;border:1px solid var(--gray-200);background:var(--gray-0);font:600 14px var(--font-ui);color:var(--gray-900);display:flex;align-items:center;gap:8px;cursor:pointer">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="var(--gray-600)" stroke-width="1.8" stroke-linecap="round"/></svg>New action</button>
+        </div>
+
+        <div style="display:flex;gap:16px;margin-bottom:18px">
+          <div style="flex:1;background:var(--gray-900);border-radius:0;padding:18px 22px;display:flex;align-items:center;gap:22px;color:#fff">
+            <div><div style="font-size:12px;color:var(--gray-400);font-weight:500">Total revenue at stake · today</div><div style="font:600 30px var(--font-mono);letter-spacing:-0.02em;margin-top:6px" class="tnum">₾24,120</div></div>
+            <div style="width:1px;align-self:stretch;background:rgba(255,255,255,0.12)"></div>
+            <div style="display:flex;gap:20px">
+              <div><div style="font:600 20px var(--font-mono);color:var(--signal-500)" class="tnum">3</div><div style="font-size:11px;color:var(--gray-400)">Critical · P1</div></div>
+              <div><div style="font:600 20px var(--font-mono)" class="tnum">5</div><div style="font-size:11px;color:var(--gray-400)">High · P2</div></div>
+              <div><div style="font:600 20px var(--font-mono)" class="tnum">4</div><div style="font-size:11px;color:var(--gray-400)">Medium · P3</div></div>
+            </div>
+            <div style="flex:1"></div>
+            <div style="display:flex;align-items:center;gap:7px;background:rgba(255,255,255,0.08);padding:7px 12px;border-radius:0"><span style="width:7px;height:7px;border-radius:0;background:var(--danger-500)"></span><span style="font-size:12px;font-weight:600">2 blocked by margin floor</span></div>
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+          <span style="font-size:12px;font-weight:600;color:var(--gray-500);margin-right:4px">Filter</span>
+          <span style="font-size:13px;font-weight:600;color:#fff;background:var(--gray-900);padding:7px 13px;border-radius:0;cursor:pointer">All · 12</span>
+          <span style="font-size:13px;font-weight:500;color:var(--gray-700);background:var(--gray-0);border:1px solid var(--gray-200);padding:7px 13px;border-radius:0;cursor:pointer">Reactivation</span>
+          <span style="font-size:13px;font-weight:500;color:var(--gray-700);background:var(--gray-0);border:1px solid var(--gray-200);padding:7px 13px;border-radius:0;cursor:pointer">Reorder</span>
+          <span style="font-size:13px;font-weight:500;color:var(--gray-700);background:var(--gray-0);border:1px solid var(--gray-200);padding:7px 13px;border-radius:0;cursor:pointer">Upsell</span>
+          <span style="font-size:13px;font-weight:500;color:var(--gray-700);background:var(--gray-0);border:1px solid var(--gray-200);padding:7px 13px;border-radius:0;cursor:pointer">Margin alert</span>
+          <span style="font-size:13px;font-weight:500;color:var(--gray-700);background:var(--gray-0);border:1px solid var(--gray-200);padding:7px 13px;border-radius:0;cursor:pointer">Stock alert</span>
+          <span style="font-size:13px;font-weight:500;color:var(--gray-700);background:var(--gray-0);border:1px solid var(--gray-200);padding:7px 13px;border-radius:0;cursor:pointer">Ad budget</span>
+          <div style="flex:1"></div>
+          <span style="display:flex;align-items:center;gap:7px;font-size:13px;font-weight:500;color:var(--gray-700);background:var(--gray-0);border:1px solid var(--gray-200);padding:7px 13px;border-radius:0;cursor:pointer">All priorities <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M7 10l5 5 5-5" stroke="var(--gray-500)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <sc-for list="{{ actions }}" as="a" hint-placeholder-count="6">
+            <div style="background:var(--gray-0);border:1px solid var(--gray-200);border-radius:0;padding:16px 18px;display:flex;align-items:center;flex-wrap:wrap;gap:12px 14px;position:relative;{{ a.rowAccent }}">
+              <div style="display:flex;flex-direction:column;align-items:center;gap:7px;width:40px;flex:none">
+                <span style="font:600 13px var(--font-mono);color:var(--gray-400)" class="tnum">{{ a.rank }}</span>
+                <span style="font:600 11px var(--font-mono);padding:3px 0;border-radius:0;width:34px;text-align:center;{{ a.priStyle }}">{{ a.pri }}</span>
+              </div>
+              <div style="width:128px;flex:none">
+                <span style="display:inline-flex;align-items:center;font-size:12px;font-weight:600;padding:4px 9px;border-radius:0;{{ a.typeStyle }}">{{ a.type }}</span>
+              </div>
+              <div style="flex:1 1 220px;min-width:0">
+                <div style="font-size:14px;font-weight:600;color:var(--gray-900);margin-bottom:3px">{{ a.target }}</div>
+                <div style="font-size:13px;color:var(--gray-500);line-height:1.45">{{ a.instruction }}</div>
+              </div>
+              <div style="width:84px;flex:none;text-align:center">
+                <div style="font-size:11px;color:var(--gray-400);margin-bottom:3px">Channel</div>
+                <div style="font-size:13px;font-weight:600;color:var(--gray-700)">{{ a.channel }}</div>
+              </div>
+              <div style="width:96px;flex:none;text-align:right">
+                <div style="font-size:11px;color:var(--gray-400);margin-bottom:3px">{{ a.stakeLabel }}</div>
+                <div style="font:600 16px var(--font-mono);{{ a.stakeStyle }}" class="tnum">{{ a.stake }}</div>
+              </div>
+              <div style="width:150px;flex:none;justify-content:flex-end;gap:8px;align-items:center;{{ a.blockedDisp }}">
+                <span style="display:flex;align-items:center;gap:6px;height:40px;padding:0 14px;border-radius:0;background:var(--gray-100);color:var(--gray-400);font:600 13px var(--font-ui);cursor:not-allowed">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><rect x="5" y="11" width="14" height="9" rx="2" stroke="var(--gray-400)" stroke-width="1.7"/><path d="M8 11V8a4 4 0 0 1 8 0v3" stroke="var(--gray-400)" stroke-width="1.7"/></svg>Blocked</span>
+              </div>
+              <div style="width:150px;flex:none;justify-content:flex-end;gap:8px;align-items:center;{{ a.runDisp }}">
+                <button style="width:40px;height:40px;border-radius:0;border:1px solid var(--gray-200);background:var(--gray-0);color:var(--gray-600);cursor:pointer;display:flex;align-items:center;justify-content:center;flex:none" title="Snooze">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="var(--gray-500)" stroke-width="1.7"/><path d="M12 8v4l3 2" stroke="var(--gray-500)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+                <button style="height:40px;padding:0 16px;border-radius:0;border:none;background:var(--green-500);color:#fff;font:600 13px var(--font-ui);cursor:pointer;display:flex;align-items:center;gap:6px">Run<svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M6 12h12M13 7l5 5-5 5" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </section>
+      </sc-if>
+
+      <sc-if value="{{ is_customer }}" hint-placeholder-val="{{ false }}">
+      <section data-screen-label="Customer 360" style="max-width:1240px;margin:0 auto">
+        <a onClick="{{ goCustomers }}" style="display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--gray-500);cursor:pointer;margin-bottom:16px" style-hover="color:var(--gray-900)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M15 6l-6 6 6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>All customers</a>
+        <div style="display:flex;align-items:center;gap:18px;margin-bottom:22px">
+          <div style="width:64px;height:64px;border-radius:0;background:var(--green-700);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:22px;flex:none">NB</div>
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:center;gap:12px">
+              <h1 style="margin:0;font-size:28px;font-weight:700;letter-spacing:-0.02em;color:var(--gray-900)">Nino Beridze</h1>
+              <span style="display:inline-flex;font-size:12px;font-weight:600;color:#fff;background:var(--seg-cantlose);padding:4px 9px;border-radius:0">Can't Lose Them</span>
+              <span style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--warning-600);background:var(--warning-50);padding:4px 9px;border-radius:0"><span style="width:6px;height:6px;border-radius:0;background:var(--warning-500)"></span>At risk</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:14px;margin-top:7px;font-size:13px;color:var(--gray-500)">
+              <span style="font-family:var(--font-mono)">PRMTR-4821</span><span style="color:var(--gray-300)">·</span><span>Tbilisi, Georgia</span><span style="color:var(--gray-300)">·</span><span>Customer since Aug 2023</span>
+            </div>
+          </div>
+          <div style="display:flex;gap:10px">
+            <button style="height:40px;padding:0 16px;border-radius:0;border:1px solid var(--gray-200);background:var(--gray-0);font:600 14px var(--font-ui);color:var(--gray-900);display:flex;align-items:center;gap:8px;cursor:pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M4 6h16v10a2 2 0 0 1-2 2H8l-4 3V6z" stroke="var(--gray-600)" stroke-width="1.7" stroke-linejoin="round"/></svg>Message</button>
+            <button style="height:40px;padding:0 16px;border-radius:0;border:none;background:var(--gray-900);font:600 14px var(--font-ui);color:#fff;display:flex;align-items:center;gap:8px;cursor:pointer">Edit profile</button>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(185px,1fr));gap:16px;margin-bottom:16px">
+          <div style="background:var(--gray-0);border:1px solid var(--gray-200);border-radius:0;padding:20px"><div style="font-size:12px;font-weight:500;color:var(--gray-600)">Lifetime value</div><div style="font:600 28px var(--font-mono);letter-spacing:-0.02em;margin:10px 0 8px" class="tnum">₾4,820</div><div style="font-size:12px;color:var(--gray-500)">Top 4% of all customers</div></div>
+          <div style="background:var(--gray-0);border:1px solid var(--gray-200);border-radius:0;padding:20px"><div style="font-size:12px;font-weight:500;color:var(--gray-600)">Total orders</div><div style="font:600 28px var(--font-mono);letter-spacing:-0.02em;margin:10px 0 8px" class="tnum">38</div><div style="font-size:12px;color:var(--gray-500)">Across 34 months</div></div>
+          <div style="background:var(--gray-0);border:1px solid var(--gray-200);border-radius:0;padding:20px"><div style="font-size:12px;font-weight:500;color:var(--gray-600)">Avg order value</div><div style="font:600 28px var(--font-mono);letter-spacing:-0.02em;margin:10px 0 8px" class="tnum">₾127</div><div style="font-size:12px;color:var(--gray-500)">23% above store avg</div></div>
+          <div style="background:var(--gray-0);border:1px solid var(--gray-200);border-radius:0;padding:20px"><div style="font-size:12px;font-weight:500;color:var(--gray-600)">Days since last order</div><div style="font:600 28px var(--font-mono);letter-spacing:-0.02em;margin:10px 0 8px;color:var(--warning-600)" class="tnum">41</div><div style="font-size:12px;color:var(--warning-600)">14 days past predicted</div></div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;margin-bottom:16px">
+          <div style="background:var(--gray-0);border:1px solid var(--gray-200);border-radius:0;overflow:hidden">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid var(--gray-100)"><span style="font-size:16px;font-weight:600;color:var(--gray-900)">Order history</span><span style="font-size:13px;color:var(--gray-500)">8 most recent</span></div>
+            <table style="width:100%;border-collapse:collapse">
+              <thead><tr style="background:var(--gray-0)">
+                <th style="text-align:left;font-size:11px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:var(--gray-500);padding:11px 20px">Date</th>
+                <th style="text-align:left;font-size:11px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:var(--gray-500);padding:11px 12px">Product</th>
+                <th style="text-align:center;font-size:11px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:var(--gray-500);padding:11px 12px">Qty</th>
+                <th style="text-align:right;font-size:11px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:var(--gray-500);padding:11px 12px">Value</th>
+                <th style="text-align:right;font-size:11px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:var(--gray-500);padding:11px 20px">Channel</th>
+              </tr></thead>
+              <tbody>
+                <sc-for list="{{ orders }}" as="o" hint-placeholder-count="8">
+                  <tr style="border-top:1px solid var(--gray-100)">
+                    <td style="font-size:13px;color:var(--gray-600);font-family:var(--font-mono);padding:13px 20px" class="tnum">{{ o.date }}</td>
+                    <td style="font-size:13px;font-weight:600;color:var(--gray-900);padding:13px 12px">{{ o.product }}</td>
+                    <td style="font-size:13px;color:var(--gray-600);text-align:center;font-family:var(--font-mono);padding:13px 12px" class="tnum">{{ o.qty }}</td>
+                    <td style="font-size:13px;font-weight:600;color:var(--gray-900);text-align:right;font-family:var(--font-mono);padding:13px 12px" class="tnum">{{ o.value }}</td>
+                    <td style="text-align:right;padding:13px 20px"><span style="font-size:12px;font-weight:600;color:var(--gray-600);background:var(--gray-100);padding:4px 9px;border-radius:0">{{ o.channel }}</span></td>
+                  </tr>
+                </sc-for>
+              </tbody>
+            </table>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:16px">
+            <div style="background:var(--gray-0);border:1px solid var(--gray-200);border-radius:0;padding:18px 20px">
+              <div style="font-size:12px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:var(--gray-400);margin-bottom:12px">Predicted next order</div>
+              <div style="display:flex;align-items:baseline;gap:10px"><span style="font:600 20px var(--font-mono)" class="tnum">10 Jun 2026</span></div>
+              <div style="display:flex;align-items:center;gap:8px;margin-top:10px"><span style="font-size:12px;font-weight:600;color:var(--warning-600);background:var(--warning-50);padding:4px 9px;border-radius:0">Overdue 14 days</span><span style="font-size:12px;color:var(--gray-500)">88% confidence</span></div>
+            </div>
+            <div style="background:var(--gray-0);border:1px solid var(--gray-200);border-radius:0;padding:18px 20px">
+              <div style="font-size:12px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:var(--gray-400);margin-bottom:14px">Churn risk</div>
+              <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:14px"><span style="font:600 28px var(--font-mono);color:var(--danger-600)" class="tnum">74%</span><span style="font-size:13px;font-weight:600;color:var(--danger-600)">High</span></div>
+              <div style="position:relative;height:10px;border-radius:0;background:linear-gradient(90deg,var(--green-400),var(--warning-500),var(--danger-500));overflow:visible">
+                <div style="position:absolute;left:74%;top:-4px;transform:translateX(-50%);width:4px;height:18px;border-radius:0;background:var(--gray-900);border:2px solid #fff"></div>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--gray-400);margin-top:8px"><span>Low</span><span>Medium</span><span>High</span></div>
+            </div>
+            <div style="background:var(--gray-0);border:1px solid var(--gray-200);border-radius:0;padding:18px 20px;display:flex;flex-direction:column;gap:14px">
+              <div style="display:flex;align-items:center;justify-content:space-between"><span style="font-size:13px;color:var(--gray-500)">Preferred channel</span><span style="font-size:13px;font-weight:600;color:var(--gray-900)">Email</span></div>
+              <div style="height:1px;background:var(--gray-100)"></div>
+              <div style="display:flex;align-items:center;justify-content:space-between"><span style="font-size:13px;color:var(--gray-500)">Preferred category</span><span style="font-size:13px;font-weight:600;color:var(--gray-900)">Single Origin</span></div>
+            </div>
+            <div style="background:var(--gray-0);border:1px solid var(--gray-200);border-radius:0;padding:18px 20px">
+              <div style="font-size:12px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:var(--gray-400);margin-bottom:14px">RFM scores</div>
+              <div style="display:flex;gap:10px">
+                <div style="flex:1;text-align:center;background:var(--warning-50);border-radius:0;padding:12px 0"><div style="font:600 24px var(--font-mono);color:var(--warning-600)" class="tnum">2</div><div style="font-size:11px;font-weight:600;color:var(--gray-500);margin-top:3px">Recency</div></div>
+                <div style="flex:1;text-align:center;background:var(--green-50);border-radius:0;padding:12px 0"><div style="font:600 24px var(--font-mono);color:var(--green-600)" class="tnum">5</div><div style="font-size:11px;font-weight:600;color:var(--gray-500);margin-top:3px">Frequency</div></div>
+                <div style="flex:1;text-align:center;background:var(--green-50);border-radius:0;padding:12px 0"><div style="font:600 24px var(--font-mono);color:var(--green-600)" class="tnum">5</div><div style="font-size:11px;font-weight:600;color:var(--gray-500);margin-top:3px">Monetary</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="background:var(--gray-900);border-radius:0;padding:22px 24px;display:flex;align-items:center;gap:22px;color:#fff">
+          <div style="width:46px;height:46px;border-radius:0;background:var(--signal-500);display:flex;align-items:center;justify-content:center;flex:none">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M13 2L4 14h6l-1 8 9-12h-6l1-8z" fill="var(--gray-900)"/></svg>
+          </div>
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:5px"><span style="font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;color:var(--signal-500)">PRMTR recommends · Reactivation</span><span style="font:600 11px var(--font-mono);background:var(--critical-500);color:#fff;padding:2px 8px;border-radius:0">P1</span></div>
+            <div style="font-size:15px;line-height:1.5;color:var(--gray-100)">Nino is your most valuable customer at risk — 41 days past her predicted reorder, with her last two emails unopened. Send a personal <strong style="color:#fff">15% offer on Kazbegi Single Origin</strong> (her top category) by email today. The offer holds margin at 44.8%, clearing the floor.</div>
+          </div>
+          <div style="text-align:right;flex:none">
+            <div style="font-size:11px;color:var(--gray-400);margin-bottom:3px">Value at stake</div>
+            <div style="font:600 22px var(--font-mono);margin-bottom:12px" class="tnum">₾4,820</div>
+            <button style="height:40px;padding:0 20px;border-radius:0;border:none;background:var(--green-500);color:#fff;font:600 14px var(--font-ui);cursor:pointer;display:flex;align-items:center;gap:7px;margin-left:auto">Run action<svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M6 12h12M13 7l5 5-5 5" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          </div>
+        </div>
+      </section>
+      </sc-if>
+
+      <sc-if value="{{ is_promo }}" hint-placeholder-val="{{ false }}">
+      <section data-screen-label="Promotion & Margin" style="max-width:1240px;margin:0 auto">
+        <div style="margin-bottom:22px">
+          <h1 style="margin:0;font-size:30px;font-weight:700;letter-spacing:-0.02em;color:var(--gray-900)">Promotion &amp; Margin Calculator</h1>
+          <p style="margin:6px 0 0;font-size:14px;color:var(--gray-500)">Check every promotion against the 40% margin floor before it goes live. PRMTR blocks anything below.</p>
+        </div>
+
+        <div style="background:var(--gray-0);border:1px solid var(--gray-200);border-radius:0;padding:24px;margin-bottom:16px">
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:28px">
+            <div>
+              <div style="font-size:16px;font-weight:600;color:var(--gray-900);margin-bottom:18px">Build a promotion</div>
+              <div style="display:flex;flex-direction:column;gap:16px">
+                <div>
+                  <label style="display:block;font-size:12px;font-weight:600;color:var(--gray-600);margin-bottom:6px">Product</label>
+                  <input value="Holiday 3-Pack — Dark Roast" readonly style="width:100%;height:40px;border:1px solid var(--gray-200);border-radius:0;padding:0 14px;font:500 14px var(--font-ui);color:var(--gray-900);background:var(--gray-50)"/>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+                  <div>
+                    <label style="display:block;font-size:12px;font-weight:600;color:var(--gray-600);margin-bottom:6px">Base price (₾)</label>
+                    <input type="number" value="{{ base }}" onChange="{{ setBase }}" style="width:100%;height:40px;border:1px solid var(--gray-200);border-radius:0;padding:0 14px;font:600 14px var(--font-mono);color:var(--gray-900);background:var(--gray-0)"/>
+                  </div>
+                  <div>
+                    <label style="display:block;font-size:12px;font-weight:600;color:var(--gray-600);margin-bottom:6px">Cost of goods (₾)</label>
+                    <input type="number" value="{{ cogs }}" onChange="{{ setCogs }}" style="width:100%;height:40px;border:1px solid var(--gray-200);border-radius:0;padding:0 14px;font:600 14px var(--font-mono);color:var(--gray-900);background:var(--gray-0)"/>
+                  </div>
+                </div>
+                <div>
+                  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px"><label style="font-size:12px;font-weight:600;color:var(--gray-600)">Discount</label><span style="font:600 14px var(--font-mono);color:var(--gray-900)" class="tnum">{{ discount }}%</span></div>
+                  <input type="range" min="0" max="60" value="{{ discount }}" onChange="{{ setDiscount }}" style="width:100%;accent-color:var(--green-600);height:6px"/>
+                  <div style="display:flex;justify-content:space-between;font:500 11px var(--font-mono);color:var(--gray-400);margin-top:6px" class="tnum"><span>0%</span><span>30%</span><span>60%</span></div>
+                </div>
+              </div>
+            </div>
+
+            <div style="border-radius:0;padding:22px;display:flex;flex-direction:column;background:{{ calcBg }}">
+              <div style="font-size:12px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:var(--gray-500)">Resulting margin</div>
+              <div style="display:flex;align-items:baseline;gap:10px;margin:10px 0 4px"><span style="font:600 48px var(--font-mono);letter-spacing:-0.02em;color:{{ calcColor }}" class="tnum">{{ calcMargin }}</span></div>
+              <div style="display:inline-flex;align-self:flex-start;align-items:center;gap:7px;font-size:13px;font-weight:600;color:{{ calcColor }};margin-bottom:18px">{{ calcStateLabel }}</div>
+              <div style="position:relative;height:12px;border-radius:0;background:rgba(0,0,0,0.06);overflow:hidden;margin-bottom:2px">
+                <div style="position:absolute;left:0;top:0;bottom:0;width:{{ calcBarW }};background:{{ calcColor }};border-radius:0"></div>
+              </div>
+              <div style="position:relative;height:16px;margin-bottom:10px"><div style="position:absolute;left:66.7%;transform:translateX(-50%);font:600 10px var(--font-mono);color:var(--critical-600)" class="tnum">▲ 40% floor</div></div>
+              <div style="display:flex;flex-direction:column;gap:8px;font-size:13px;color:var(--gray-700);border-top:1px solid rgba(0,0,0,0.07);padding-top:14px">
+                <div style="display:flex;justify-content:space-between"><span>Price after discount</span><span style="font-family:var(--font-mono);font-weight:600" class="tnum">{{ calcPrice }}</span></div>
+                <div style="display:flex;justify-content:space-between"><span>Margin status</span><span style="font-weight:600;color:{{ calcColor }}">{{ calcBreachNote }}</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+          <div style="background:var(--gray-0);border:1px solid var(--green-200);border-left:3px solid var(--green-600);border-radius:0;padding:20px">
+            
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px"><span style="font-size:15px;font-weight:600;color:var(--gray-900)">Spring Single-Origin · 12% off</span><span style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--green-600);background:var(--green-50);padding:4px 9px;border-radius:0"><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6l7-3z" stroke="var(--green-600)" stroke-width="1.7" stroke-linejoin="round"/><path d="M9 12l2 2 4-4" stroke="var(--green-600)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>Safe to run</span></div>
+            <div style="display:flex;align-items:baseline;gap:12px"><span style="font:600 40px var(--font-mono);color:var(--green-600)" class="tnum">52.3%</span><span style="font-size:13px;color:var(--gray-500)">margin · 12.3 pts above floor</span></div>
+            <div style="display:flex;gap:20px;margin-top:16px;font-size:13px;color:var(--gray-600)"><span>Base <strong style="font-family:var(--font-mono);color:var(--gray-900)" class="tnum">₾62</strong></span><span>COGS <strong style="font-family:var(--font-mono);color:var(--gray-900)" class="tnum">₾26</strong></span><span>Sale price <strong style="font-family:var(--font-mono);color:var(--gray-900)" class="tnum">₾54.56</strong></span></div>
+          </div>
+          <div style="background:var(--critical-50);border:1px solid var(--critical-500);border-left:3px solid var(--critical-600);border-radius:0;padding:20px">
+            
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px"><span style="font-size:15px;font-weight:600;color:var(--gray-900)">Holiday 3-Pack · 28% off</span><span style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:#fff;background:var(--critical-600);padding:4px 9px;border-radius:0"><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><rect x="5" y="11" width="14" height="9" rx="2" stroke="#fff" stroke-width="1.7"/><path d="M8 11V8a4 4 0 0 1 8 0v3" stroke="#fff" stroke-width="1.7"/></svg>Blocked</span></div>
+            <div style="display:flex;align-items:baseline;gap:12px"><span style="font:600 40px var(--font-mono);color:var(--critical-600)" class="tnum">37.2%</span><span style="font-size:13px;font-weight:600;color:var(--critical-600)">2.8 pts below the 40% floor</span></div>
+            <div style="display:flex;gap:20px;margin-top:16px;font-size:13px;color:var(--gray-600)"><span>Base <strong style="font-family:var(--font-mono);color:var(--gray-900)" class="tnum">₾144</strong></span><span>COGS <strong style="font-family:var(--font-mono);color:var(--gray-900)" class="tnum">₾65</strong></span><span>Sale price <strong style="font-family:var(--font-mono);color:var(--gray-900)" class="tnum">₾103.68</strong></span></div>
+          </div>
+        </div>
+
+        <div style="background:var(--gray-0);border:1px solid var(--gray-200);border-radius:0;overflow:hidden">
+          <div style="padding:18px 22px;border-bottom:1px solid var(--gray-100);font-size:16px;font-weight:600;color:var(--gray-900)">Saved promotions</div>
+          <table style="width:100%;border-collapse:collapse">
+            <thead><tr>
+              <th style="text-align:left;font-size:11px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:var(--gray-500);padding:11px 22px">Promotion</th>
+              <th style="text-align:right;font-size:11px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:var(--gray-500);padding:11px 12px">Discount</th>
+              <th style="text-align:right;font-size:11px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:var(--gray-500);padding:11px 12px">Resulting margin</th>
+              <th style="text-align:right;font-size:11px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:var(--gray-500);padding:11px 22px">Status</th>
+            </tr></thead>
+            <tbody>
+              <sc-for list="{{ promos }}" as="p" hint-placeholder-count="6">
+                <tr style="border-top:1px solid var(--gray-100)">
+                  <td style="font-size:14px;font-weight:600;color:var(--gray-900);padding:14px 22px">{{ p.name }}</td>
+                  <td style="font-size:14px;color:var(--gray-700);text-align:right;font-family:var(--font-mono);padding:14px 12px" class="tnum">{{ p.discount }}</td>
+                  <td style="font-size:14px;font-weight:600;text-align:right;font-family:var(--font-mono);padding:14px 12px;color:{{ p.marginColor }}" class="tnum">{{ p.margin }}</td>
+                  <td style="text-align:right;padding:14px 22px"><span style="display:inline-flex;align-items:center;font-size:12px;font-weight:600;padding:4px 9px;border-radius:0;{{ p.statusStyle }}">{{ p.status }}</span></td>
+                </tr>
+              </sc-for>
+            </tbody>
+          </table>
+        </div>
+      </section>
+      </sc-if>
+
+      <sc-if value="{{ is_product }}" hint-placeholder-val="{{ false }}">
+      <section data-screen-label="Product Intelligence" style="max-width:1240px;margin:0 auto">
+        <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:22px">
+          <div>
+            <h1 style="margin:0;font-size:30px;font-weight:700;letter-spacing:-0.02em;color:var(--gray-900)">Product Intelligence</h1>
+            <p style="margin:6px 0 0;font-size:14px;color:var(--gray-500)">All products ranked by revenue contribution · June 2026.</p>
+          </div>
+          <button style="height:40px;padding:0 16px;border-radius:0;border:1px solid var(--gray-200);background:var(--gray-0);font:600 14px var(--font-ui);color:var(--gray-900);display:flex;align-items:center;gap:8px;cursor:pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="4" y="4" width="16" height="16" rx="2" stroke="var(--gray-500)" stroke-width="1.7"/><path d="M8 9h8M8 13h8M8 17h5" stroke="var(--gray-500)" stroke-width="1.7" stroke-linecap="round"/></svg>This month</button>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px;margin-bottom:16px">
+          <div style="background:var(--gray-0);border:1px solid var(--gray-200);border-radius:0;padding:20px">
+            <div style="font-size:12px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:var(--gray-400);margin-bottom:12px">Best performer</div>
+            <div style="font-size:16px;font-weight:600;color:var(--gray-900)">Champions Subscription Box</div>
+            <div style="display:flex;align-items:baseline;gap:8px;margin-top:10px"><span style="font:600 24px var(--font-mono)" class="tnum">₾28,710</span><span style="font:600 12px var(--font-mono);color:var(--success-600)" class="tnum">▲ 9%</span></div>
+            <div style="font-size:12px;color:var(--gray-500);margin-top:6px">198 boxes · 47% margin</div>
+          </div>
+          <div style="background:var(--gray-0);border:1px solid var(--gray-200);border-radius:0;padding:20px">
+            <div style="font-size:12px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:var(--gray-400);margin-bottom:12px">Fastest growing</div>
+            <div style="font-size:16px;font-weight:600;color:var(--gray-900)">Cold Brew Concentrate</div>
+            <div style="display:flex;align-items:baseline;gap:8px;margin-top:10px"><span style="font:600 24px var(--font-mono);color:var(--green-600)" class="tnum">▲ 34%</span><span style="font-size:13px;color:var(--gray-500)">week over week</span></div>
+            <div style="font-size:12px;color:var(--gray-500);margin-top:6px">241 units · seasonal demand</div>
+          </div>
+          <div style="background:var(--gray-0);border:1px solid var(--gray-200);border-radius:0;padding:20px">
+            <div style="font-size:12px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:var(--gray-400);margin-bottom:12px">Highest churn risk</div>
+            <div style="font-size:16px;font-weight:600;color:var(--gray-900)">Decaf Swiss Water</div>
+            <div style="display:flex;align-items:baseline;gap:8px;margin-top:10px"><span style="font:600 24px var(--font-mono);color:var(--danger-600)" class="tnum">41%</span><span style="font-size:13px;color:var(--gray-500)">of repeat buyers lapsing</span></div>
+            <div style="font-size:12px;color:var(--gray-500);margin-top:6px">Declining reorder rate</div>
+          </div>
+        </div>
+
+        <div style="margin:0 0 14px;display:flex;align-items:center;gap:12px"><h2 style="margin:0;font-size:18px;font-weight:700;letter-spacing:-0.01em;color:var(--gray-900)">Product portfolio</h2><span style="flex:1;height:1px;background:var(--gray-200)"></span><span style="font-size:13px;font-weight:600;color:var(--green-600);cursor:pointer">+ Add product</span></div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-bottom:24px">
+          <sc-for list="{{ portfolio }}" as="p" hint-placeholder-count="8">
+            <div style="background:var(--gray-0);border:1px solid var(--gray-200);overflow:hidden;cursor:pointer" style-hover="border-color:var(--gray-300);box-shadow:var(--shadow-sm)">
+              <div style="aspect-ratio:4/3;background:var(--gray-100);position:relative;display:flex;align-items:center;justify-content:center;color:var(--gray-300);border-bottom:1px solid var(--gray-200)">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="16" stroke="currentColor" stroke-width="1.4"/><circle cx="8.5" cy="9.5" r="1.7" fill="currentColor"/><path d="M4.5 18.5l4.5-5 3 3 3-3.5L19.5 18.5" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>
+                <span style="position:absolute;top:10px;left:10px;font-size:11px;font-weight:600;padding:4px 8px;{{ p.statusStyle }}">{{ p.status }}</span>
+              </div>
+              <div style="padding:14px 16px">
+                <div style="font-size:14px;font-weight:700;color:var(--gray-900)">{{ p.name }}</div>
+                <div style="font-size:12px;color:var(--gray-500);margin-top:2px">{{ p.meta }}</div>
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-top:12px">
+                  <span style="font:600 16px var(--font-mono);color:var(--gray-900)" class="tnum">{{ p.price }}</span>
+                  <span style="display:flex;align-items:center;gap:4px;font-size:12px;font-weight:600;color:var(--warning-600)"><svg width="13" height="13" viewBox="0 0 24 24" fill="var(--warning-500)"><path d="M12 2l2.9 6.2 6.6.7-4.9 4.5 1.3 6.5L12 17.8 6 19.9l1.3-6.5L2.4 8.9l6.6-.7L12 2z"/></svg>{{ p.rating }}</span>
+                </div>
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-top:10px;padding-top:10px;border-top:1px solid var(--gray-100);font-size:12px;color:var(--gray-500)">
+                  <span>Margin <strong style="font-family:var(--font-mono);color:var(--gray-900)" class="tnum">{{ p.margin }}</strong></span>
+                  <span>{{ p.stock }}</span>
+                </div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="background:var(--gray-0);border:1px solid var(--gray-200);border-radius:0;overflow:hidden;margin-bottom:16px">
+          <div style="padding:18px 22px;border-bottom:1px solid var(--gray-100);font-size:16px;font-weight:600;color:var(--gray-900)">Product ranking</div>
+          <table style="width:100%;border-collapse:collapse">
+            <thead><tr>
+              <th style="text-align:left;font-size:11px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:var(--gray-500);padding:11px 22px;width:34px">#</th>
+              <th style="text-align:left;font-size:11px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:var(--gray-500);padding:11px 12px">Product</th>
+              <th style="text-align:right;font-size:11px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:var(--gray-500);padding:11px 12px">Units</th>
+              <th style="text-align:right;font-size:11px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:var(--gray-500);padding:11px 12px">Revenue</th>
+              <th style="text-align:right;font-size:11px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:var(--gray-500);padding:11px 12px">Margin</th>
+              <th style="text-align:center;font-size:11px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:var(--gray-500);padding:11px 12px">7-day trend</th>
+              <th style="text-align:right;font-size:11px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:var(--gray-500);padding:11px 22px">Status</th>
+            </tr></thead>
+            <tbody>
+              <sc-for list="{{ products }}" as="pr" hint-placeholder-count="9">
+                <tr style="border-top:1px solid var(--gray-100)">
+                  <td style="font-size:13px;color:var(--gray-400);font-family:var(--font-mono);padding:14px 22px" class="tnum">{{ pr.rank }}</td>
+                  <td style="font-size:14px;font-weight:600;color:var(--gray-900);padding:14px 12px">{{ pr.name }}</td>
+                  <td style="font-size:14px;color:var(--gray-700);text-align:right;font-family:var(--font-mono);padding:14px 12px" class="tnum">{{ pr.units }}</td>
+                  <td style="font-size:14px;font-weight:600;color:var(--gray-900);text-align:right;font-family:var(--font-mono);padding:14px 12px" class="tnum">{{ pr.revenue }}</td>
+                  <td style="font-size:14px;font-weight:600;text-align:right;font-family:var(--font-mono);padding:14px 12px;color:{{ pr.marginColor }}" class="tnum">{{ pr.margin }}</td>
+                  <td style="padding:14px 12px;text-align:center">
+                    <svg viewBox="0 0 64 24" width="64" height="24" style="display:inline-block;vertical-align:middle"><polyline points="{{ pr.spark }}" fill="none" stroke="{{ pr.sparkColor }}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  </td>
+                  <td style="text-align:right;padding:14px 22px"><span style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:4px 9px;border-radius:0;{{ pr.statusStyle }}">{{ pr.status }}</span></td>
+                </tr>
+              </sc-for>
+            </tbody>
+          </table>
+        </div>
+
+        <div style="background:var(--gray-0);border:1px solid var(--gray-200);border-radius:0;padding:22px">
+          <div style="font-size:16px;font-weight:600;color:var(--gray-900);margin-bottom:6px">Product affinity</div>
+          <div style="font-size:13px;color:var(--gray-500);margin-bottom:20px">Most frequently bought together — use these pairs to build bundles and cross-sell prompts.</div>
+          <div style="display:flex;flex-direction:column;gap:16px">
+            <sc-for list="{{ affinity }}" as="af" hint-placeholder-count="4">
+              <div style="display:flex;align-items:center;gap:18px">
+                <div style="flex:1;min-width:0;display:flex;align-items:center;gap:10px">
+                  <span style="font-size:14px;font-weight:600;color:var(--gray-900)">{{ af.a }}</span>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style="flex:none"><path d="M8 7l-4 5 4 5M16 7l4 5-4 5" stroke="var(--gray-300)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  <span style="font-size:14px;font-weight:600;color:var(--gray-900)">{{ af.b }}</span>
+                </div>
+                <div style="width:280px;flex:none;height:8px;border-radius:0;background:var(--gray-100);position:relative;overflow:hidden">
+                  <div style="position:absolute;left:0;top:0;bottom:0;width:{{ af.barW }};background:var(--green-500);border-radius:0"></div>
+                </div>
+                <span style="width:54px;text-align:right;font:600 15px var(--font-mono);color:var(--gray-900)" class="tnum">{{ af.rate }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </section>
+      </sc-if>
+
+      <sc-if value="{{ is_ads }}" hint-placeholder-val="{{ false }}">
+      <section data-screen-label="Ads Intelligence" style="max-width:1240px;margin:0 auto">
+        <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:22px">
+          <div>
+            <h1 style="margin:0;font-size:30px;font-weight:700;letter-spacing:-0.02em;color:var(--gray-900)">Ads Intelligence</h1>
+            <p style="margin:6px 0 0;font-size:14px;color:var(--gray-500)">All paid &amp; social channels in one place · last 14 days · attribution synced 12 min ago.</p>
+          </div>
+          <button style="height:40px;padding:0 16px;border-radius:0;border:1px solid var(--gray-200);background:var(--gray-0);font:600 14px var(--font-ui);color:var(--gray-900);display:flex;align-items:center;gap:8px;cursor:pointer">Last 14 days</button>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;margin-bottom:16px">
+          <div style="background:var(--gray-900);color:#fff;padding:18px"><div style="font-size:12px;color:var(--gray-400)">Total audience</div><div style="font:600 24px var(--font-mono);margin:10px 0 8px" class="tnum">166.9k</div><span style="font:600 11px var(--font-mono);background:rgba(255,255,255,0.1);color:var(--signal-500);padding:4px 8px" class="tnum">▲ 6.4%</span></div>
+          <div style="background:var(--gray-0);border:1px solid var(--gray-200);padding:18px"><div style="font-size:12px;color:var(--gray-600)">Total ad spend</div><div style="font:600 24px var(--font-mono);margin:10px 0 8px" class="tnum">₾21,400</div><span style="font:600 11px var(--font-mono);background:var(--gray-100);color:var(--gray-600);padding:4px 8px" class="tnum">▲ 8%</span></div>
+          <div style="background:var(--gray-0);border:1px solid var(--gray-200);padding:18px"><div style="font-size:12px;color:var(--gray-600)">Attributed revenue</div><div style="font:600 24px var(--font-mono);margin:10px 0 8px" class="tnum">₾84,300</div><span style="font:600 11px var(--font-mono);background:var(--success-50);color:var(--success-600);padding:4px 8px" class="tnum">▲ 12%</span></div>
+          <div style="background:var(--gray-0);border:1px solid var(--gray-200);padding:18px"><div style="font-size:12px;color:var(--gray-600)">Blended ROAS</div><div style="font:600 24px var(--font-mono);margin:10px 0 8px" class="tnum">3.94x</div><span style="font:600 11px var(--font-mono);background:var(--success-50);color:var(--success-600);padding:4px 8px" class="tnum">▲ 0.3</span></div>
+          <div style="background:var(--gray-0);border:1px solid var(--gray-200);padding:18px"><div style="font-size:12px;color:var(--gray-600)">Avg engagement</div><div style="font:600 24px var(--font-mono);margin:10px 0 8px" class="tnum">4.1%</div><span style="font:600 11px var(--font-mono);background:var(--success-50);color:var(--success-600);padding:4px 8px" class="tnum">▲ 0.6%</span></div>
+        </div>
+        <div style="margin:22px 0 14px;display:flex;align-items:center;gap:12px"><h2 style="margin:0;font-size:18px;font-weight:700;letter-spacing:-0.01em;color:var(--gray-900)">Channels &amp; audience</h2><span style="flex:1;height:1px;background:var(--gray-200)"></span></div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-bottom:22px">
+          <sc-for list="{{ adsPlatforms }}" as="p" hint-placeholder-count="5">
+            <div style="background:var(--gray-0);border:1px solid var(--gray-200);padding:18px" style-hover="border-color:var(--gray-300);box-shadow:var(--shadow-sm)">
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+                <div style="width:36px;height:36px;background:{{ p.color }};color:#fff;display:flex;align-items:center;justify-content:center;font:700 16px var(--font-ui);flex:none">{{ p.initial }}</div>
+                <div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:700;color:var(--gray-900)">{{ p.name }}</div><div style="font-size:12px;color:var(--gray-500)">{{ p.handle }}</div></div>
+              </div>
+              <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px"><div><div style="font:600 18px var(--font-mono)" class="tnum">{{ p.followers }}</div><div style="font-size:11px;color:var(--gray-500)">followers</div></div><span style="font:600 11px var(--font-mono);padding:4px 8px;{{ p.folStyle }}" class="tnum">{{ p.folDelta }}</span></div>
+              <div style="display:flex;gap:12px;border-top:1px solid var(--gray-100);padding-top:12px">
+                <div style="flex:1"><div style="font:600 14px var(--font-mono)" class="tnum">{{ p.spend }}</div><div style="font-size:11px;color:var(--gray-400)">spend</div></div>
+                <div style="flex:1"><div style="font:600 14px var(--font-mono);color:var(--green-600)" class="tnum">{{ p.roas }}</div><div style="font-size:11px;color:var(--gray-400)">ROAS</div></div>
+                <div style="flex:1"><div style="font:600 14px var(--font-mono)" class="tnum">{{ p.eng }}</div><div style="font-size:11px;color:var(--gray-400)">engage</div></div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="margin:0 0 14px;display:flex;align-items:center;gap:12px"><h2 style="margin:0;font-size:18px;font-weight:700;letter-spacing:-0.01em;color:var(--gray-900)">Meta — detailed performance</h2><span style="flex:1;height:1px;background:var(--gray-200)"></span></div>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(185px,1fr));gap:16px;margin-bottom:16px">
+          <div style="background:var(--gray-0);border:1px solid var(--gray-200);border-radius:0;padding:20px"><div style="font-size:12px;font-weight:500;color:var(--gray-600)">Total ad spend</div><div style="font:600 28px var(--font-mono);letter-spacing:-0.02em;margin:10px 0 8px" class="tnum">₾18,420</div><div style="display:flex;align-items:center;gap:8px"><span style="font:600 12px var(--font-mono);background:var(--gray-100);color:var(--gray-600);padding:4px 8px;border-radius:0" class="tnum">▲ 6%</span><span style="font-size:12px;color:var(--gray-500)">vs prev 14d</span></div></div>
+          <div style="background:var(--gray-0);border:1px solid var(--gray-200);border-radius:0;padding:20px"><div style="font-size:12px;font-weight:500;color:var(--gray-600)">Attributed revenue</div><div style="font:600 28px var(--font-mono);letter-spacing:-0.02em;margin:10px 0 8px" class="tnum">₾72,840</div><div style="display:flex;align-items:center;gap:8px"><span style="font:600 12px var(--font-mono);background:var(--success-50);color:var(--success-600);padding:4px 8px;border-radius:0" class="tnum">▲ 11%</span><span style="font-size:12px;color:var(--gray-500)">vs prev 14d</span></div></div>
+          <div style="background:var(--gray-0);border:1px solid var(--gray-200);border-radius:0;padding:20px"><div style="font-size:12px;font-weight:500;color:var(--gray-600)">Overall ROAS</div><div style="font:600 28px var(--font-mono);letter-spacing:-0.02em;margin:10px 0 8px" class="tnum">3.95x</div><div style="display:flex;align-items:center;gap:8px"><span style="font:600 12px var(--font-mono);background:var(--success-50);color:var(--success-600);padding:4px 8px;border-radius:0" class="tnum">▲ 0.3</span><span style="font-size:12px;color:var(--gray-500)">vs prev 14d</span></div></div>
+          <div style="background:var(--gray-0);border:1px solid var(--gray-200);border-radius:0;padding:20px"><div style="font-size:12px;font-weight:500;color:var(--gray-600)">Cost per acquisition</div><div style="font:600 28px var(--font-mono);letter-spacing:-0.02em;margin:10px 0 8px" class="tnum">₾42.10</div><div style="display:flex;align-items:center;gap:8px"><span style="font:600 12px var(--font-mono);background:var(--success-50);color:var(--success-600);padding:4px 8px;border-radius:0" class="tnum">▼ 4%</span><span style="font-size:12px;color:var(--gray-500)">lower is better</span></div></div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;margin-bottom:16px">
+          <div style="background:var(--gray-0);border:1px solid var(--gray-200);border-radius:0;padding:22px 24px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
+              <div style="font-size:16px;font-weight:600;color:var(--gray-900)">ROAS trend · last 14 days</div>
+              <span style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--gray-600)"><span style="width:14px;height:0;border-top:2px dashed var(--gray-300)"></span>3.0x threshold</span>
+            </div>
+            <div style="display:flex;gap:12px">
+              <div style="display:flex;flex-direction:column;justify-content:space-between;font:500 11px var(--font-mono);color:var(--gray-400);height:200px" class="tnum"><span>5x</span><span>4x</span><span>3x</span><span>2x</span></div>
+              <div style="flex:1">
+                <svg viewBox="0 0 720 200" preserveAspectRatio="none" style="width:100%;height:200px;display:block">
+                  <defs><linearGradient id="roas" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--green-600)" stop-opacity="0.28"/><stop offset="1" stop-color="var(--green-600)" stop-opacity="0.02"/></linearGradient></defs>
+                  <line x1="0" y1="20" x2="720" y2="20" stroke="var(--gray-100)"/><line x1="0" y1="80" x2="720" y2="80" stroke="var(--gray-100)"/><line x1="0" y1="200" x2="720" y2="200" stroke="var(--gray-200)"/>
+                  <line x1="0" y1="140" x2="720" y2="140" stroke="var(--gray-300)" stroke-width="1.5" stroke-dasharray="6 5"/>
+                  <path d="M0,132 L55,140 L110,120 L166,128 L221,112 L277,118 L332,104 L388,110 L443,96 L498,100 L554,84 L609,90 L665,76 L720,68 L720,200 L0,200 Z" fill="url(#roas)"/>
+                  <polyline points="0,132 55,140 110,120 166,128 221,112 277,118 332,104 388,110 443,96 498,100 554,84 609,90 665,76 720,68" fill="none" stroke="var(--green-600)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                  <circle cx="720" cy="68" r="4.5" fill="var(--green-600)" stroke="#fff" stroke-width="2"/>
+                </svg>
+                <div style="display:flex;justify-content:space-between;font:500 11px var(--font-mono);color:var(--gray-400);margin-top:8px" class="tnum"><span>11 Jun</span><span>15 Jun</span><span>19 Jun</span><span>24 Jun</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div style="background:var(--gray-0);border:1px solid var(--gray-200);border-radius:0;padding:20px">
+            <div style="font-size:16px;font-weight:600;color:var(--gray-900);margin-bottom:4px">Segment conversion</div>
+            <div style="font-size:12px;color:var(--gray-500);margin-bottom:18px">From paid traffic · revenue attributed</div>
+            <div style="display:flex;flex-direction:column;gap:16px">
+              <sc-for list="{{ adSegments }}" as="s" hint-placeholder-count="5">
+                <div>
+                  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px">
+                    <span style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--gray-900)"><span style="width:9px;height:9px;border-radius:0;background:{{ s.color }}"></span>{{ s.name }}</span>
+                    <span style="font:600 13px var(--font-mono);color:var(--gray-900)" class="tnum">{{ s.rev }}</span>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:9px">
+                    <div style="flex:1;height:7px;border-radius:0;background:var(--gray-100);position:relative;overflow:hidden"><div style="position:absolute;left:0;top:0;bottom:0;width:{{ s.barW }};background:{{ s.color }};border-radius:0"></div></div>
+                    <span style="font:600 12px var(--font-mono);color:var(--gray-500);width:38px;text-align:right" class="tnum">{{ s.rate }}</span>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+
+        <div style="background:var(--gray-0);border:1px solid var(--gray-200);border-radius:0;overflow:hidden;margin-bottom:16px">
+          <div style="padding:18px 22px;border-bottom:1px solid var(--gray-100);font-size:16px;font-weight:600;color:var(--gray-900)">Active campaigns</div>
+          <table style="width:100%;border-collapse:collapse">
+            <thead><tr>
+              <th style="text-align:left;font-size:11px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:var(--gray-500);padding:11px 22px">Campaign</th>
+              <th style="text-align:left;font-size:11px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:var(--gray-500);padding:11px 12px">Objective</th>
+              <th style="text-align:right;font-size:11px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:var(--gray-500);padding:11px 12px">Spend</th>
+              <th style="text-align:right;font-size:11px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:var(--gray-500);padding:11px 12px">Revenue</th>
+              <th style="text-align:right;font-size:11px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:var(--gray-500);padding:11px 12px">ROAS</th>
+              <th style="text-align:right;font-size:11px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:var(--gray-500);padding:11px 12px">CPC</th>
+              <th style="text-align:right;font-size:11px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:var(--gray-500);padding:11px 22px">Status</th>
+            </tr></thead>
+            <tbody>
+              <sc-for list="{{ campaigns }}" as="c" hint-placeholder-count="5">
+                <tr style="border-top:1px solid var(--gray-100)">
+                  <td style="font-size:14px;font-weight:600;color:var(--gray-900);padding:14px 22px">{{ c.name }}</td>
+                  <td style="font-size:13px;color:var(--gray-600);padding:14px 12px">{{ c.objective }}</td>
+                  <td style="font-size:14px;color:var(--gray-700);text-align:right;font-family:var(--font-mono);padding:14px 12px" class="tnum">{{ c.spend }}</td>
+                  <td style="font-size:14px;font-weight:600;color:var(--gray-900);text-align:right;font-family:var(--font-mono);padding:14px 12px" class="tnum">{{ c.revenue }}</td>
+                  <td style="font-size:14px;font-weight:600;text-align:right;font-family:var(--font-mono);padding:14px 12px;color:{{ c.roasColor }}" class="tnum">{{ c.roas }}</td>
+                  <td style="font-size:14px;color:var(--gray-700);text-align:right;font-family:var(--font-mono);padding:14px 12px" class="tnum">{{ c.cpc }}</td>
+                  <td style="text-align:right;padding:14px 22px"><span style="display:inline-flex;align-items:center;font-size:12px;font-weight:600;padding:4px 9px;border-radius:0;{{ c.statusStyle }}">{{ c.status }}</span></td>
+                </tr>
+              </sc-for>
+            </tbody>
+          </table>
+        </div>
+
+        <div style="background:var(--gray-0);border:1px solid var(--gray-200);border-radius:0;padding:22px">
+          <div style="font-size:16px;font-weight:600;color:var(--gray-900);margin-bottom:16px">Budget alerts</div>
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <div style="display:flex;align-items:flex-start;gap:14px;padding:16px;border-radius:0;background:var(--critical-50);border:1px solid var(--critical-500)">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style="flex:none;margin-top:1px"><path d="M12 3l9 16H3l9-16z" stroke="var(--critical-600)" stroke-width="1.7" stroke-linejoin="round"/><path d="M12 10v4M12 17h.01" stroke="var(--critical-600)" stroke-width="1.8" stroke-linecap="round"/></svg>
+              <div style="flex:1"><div style="font-size:14px;font-weight:600;color:var(--critical-600);margin-bottom:3px">Brand Awareness – Reels is below the ROAS threshold</div><div style="font-size:13px;color:var(--gray-700);line-height:1.5">Spending ₾2,860 to return only ₾5,140 (1.8x, threshold 3.0x). Pause it or shift budget to Retargeting – Warm at 5.9x.</div></div>
+              <button style="height:40px;padding:0 16px;border-radius:0;border:none;background:var(--critical-600);color:#fff;font:600 13px var(--font-ui);cursor:pointer;flex:none">Pause campaign</button>
+            </div>
+            <div style="display:flex;align-items:flex-start;gap:14px;padding:16px;border-radius:0;background:var(--warning-50);border:1px solid var(--warning-500)">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style="flex:none;margin-top:1px"><circle cx="12" cy="12" r="9" stroke="var(--warning-600)" stroke-width="1.7"/><path d="M12 8v5M12 16h.01" stroke="var(--warning-600)" stroke-width="1.8" stroke-linecap="round"/></svg>
+              <div style="flex:1"><div style="font-size:14px;font-weight:600;color:var(--warning-600);margin-bottom:3px">Prospecting – Coffee Lovers CPC up 22% this week</div><div style="font-size:13px;color:var(--gray-700);line-height:1.5">CPC climbed to ₾0.62 while ROAS holds at 3.4x. Refresh the creative before scaling spend further.</div></div>
+            </div>
+            <div style="display:flex;align-items:flex-start;gap:14px;padding:16px;border-radius:0;background:var(--info-50);border:1px solid var(--info-500)">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style="flex:none;margin-top:1px"><circle cx="12" cy="12" r="9" stroke="var(--info-600)" stroke-width="1.7"/><path d="M12 11v5M12 8h.01" stroke="var(--info-600)" stroke-width="1.8" stroke-linecap="round"/></svg>
+              <div style="flex:1"><div style="font-size:14px;font-weight:600;color:var(--info-600);margin-bottom:3px">Retargeting – Warm has budget headroom at 5.9x ROAS</div><div style="font-size:13px;color:var(--gray-700);line-height:1.5">Daily budget is capped while demand is unmet. Raise it by ₾800/day to capture more warm-audience conversions.</div></div>
+              <button style="height:40px;padding:0 16px;border-radius:0;border:none;background:var(--gray-900);color:#fff;font:600 13px var(--font-ui);cursor:pointer;flex:none">Raise budget</button>
+            </div>
+          </div>
+        </div>
+      </section>
+      </sc-if>
+
+      <sc-if value="{{ is_customers }}" hint-placeholder-val="{{ false }}">
+      <section data-screen-label="Customers" style="max-width:1240px;margin:0 auto">
+        <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:20px">
+          <div>
+            <h1 style="margin:0;font-size:30px;font-weight:700;letter-spacing:-0.02em;color:var(--gray-900)">Customers</h1>
+            <p style="margin:6px 0 0;font-size:14px;color:var(--gray-500)">1,200 active customers · click any row to open their 360 profile.</p>
+          </div>
+          <button style="height:40px;padding:0 16px;border:none;background:var(--gray-900);font:600 14px var(--font-ui);color:#fff;display:flex;align-items:center;gap:8px;cursor:pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></svg>Add customer</button>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:16px">
+          <div style="background:var(--gray-0);border:1px solid var(--gray-200);padding:18px"><div style="font-size:12px;color:var(--gray-600);font-weight:500">Total customers</div><div style="font:600 26px var(--font-mono);margin-top:10px" class="tnum">1,200</div></div>
+          <div style="background:var(--gray-0);border:1px solid var(--gray-200);padding:18px"><div style="font-size:12px;color:var(--gray-600);font-weight:500">New this month</div><div style="font:600 26px var(--font-mono);margin-top:10px;color:var(--green-600)" class="tnum">196</div></div>
+          <div style="background:var(--gray-0);border:1px solid var(--gray-200);padding:18px"><div style="font-size:12px;color:var(--gray-600);font-weight:500">At-risk / churning</div><div style="font:600 26px var(--font-mono);margin-top:10px;color:var(--critical-600)" class="tnum">142</div></div>
+          <div style="background:var(--gray-0);border:1px solid var(--gray-200);padding:18px"><div style="font-size:12px;color:var(--gray-600);font-weight:500">Avg lifetime value</div><div style="font:600 26px var(--font-mono);margin-top:10px" class="tnum">₾2,840</div></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+          <div style="display:flex;align-items:center;gap:8px;width:280px;height:40px;padding:0 12px;border:1px solid var(--gray-200);background:var(--gray-0)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="var(--gray-400)" stroke-width="1.7"/><path d="M20 20l-3.5-3.5" stroke="var(--gray-400)" stroke-width="1.7" stroke-linecap="round"/></svg><span style="font-size:13px;color:var(--gray-400)">Search by name or ID…</span></div>
+          <div style="flex:1"></div>
+          <span style="font-size:13px;font-weight:600;color:#fff;background:var(--gray-900);padding:8px 13px;cursor:pointer">All</span>
+          <span style="font-size:13px;font-weight:500;color:var(--gray-700);background:var(--gray-0);border:1px solid var(--gray-200);padding:8px 13px;cursor:pointer">Champions</span>
+          <span style="font-size:13px;font-weight:500;color:var(--gray-700);background:var(--gray-0);border:1px solid var(--gray-200);padding:8px 13px;cursor:pointer">At Risk</span>
+          <span style="font-size:13px;font-weight:500;color:var(--gray-700);background:var(--gray-0);border:1px solid var(--gray-200);padding:8px 13px;cursor:pointer">New</span>
+        </div>
+        <div style="background:var(--gray-0);border:1px solid var(--gray-200);overflow:hidden">
+          <table style="width:100%;border-collapse:collapse">
+            <thead><tr>
+              <th style="text-align:left;font-size:11px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:var(--gray-500);padding:11px 20px">Customer</th>
+              <th style="text-align:left;font-size:11px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:var(--gray-500);padding:11px 12px">Segment</th>
+              <th style="text-align:right;font-size:11px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:var(--gray-500);padding:11px 12px">Orders</th>
+              <th style="text-align:right;font-size:11px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:var(--gray-500);padding:11px 12px">LTV</th>
+              <th style="text-align:right;font-size:11px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:var(--gray-500);padding:11px 12px">Churn</th>
+              <th style="text-align:right;font-size:11px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:var(--gray-500);padding:11px 20px">Last order</th>
+            </tr></thead>
+            <tbody>
+              <sc-for list="{{ customersList }}" as="c" hint-placeholder-count="8">
+                <tr onClick="{{ goCustomer }}" style="border-top:1px solid var(--gray-100);cursor:pointer" style-hover="background:var(--gray-50)">
+                  <td style="padding:12px 20px"><div style="display:flex;align-items:center;gap:11px"><div style="width:34px;height:34px;background:var(--gray-900);color:#fff;display:flex;align-items:center;justify-content:center;font:700 12px var(--font-ui);flex:none">{{ c.initials }}</div><div><div style="font-size:13px;font-weight:600;color:var(--gray-900)">{{ c.name }}</div><div style="font:500 11px var(--font-mono);color:var(--gray-400)">{{ c.id }}</div></div></div></td>
+                  <td style="padding:12px 12px"><span style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--gray-700)"><span style="width:9px;height:9px;background:{{ c.segColor }};flex:none"></span>{{ c.seg }}</span></td>
+                  <td style="font-size:13px;color:var(--gray-700);text-align:right;font-family:var(--font-mono);padding:12px 12px" class="tnum">{{ c.orders }}</td>
+                  <td style="font-size:13px;font-weight:600;color:var(--gray-900);text-align:right;font-family:var(--font-mono);padding:12px 12px" class="tnum">{{ c.ltv }}</td>
+                  <td style="font-size:13px;font-weight:600;text-align:right;font-family:var(--font-mono);padding:12px 12px;color:{{ c.churnColor }}" class="tnum">{{ c.churn }}</td>
+                  <td style="font-size:13px;color:var(--gray-500);text-align:right;font-family:var(--font-mono);padding:12px 20px" class="tnum">{{ c.last }}</td>
+                </tr>
+              </sc-for>
+            </tbody>
+          </table>
+        </div>
+      </section>
+      </sc-if>
+
+      <sc-if value="{{ is_hunter }}" hint-placeholder-val="{{ false }}">
+      <section data-screen-label="Money Hunter" style="max-width:1240px;margin:0 auto">
+        <div style="margin-bottom:20px">
+          <h1 style="margin:0;font-size:30px;font-weight:700;letter-spacing:-0.02em;color:var(--gray-900)">Money Hunter</h1>
+          <p style="margin:6px 0 0;font-size:14px;color:var(--gray-500)">Where the next revenue is hiding — opportunities ranked by potential, every one margin-checked.</p>
+        </div>
+        <div style="background:var(--gray-900);padding:20px 24px;display:flex;align-items:center;gap:26px;color:#fff;margin-bottom:18px;flex-wrap:wrap">
+          <div><div style="font-size:12px;color:var(--gray-400);font-weight:500">Total opportunity identified</div><div style="font:600 32px var(--font-mono);letter-spacing:-0.02em;margin-top:6px" class="tnum">₾73,900</div></div>
+          <div style="width:1px;align-self:stretch;background:rgba(255,255,255,0.12)"></div>
+          <div><div style="font:600 20px var(--font-mono);color:var(--signal-500)" class="tnum">7</div><div style="font-size:11px;color:var(--gray-400)">Open plays</div></div>
+          <div><div style="font:600 20px var(--font-mono)" class="tnum">4</div><div style="font-size:11px;color:var(--gray-400)">Low effort</div></div>
+          <div><div style="font:600 20px var(--font-mono)" class="tnum">71%</div><div style="font-size:11px;color:var(--gray-400)">Avg confidence</div></div>
+          <div style="flex:1"></div>
+          <div style="display:flex;align-items:center;gap:7px;background:rgba(255,255,255,0.08);padding:7px 12px"><span style="width:7px;height:7px;background:var(--green-500)"></span><span style="font-size:12px;font-weight:600">All margin-safe</span></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <sc-for list="{{ hunt }}" as="h" hint-placeholder-count="7">
+            <div style="background:var(--gray-0);border:1px solid var(--gray-200);padding:18px 20px;display:flex;align-items:center;gap:18px;flex-wrap:wrap" style-hover="border-color:var(--gray-300);box-shadow:var(--shadow-sm)">
+              <span style="font:600 18px var(--font-mono);color:var(--gray-300);width:28px;flex:none" class="tnum">{{ h.rank }}</span>
+              <div style="flex:1 1 280px;min-width:0">
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:5px"><span style="font-size:15px;font-weight:600;color:var(--gray-900)">{{ h.title }}</span><span style="font-size:11px;font-weight:600;padding:3px 8px;{{ h.typeStyle }}">{{ h.type }}</span></div>
+                <div style="font-size:13px;color:var(--gray-500);line-height:1.45">{{ h.desc }}</div>
+              </div>
+              <div style="display:flex;gap:22px;align-items:center;flex:none">
+                <div style="text-align:center"><div style="font-size:11px;color:var(--gray-400);margin-bottom:3px">Effort</div><div style="font-size:13px;font-weight:600;color:var(--gray-700)">{{ h.effort }}</div></div>
+                <div style="text-align:center"><div style="font-size:11px;color:var(--gray-400);margin-bottom:3px">Confidence</div><div style="font:600 13px var(--font-mono);color:var(--gray-900)" class="tnum">{{ h.conf }}</div></div>
+                <div style="text-align:right"><div style="font-size:11px;color:var(--gray-400);margin-bottom:3px">Potential</div><div style="font:600 20px var(--font-mono);color:var(--green-600)" class="tnum">{{ h.potential }}</div></div>
+                <button style="height:40px;padding:0 18px;border:none;background:var(--green-500);color:#fff;font:600 13px var(--font-ui);cursor:pointer;display:flex;align-items:center;gap:6px" style-hover="background:var(--green-600)">Pursue<svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M6 12h12M13 7l5 5-5 5" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </section>
+      </sc-if>
+
+      <sc-if value="{{ is_website }}" hint-placeholder-val="{{ false }}">
+      <section data-screen-label="Website Analytics" style="max-width:1240px;margin:0 auto">
+        <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:20px">
+          <div>
+            <h1 style="margin:0;font-size:30px;font-weight:700;letter-spacing:-0.02em;color:var(--gray-900)">Website Analytics</h1>
+            <p style="margin:6px 0 0;font-size:14px;color:var(--gray-500)">kalocoffee.ge · last 30 days · storefront performance &amp; conversion.</p>
+          </div>
+          <button style="height:40px;padding:0 16px;border:1px solid var(--gray-200);background:var(--gray-0);font:600 14px var(--font-ui);color:var(--gray-900);cursor:pointer">Last 30 days</button>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:16px;margin-bottom:16px">
+          <div style="background:var(--gray-0);border:1px solid var(--gray-200);padding:18px"><div style="font-size:12px;color:var(--gray-600)">Sessions</div><div style="font:600 26px var(--font-mono);margin:10px 0 8px" class="tnum">48,390</div><span style="font:600 11px var(--font-mono);background:var(--success-50);color:var(--success-600);padding:3px 7px" class="tnum">▲ 7.2%</span></div>
+          <div style="background:var(--gray-0);border:1px solid var(--gray-200);padding:18px"><div style="font-size:12px;color:var(--gray-600)">Unique visitors</div><div style="font:600 26px var(--font-mono);margin:10px 0 8px" class="tnum">31,840</div><span style="font:600 11px var(--font-mono);background:var(--success-50);color:var(--success-600);padding:3px 7px" class="tnum">▲ 5.1%</span></div>
+          <div style="background:var(--gray-0);border:1px solid var(--gray-200);padding:18px"><div style="font-size:12px;color:var(--gray-600)">Conversion rate</div><div style="font:600 26px var(--font-mono);margin:10px 0 8px" class="tnum">4.6%</div><span style="font:600 11px var(--font-mono);background:var(--success-50);color:var(--success-600);padding:3px 7px" class="tnum">▲ 0.4%</span></div>
+          <div style="background:var(--gray-0);border:1px solid var(--gray-200);padding:18px"><div style="font-size:12px;color:var(--gray-600)">Bounce rate</div><div style="font:600 26px var(--font-mono);margin:10px 0 8px" class="tnum">38.2%</div><span style="font:600 11px var(--font-mono);background:var(--success-50);color:var(--success-600);padding:3px 7px" class="tnum">▼ 1.8%</span></div>
+          <div style="background:var(--gray-0);border:1px solid var(--gray-200);padding:18px"><div style="font-size:12px;color:var(--gray-600)">Avg session</div><div style="font:600 26px var(--font-mono);margin:10px 0 8px" class="tnum">3m 12s</div><span style="font:600 11px var(--font-mono);background:var(--gray-100);color:var(--gray-600);padding:3px 7px" class="tnum">▲ 4s</span></div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px;margin-bottom:16px">
+          <div style="background:var(--gray-0);border:1px solid var(--gray-200);padding:22px">
+            <div style="font-size:15px;font-weight:600;color:var(--gray-900);margin-bottom:3px">Sessions trend</div>
+            <div style="font-size:12px;color:var(--gray-500);margin-bottom:16px">Daily sessions · last 30 days</div>
+            <svg viewBox="0 0 600 180" preserveAspectRatio="none" style="width:100%;height:180px;display:block">
+              <defs><linearGradient id="sess" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--green-600)" stop-opacity="0.3"/><stop offset="1" stop-color="var(--green-600)" stop-opacity="0.02"/></linearGradient></defs>
+              <line x1="0" y1="2" x2="600" y2="2" stroke="var(--gray-100)"/><line x1="0" y1="60" x2="600" y2="60" stroke="var(--gray-100)"/><line x1="0" y1="120" x2="600" y2="120" stroke="var(--gray-100)"/><line x1="0" y1="178" x2="600" y2="178" stroke="var(--gray-200)"/>
+              <path d="M0,180 L0,130 L50,138 L100,118 L150,124 L200,104 L250,112 L300,92 L350,98 L400,78 L450,86 L500,64 L550,70 L600,50 L600,180 Z" fill="url(#sess)"/>
+              <polyline points="0,130 50,138 100,118 150,124 200,104 250,112 300,92 350,98 400,78 450,86 500,64 550,70 600,50" fill="none" stroke="var(--green-600)" stroke-width="2.5" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div style="background:var(--gray-0);border:1px solid var(--gray-200);padding:22px">
+            <div style="font-size:15px;font-weight:600;color:var(--gray-900);margin-bottom:3px">Traffic sources</div>
+            <div style="font-size:12px;color:var(--gray-500);margin-bottom:18px">Sessions by channel</div>
+            <div style="display:flex;flex-direction:column;gap:13px">
+              <sc-for list="{{ webSources }}" as="s" hint-placeholder-count="5">
+                <div>
+                  <div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="font-size:13px;font-weight:600;color:var(--gray-800)">{{ s.name }}</span><span style="font:600 13px var(--font-mono);color:var(--gray-900)" class="tnum">{{ s.s }}</span></div>
+                  <div style="display:flex;align-items:center;gap:9px"><div style="flex:1;height:8px;background:var(--gray-100);position:relative;overflow:hidden"><div style="position:absolute;left:0;top:0;bottom:0;width:{{ s.barW }};background:var(--green-600)"></div></div><span style="font:600 11px var(--font-mono);color:var(--gray-500);width:30px;text-align:right" class="tnum">{{ s.pct }}</span></div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px">
+          <div style="background:var(--gray-0);border:1px solid var(--gray-200);overflow:hidden">
+            <div style="padding:18px 20px;border-bottom:1px solid var(--gray-100);font-size:15px;font-weight:600;color:var(--gray-900)">Top pages</div>
+            <table style="width:100%;border-collapse:collapse">
+              <thead><tr>
+                <th style="text-align:left;font-size:11px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:var(--gray-500);padding:10px 20px">Page</th>
+                <th style="text-align:right;font-size:11px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:var(--gray-500);padding:10px 12px">Views</th>
+                <th style="text-align:right;font-size:11px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:var(--gray-500);padding:10px 12px">CR</th>
+                <th style="text-align:right;font-size:11px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:var(--gray-500);padding:10px 20px">Bounce</th>
+              </tr></thead>
+              <tbody>
+                <sc-for list="{{ webPages }}" as="p" hint-placeholder-count="5">
+                  <tr style="border-top:1px solid var(--gray-100)">
+                    <td style="font:600 13px var(--font-mono);color:var(--gray-900);padding:12px 20px">{{ p.path }}</td>
+                    <td style="font-size:13px;color:var(--gray-700);text-align:right;font-family:var(--font-mono);padding:12px 12px" class="tnum">{{ p.views }}</td>
+                    <td style="font-size:13px;font-weight:600;color:var(--green-600);text-align:right;font-family:var(--font-mono);padding:12px 12px" class="tnum">{{ p.cr }}</td>
+                    <td style="font-size:13px;color:var(--gray-500);text-align:right;font-family:var(--font-mono);padding:12px 20px" class="tnum">{{ p.bounce }}</td>
+                  </tr>
+                </sc-for>
+              </tbody>
+            </table>
+          </div>
+          <div style="background:var(--gray-0);border:1px solid var(--gray-200);padding:22px">
+            <div style="font-size:15px;font-weight:600;color:var(--gray-900);margin-bottom:18px">Conversion funnel</div>
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <div style="display:flex;align-items:center;gap:12px"><div style="height:36px;width:100%;background:var(--green-700);display:flex;align-items:center;padding:0 14px;color:#fff;font:600 13px var(--font-ui);justify-content:space-between"><span>Sessions</span><span style="font-family:var(--font-mono)" class="tnum">48,390</span></div></div>
+              <div style="display:flex;align-items:center;gap:12px;padding-right:11%"><div style="height:36px;width:100%;background:var(--green-600);display:flex;align-items:center;padding:0 14px;color:#fff;font:600 13px var(--font-ui);justify-content:space-between"><span>Product views</span><span style="font-family:var(--font-mono)" class="tnum">31,210</span></div></div>
+              <div style="display:flex;align-items:center;gap:12px;padding-right:32%"><div style="height:36px;width:100%;background:var(--green-500);display:flex;align-items:center;padding:0 14px;color:#fff;font:600 13px var(--font-ui);justify-content:space-between"><span>Add to cart</span><span style="font-family:var(--font-mono)" class="tnum">8,640</span></div></div>
+              <div style="display:flex;align-items:center;gap:12px;padding-right:52%"><div style="height:36px;width:100%;background:var(--green-400);display:flex;align-items:center;padding:0 14px;color:#fff;font:600 13px var(--font-ui);justify-content:space-between"><span>Checkout</span><span style="font-family:var(--font-mono)" class="tnum">3,420</span></div></div>
+              <div style="display:flex;align-items:center;gap:12px;padding-right:64%"><div style="height:36px;width:100%;background:var(--gray-900);display:flex;align-items:center;padding:0 14px;color:#fff;font:600 13px var(--font-ui);justify-content:space-between"><span>Purchase</span><span style="font-family:var(--font-mono)" class="tnum">2,226</span></div></div>
+            </div>
+          </div>
+        </div>
+      </section>
+      </sc-if>
+
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { page: 'overview', base: 144, discount: 20, cogs: 60 };
+  go(p){ return () => this.setState({ page: p }); }
+  num(key){ return (e) => { const v = parseFloat(e.target.value); this.setState({ [key]: isNaN(v) ? 0 : v }); }; }
+  renderVals(){
+    const { page, base, discount, cogs } = this.state;
+    const v = {};
+    ['overview','queue','hunter','customers','customer','product','ads','website','promo'].forEach(p => { v['is_'+p] = page === p; });
+    const active = 'background:var(--gray-100);color:var(--gray-900);box-shadow:inset 3px 0 0 var(--green-600);';
+    const idle = 'color:var(--gray-600);';
+    ['overview','queue','hunter','product','ads','website','promo'].forEach(p => { v['nav_'+p] = page === p ? active : idle; });
+    v['nav_customers'] = (page === 'customers' || page === 'customer') ? active : idle;
+    const titles = { overview:'Overview', queue:'Action Queue', hunter:'Money Hunter', customers:'Customers', customer:'Customer 360', promo:'Promotion & Margin', product:'Product Intelligence', ads:'Ads Intelligence', website:'Website Analytics' };
+    v.pageTitle = titles[page];
+    v.goOverview = this.go('overview'); v.goQueue = this.go('queue'); v.goCustomer = this.go('customer');
+    v.goCustomers = this.go('customers'); v.goWebsite = this.go('website'); v.goHunter = this.go('hunter');
+    v.goPromo = this.go('promo'); v.goProduct = this.go('product'); v.goAds = this.go('ads');
+    // Live margin calculator
+    const price = base * (1 - discount/100);
+    const margin = price > 0 ? (price - cogs)/price*100 : 0;
+    const breach = margin < 40, near = margin >= 40 && margin < 45;
+    v.base = base; v.discount = discount; v.cogs = cogs;
+    v.setBase = this.num('base'); v.setDiscount = this.num('discount'); v.setCogs = this.num('cogs');
+    v.calcPrice = '₾' + price.toFixed(2);
+    v.calcMargin = margin.toFixed(1) + '%';
+    v.calcBreach = breach; v.calcOk = !breach;
+    v.calcColor = breach ? 'var(--critical-600)' : near ? 'var(--warning-600)' : 'var(--green-600)';
+    v.calcBg = breach ? 'var(--critical-50)' : near ? 'var(--warning-50)' : 'var(--green-50)';
+    v.calcStateLabel = breach ? 'Below floor — blocked' : near ? 'Near floor — caution' : 'Safe to run';
+    v.calcBarW = Math.max(2, Math.min(100, margin/60*100)) + '%';
+    v.calcBreachNote = breach ? (40 - margin).toFixed(1) + '% below the 40% floor' : (margin - 40).toFixed(1) + '% of headroom above the floor';
+    // Action Queue data
+    const priStyle = { P1:'background:var(--critical-50);color:var(--critical-600);', P2:'background:var(--warning-50);color:var(--warning-600);', P3:'background:var(--gray-100);color:var(--gray-600);' };
+    const typeStyle = (t) => ({
+      'Reactivation':'background:var(--violet-50);color:var(--violet-600);',
+      'Reorder prompt':'background:var(--info-50);color:var(--info-600);',
+      'Upsell':'background:var(--green-50);color:var(--green-600);',
+      'Margin alert':'background:var(--critical-50);color:var(--critical-600);',
+      'Stock alert':'background:var(--warning-50);color:var(--warning-600);',
+      'Ad budget':'background:var(--teal-50);color:var(--teal-600);',
+    }[t] || 'background:var(--gray-100);color:var(--gray-700);');
+    const raw = [
+      ['Reactivation','Nino Beridze','Overdue 41 days. Send a 15% single-origin win-back offer before she lapses.','Email','₾4,820','P1',false],
+      ['Margin alert','Holiday 3-Pack promo','28% discount yields a 37.2% margin. Cap the discount at 18% to clear the floor.','Blocked','−2.8%','P1',true],
+      ['Upsell','Davit Gelashvili','High AOV with no subscription. Pitch the monthly Champions box on the next call.','Call','₾3,920','P1',false],
+      ['Stock alert','Ethiopia Yirgacheffe','6 days of cover left. Reorder 120kg now to avoid a weekend stockout.','Ops','₾2,160','P2',false],
+      ['Upsell','Loyal segment · 212','Cross-sell the V60 dripper to filter-coffee repeat buyers this week.','App push','₾3,480','P2',false],
+      ['Reorder prompt','Giorgi Kapanadze','Predicted reorder in 2 days. Nudge with a cold brew restock.','SMS','₾1,240','P2',false],
+      ['Margin alert','Cold Brew bundle','Free shipping drops the margin to 38.6%. Add ₾6 handling or trim the discount.','Blocked','−1.4%','P2',true],
+      ['Reactivation','Mariam Tsiklauri','Churn risk 68%. Last two emails unopened — try SMS with a sample offer.','SMS','₾1,860','P2',false],
+      ['Ad budget','Retargeting · Warm','ROAS up to 4.2x. Shift ₾800/day from Prospecting to scale the winners.','Ops','₾2,940','P2',false],
+      ['Upsell','Salome Mgeladze','Bought a grinder, no beans in 30 days. Recommend the Tbilisi Dark Roast.','App push','₾980','P3',false],
+      ['Reorder prompt','Luka Maisuradze','Subscription skipped this month. Send a one-tap resume nudge.','SMS','₾760','P3',false],
+      ['Stock alert','V60 Paper Filters','11 days of cover. Add to the next roastery order — not urgent.','Ops','₾540','P3',false],
+      ['Upsell','New segment · 96','First-order buyers from May — introduce the subscription onboarding flow.','Email','₾1,420','P3',false],
+    ];
+    v.actions = raw.map((r, i) => {
+      const [type, target, instruction, channel, stake, pri, blocked] = r;
+      let rowAccent = '';
+      if (i === 0) rowAccent = 'box-shadow:inset 3px 0 0 var(--signal-500);background:var(--signal-100);';
+      else if (blocked) rowAccent = 'box-shadow:inset 3px 0 0 var(--critical-500);';
+      return {
+        rank: i+1, pri, priStyle: priStyle[pri], type, typeStyle: typeStyle(type),
+        target, instruction, channel, stake,
+        stakeLabel: blocked ? 'Margin' : 'At stake',
+        stakeStyle: blocked ? 'color:var(--critical-600);' : 'color:var(--gray-900);',
+        blocked, notBlocked: !blocked, rowAccent,
+        blockedDisp: blocked ? 'display:flex;' : 'display:none;',
+        runDisp: blocked ? 'display:none;' : 'display:flex;',
+      };
+    });
+    // Customer 360 order history
+    v.orders = [
+      { date:'14 May 2026', product:'Kazbegi Single Origin 250g', qty:2, value:'₾118', channel:'Web' },
+      { date:'28 Apr 2026', product:'Ethiopia Yirgacheffe 250g', qty:1, value:'₾62', channel:'Web' },
+      { date:'12 Apr 2026', product:'Champions Subscription Box', qty:1, value:'₾145', channel:'Subscription' },
+      { date:'30 Mar 2026', product:'Tbilisi Dark Roast 1kg', qty:1, value:'₾96', channel:'App' },
+      { date:'15 Mar 2026', product:'Champions Subscription Box', qty:1, value:'₾145', channel:'Subscription' },
+      { date:'02 Mar 2026', product:'Cold Brew Concentrate', qty:3, value:'₾87', channel:'Web' },
+      { date:'14 Feb 2026', product:'Colombia Huila 250g', qty:2, value:'₾116', channel:'Web' },
+      { date:'28 Jan 2026', product:'V60 Dripper + Filters', qty:1, value:'₾134', channel:'App' },
+    ];
+    // Saved promotions
+    const pStatus = { Active:'background:var(--green-50);color:var(--green-600);', Approved:'background:var(--info-50);color:var(--info-600);', Blocked:'background:var(--critical-50);color:var(--critical-600);' };
+    const praw = [
+      ['Summer Cold Brew','15%','48.6%','Active', false],
+      ['Single-Origin Sampler','10%','53.1%','Approved', false],
+      ['Holiday 3-Pack','28%','37.2%','Blocked', true],
+      ['Subscription Welcome','20%','44.8%','Active', false],
+      ['Clearance: Light Roast','35%','31.5%','Blocked', true],
+      ['Brew Kit Bundle','12%','46.0%','Approved', false],
+    ];
+    v.promos = praw.map(r => ({ name:r[0], discount:r[1], margin:r[2], status:r[3], marginColor: r[4] ? 'var(--critical-600)' : 'var(--green-600)', statusStyle: pStatus[r[3]] }));
+    // Product Intelligence
+    const spark = {
+      rising:'0,20 11,18 22,15 32,16 43,11 53,8 64,4',
+      stable:'0,14 11,13 22,15 32,13 43,14 53,12 64,13',
+      declining:'0,6 11,8 22,7 32,11 43,13 53,16 64,19',
+      'at-risk':'0,10 11,9 22,13 32,11 43,15 53,13 64,18',
+    };
+    const sStyle = { rising:'background:var(--green-50);color:var(--green-600);', stable:'background:var(--gray-100);color:var(--gray-600);', declining:'background:var(--danger-50);color:var(--danger-600);', 'at-risk':'background:var(--warning-50);color:var(--warning-600);' };
+    const sColor = { rising:'var(--green-500)', stable:'var(--gray-400)', declining:'var(--danger-500)', 'at-risk':'var(--warning-500)' };
+    const sLabel = { rising:'Rising', stable:'Stable', declining:'Declining', 'at-risk':'At risk' };
+    const prraw = [
+      ['Kazbegi Single Origin', '312', '₾18,240', '54%', false, 'rising'],
+      ['Champions Subscription Box', '198', '₾28,710', '47%', false, 'rising'],
+      ['Tbilisi Dark Roast 1kg', '286', '₾16,920', '51%', false, 'stable'],
+      ['Ethiopia Yirgacheffe', '174', '₾10,280', '49%', false, 'declining'],
+      ['Espresso Supreme Blend', '156', '₾9,360', '52%', false, 'stable'],
+      ['Cold Brew Concentrate', '241', '₾8,640', '43%', false, 'rising'],
+      ['Colombia Huila', '142', '₾8,120', '50%', false, 'at-risk'],
+      ['V60 Dripper + Filters', '134', '₾6,700', '38%', true, 'at-risk'],
+      ['Decaf Swiss Water', '88', '₾4,840', '45%', false, 'declining'],
+    ];
+    v.products = prraw.map((r, i) => ({ rank:i+1, name:r[0], units:r[1], revenue:r[2], margin:r[3], marginColor: r[4] ? 'var(--critical-600)' : 'var(--gray-900)', status:sLabel[r[5]], statusStyle:sStyle[r[5]], spark:spark[r[5]], sparkColor:sColor[r[5]] }));
+    v.affinity = [
+      { a:'Kazbegi Single Origin', b:'V60 Dripper', rate:'38%', barW:'76%' },
+      { a:'Tbilisi Dark Roast', b:'Cold Brew Concentrate', rate:'31%', barW:'62%' },
+      { a:'Champions Box', b:'Ethiopia Yirgacheffe', rate:'27%', barW:'54%' },
+      { a:'Espresso Supreme', b:'Decaf Swiss Water', rate:'19%', barW:'38%' },
+    ];
+    // ---- Overview: expanded analytics ----
+    v.statTiles = [
+      { label:'Active subscriptions', value:'1,284', delta:'▲ 3.1%', dir:'up' },
+      { label:'Monthly recurring rev', value:'₾92,300', delta:'▲ 5.4%', dir:'up' },
+      { label:'Repeat purchase rate', value:'62%', delta:'▲ 1.2%', dir:'up' },
+      { label:'Refund rate', value:'1.8%', delta:'▼ 0.3%', dir:'up' },
+      { label:'Avg fulfilment', value:'1.4d', delta:'▼ 0.2d', dir:'up' },
+    ].map(t => ({ ...t, deltaStyle: t.dir==='up' ? 'background:var(--success-50);color:var(--success-600);' : 'background:var(--danger-50);color:var(--danger-600);' }));
+    v.goals = [
+      { label:'Monthly revenue', cur:'₾342,180', tgt:'₾400,000', pct:'86%', barW:'86%' },
+      { label:'New customers', cur:'196', tgt:'250', pct:'78%', barW:'78%' },
+      { label:'Subscription retention', cur:'91%', tgt:'88% target', pct:'Exceeds', barW:'100%' },
+    ];
+    v.catRevenue = [
+      { name:'Single Origin', value:'₾118,400', pct:'35%', barW:'100%', color:'var(--green-700)' },
+      { name:'Subscriptions', value:'₾92,300', pct:'27%', barW:'78%', color:'var(--green-600)' },
+      { name:'Signature Blends', value:'₾68,900', pct:'20%', barW:'58%', color:'var(--green-500)' },
+      { name:'Cold Brew', value:'₾34,200', pct:'10%', barW:'29%', color:'var(--green-400)' },
+      { name:'Accessories', value:'₾28,380', pct:'8%', barW:'24%', color:'var(--green-300)' },
+    ];
+    v.segDist = [
+      { name:'Champions', count:'184', barW:'15.3%', color:'var(--seg-champions)' },
+      { name:'Loyal', count:'312', barW:'26.0%', color:'var(--seg-loyal)' },
+      { name:'Potential', count:'268', barW:'22.3%', color:'var(--green-400)' },
+      { name:'New', count:'196', barW:'16.3%', color:'var(--info-500)' },
+      { name:'At Risk', count:'142', barW:'11.8%', color:'var(--seg-atrisk)' },
+      { name:'Hibernating', count:'98', barW:'8.2%', color:'var(--gray-400)' },
+    ];
+    v.channels = [
+      { name:'Web store', value:'₾164,200', pct:'48%', barW:'100%' },
+      { name:'Mobile app', value:'₾102,700', pct:'30%', barW:'63%' },
+      { name:'Subscription', value:'₾61,500', pct:'18%', barW:'37%' },
+      { name:'Wholesale', value:'₾13,780', pct:'4%', barW:'9%' },
+    ];
+    v.activity = [
+      { time:'11:42', tag:'Margin', text:'Holiday 3-Pack promo blocked at 37.2% margin.', color:'var(--critical-600)' },
+      { time:'10:18', tag:'Stock', text:'Ethiopia Yirgacheffe flagged — 6 days of cover left.', color:'var(--warning-500)' },
+      { time:'09:50', tag:'Churn', text:'Nino Beridze moved into "Can\'t Lose Them".', color:'var(--violet-600)' },
+      { time:'08:30', tag:'Growth', text:'Cold Brew Concentrate up 34% week over week.', color:'var(--green-600)' },
+      { time:'08:05', tag:'Sync', text:'Meta Ads attribution refreshed (12 min ago).', color:'var(--info-500)' },
+    ];
+    v.topCustomers = [
+      { name:'Davit Gelashvili', seg:'Champions', segColor:'var(--seg-champions)', orders:'51', ltv:'₾6,140' },
+      { name:'Tamar Lomidze', seg:'Champions', segColor:'var(--seg-champions)', orders:'44', ltv:'₾5,790' },
+      { name:'Nino Beridze', seg:"Can't Lose Them", segColor:'var(--seg-cantlose)', orders:'38', ltv:'₾4,820' },
+      { name:'Giorgi Kapanadze', seg:'Loyal', segColor:'var(--seg-loyal)', orders:'29', ltv:'₾3,210' },
+      { name:'Mariam Tsiklauri', seg:'At Risk', segColor:'var(--seg-atrisk)', orders:'22', ltv:'₾2,480' },
+    ];
+    const heatVals = [
+      [3,4,5,6,8,9,7],[2,3,4,5,7,9,8],[5,6,7,8,9,9,9],[6,7,8,9,9,8,7],[4,5,6,7,8,7,6],[2,2,3,4,6,7,5],
+    ];
+    const heatLabels = ['6–9','9–12','12–15','15–18','18–21','21–24'];
+    v.heat = heatVals.map((row, i) => ({
+      label: heatLabels[i],
+      cells: row.map(val => ({ bg: val <= 2 ? 'var(--gray-100)' : 'color-mix(in srgb, var(--green-700) ' + (val*11) + '%, var(--gray-50))' }))
+    }));
+    // ---- Product portfolio ----
+    const pfTone = { Bestseller:'background:var(--green-50);color:var(--green-600);', Core:'background:var(--gray-100);color:var(--gray-600);', Trending:'background:var(--green-50);color:var(--green-600);', 'Low stock':'background:var(--warning-50);color:var(--warning-600);', Subscription:'background:var(--violet-50);color:var(--violet-600);', 'Low margin':'background:var(--critical-50);color:var(--critical-600);' };
+    const pf = [
+      ['Kazbegi Single Origin','Ethiopia · Light roast','₾62','54%','312 in stock','4.8','Bestseller'],
+      ['Tbilisi Dark Roast','House blend · Dark','₾48','51%','280 in stock','4.6','Core'],
+      ['Ethiopia Yirgacheffe','Ethiopia · Medium','₾62','49%','42 left','4.7','Low stock'],
+      ['Cold Brew Concentrate','Blend · Cold','₾29','43%','190 in stock','4.5','Trending'],
+      ['Espresso Supreme Blend','Blend · Espresso','₾60','52%','164 in stock','4.4','Core'],
+      ['Colombia Huila','Colombia · Medium','₾58','50%','138 in stock','4.6','Core'],
+      ['Champions Subscription Box','Monthly · 3 bags','₾145','47%','198 active','4.9','Subscription'],
+      ['V60 Dripper Kit','Accessory · Brew gear','₾134','38%','120 in stock','4.3','Low margin'],
+    ];
+    v.portfolio = pf.map(r => ({ name:r[0], meta:r[1], price:r[2], margin:r[3], stock:r[4], rating:r[5], status:r[6], statusStyle:pfTone[r[6]] }));
+    // ---- Customers list ----
+    const cc = (n) => n>50 ? 'var(--critical-600)' : n>25 ? 'var(--warning-600)' : 'var(--green-600)';
+    const cl = [
+      ['Davit Gelashvili','PRMTR-3310','Champions','var(--seg-champions)','₾6,140','51','3d ago',8],
+      ['Tamar Lomidze','PRMTR-2904','Champions','var(--seg-champions)','₾5,790','44','5d ago',11],
+      ['Nino Beridze','PRMTR-4821',"Can't Lose Them",'var(--seg-cantlose)','₾4,820','38','41d ago',74],
+      ['Giorgi Kapanadze','PRMTR-5102','Loyal','var(--seg-loyal)','₾3,210','29','12d ago',22],
+      ['Luka Maisuradze','PRMTR-4417','Loyal','var(--seg-loyal)','₾2,910','26','8d ago',18],
+      ['Mariam Tsiklauri','PRMTR-3876',"At Risk",'var(--seg-atrisk)','₾2,480','22','34d ago',68],
+      ['Ana Kvaratskhelia','PRMTR-6033','Potential','var(--green-400)','₾1,640','14','6d ago',29],
+      ['Salome Mgeladze','PRMTR-6190','New','var(--info-500)','₾820','5','2d ago',12],
+    ];
+    v.customersList = cl.map(r => ({ name:r[0], id:r[1], seg:r[2], segColor:r[3], ltv:r[4], orders:r[5], last:r[6], churn:r[7]+'%', churnColor:cc(r[7]), initials:r[0].split(' ').map(w=>w[0]).join('') }));
+    // ---- Money Hunter ----
+    const huType = { Retention:'background:var(--violet-50);color:var(--violet-600);', Subscription:'background:var(--violet-50);color:var(--violet-600);', Pricing:'background:var(--info-50);color:var(--info-600);', Margin:'background:var(--critical-50);color:var(--critical-600);', Ads:'background:var(--teal-50);color:var(--teal-600);', Upsell:'background:var(--green-50);color:var(--green-600);' };
+    const hu = [
+      ['Win back 18 lapsing Champions','Retention','₾22,400','Low','84%','High-value customers 30+ days overdue. A personal 12% offer recovers most.'],
+      ['Convert 142 one-time buyers to subscription','Subscription','₾18,600','Medium','71%','First-order buyers who never returned — onboarding flow into the Champions box.'],
+      ['Raise Cold Brew price 8%','Pricing','₾9,200','Low','66%','Demand is inelastic at current volume; margin lifts with negligible churn.'],
+      ['Bundle V60 + filters to lift margin','Margin','₾7,400','Low','78%','Accessory margin is 38%. Bundling raises blended margin above floor.'],
+      ['Scale Retargeting – Warm ad budget','Ads','₾6,900','Low','81%','Campaign holds 5.9x ROAS with unmet demand — raise daily cap ₾800.'],
+      ['Reactivate 96 At-Risk with SMS','Retention','₾5,600','Medium','63%','Email fatigue detected; SMS sample offer re-engages the segment.'],
+      ['Cross-sell Decaf to evening buyers','Upsell','₾3,800','Medium','58%','Affinity model links evening orders to decaf — targeted app push.'],
+    ];
+    v.hunt = hu.map((r,i) => ({ rank:i+1, title:r[0], type:r[1], typeStyle:huType[r[1]], potential:r[2], effort:r[3], conf:r[4], desc:r[5] }));
+    // ---- Website analytics ----
+    v.webSources = [
+      { name:'Organic search', s:'18,420', pct:'38%', barW:'100%' },
+      { name:'Paid social', s:'12,640', pct:'26%', barW:'69%' },
+      { name:'Direct', s:'8,910', pct:'18%', barW:'48%' },
+      { name:'Email', s:'5,240', pct:'11%', barW:'28%' },
+      { name:'Referral', s:'3,180', pct:'7%', barW:'17%' },
+    ];
+    v.webPages = [
+      ['/shop/single-origin','9,840','4.2%','38%'],
+      ['/ (home)','8,210','3.1%','44%'],
+      ['/subscription','6,470','6.8%','29%'],
+      ['/shop/cold-brew','4,920','5.1%','41%'],
+      ['/product/kazbegi','3,860','7.4%','33%'],
+    ].map(r => ({ path:r[0], views:r[1], cr:r[2], bounce:r[3] }));
+    // ---- Ads Intelligence: platforms ----
+    const ap = [
+      ['Instagram','@kalocoffee','62.8k','+4.1%','₾5,100','4.6x','5.2%','var(--violet-600)'],
+      ['Facebook','Kalo Coffee','48.2k','+1.2%','₾6,200','3.4x','2.1%','var(--info-600)'],
+      ['TikTok','@kalocoffee','31.4k','+18.6%','₾3,800','5.2x','7.8%','var(--gray-900)'],
+      ['Google Ads','Search & Shopping','—','—','₾4,900','3.9x','3.4%','var(--warning-600)'],
+      ['YouTube','Kalo Coffee','9.7k','+2.4%','₾1,400','2.8x','1.9%','var(--critical-600)'],
+    ];
+    v.adsPlatforms = ap.map(r => ({ name:r[0], handle:r[1], followers:r[2], folDelta:r[3], spend:r[4], roas:r[5], eng:r[6], color:r[7], initial:r[0][0], folStyle: r[3].startsWith('+') ? 'background:var(--success-50);color:var(--success-600);' : 'background:var(--gray-100);color:var(--gray-500);' }));
+    // Meta Ads
+    const cStatus = { Active:'background:var(--green-50);color:var(--green-600);', Underperforming:'background:var(--warning-50);color:var(--warning-600);', Paused:'background:var(--gray-100);color:var(--gray-600);' };
+    const craw = [
+      ['Retargeting – Warm Audience','Conversions','₾3,180','₾18,720','5.9x','₾0.41','Active', true],
+      ['Lookalike – High LTV','Conversions','₾2,120','₾11,500','5.4x','₾0.48','Paused', true],
+      ['Subscription Push','Conversions','₾4,020','₾16,080','4.0x','₾0.55','Active', true],
+      ['Prospecting – Coffee Lovers','Conversions','₾6,240','₾21,400','3.4x','₾0.62','Active', true],
+      ['Brand Awareness – Reels','Awareness','₾2,860','₾5,140','1.8x','₾0.88','Underperforming', false],
+    ];
+    v.campaigns = craw.map(r => ({ name:r[0], objective:r[1], spend:r[2], revenue:r[3], roas:r[4], cpc:r[5], status:r[6], statusStyle:cStatus[r[6]], roasColor: r[7] ? 'var(--green-600)' : 'var(--critical-600)' }));
+    v.adSegments = [
+      { name:'Champions', color:'var(--seg-champions)', rev:'₾24,100', rate:'8.4%', barW:'93%' },
+      { name:'Loyal', color:'var(--seg-loyal)', rev:'₾19,300', rate:'6.1%', barW:'68%' },
+      { name:'Potential Loyalist', color:'var(--green-400)', rev:'₾14,600', rate:'4.8%', barW:'53%' },
+      { name:'New Customers', color:'var(--info-500)', rev:'₾9,200', rate:'3.2%', barW:'36%' },
+      { name:'At Risk', color:'var(--seg-atrisk)', rev:'₾5,640', rate:'2.1%', barW:'23%' },
+    ];
+    return v;
+  }
+}
+</script>
+</body>
+</html>

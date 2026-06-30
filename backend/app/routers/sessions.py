@@ -8,7 +8,6 @@ from zoneinfo import ZoneInfo
 from fastapi import APIRouter, Depends, Query
 
 from ..deps import get_supabase
-from ..services.catalog import clean_category, dedupe_geo
 from ..schemas.sessions import (
     AbandonmentByStage,
     AbandonmentKpis,
@@ -138,28 +137,30 @@ async def sessions_overview(
         for sku in (s.get("products_carted_sku") or []):
             sku_cart[sku] += 1
 
-    # Resolve SKU → name / category from products_georgia (deduped by variant_sku)
+    # Resolve SKU → name / category
     top_skus = [sku for sku, _ in sku_view.most_common(20)]
     product_map: dict = {}
     if top_skus:
-        pg = (
+        pm = (
             sb.table("products_georgia")
-            .select("variant_sku,title,product_type,status,variant_price")
+            .select("variant_sku,title,product_type")
             .in_("variant_sku", top_skus)
             .execute()
         )
-        product_map = dedupe_geo(pg.data or [])
+        product_map = {
+            r["variant_sku"]: {"sku": r["variant_sku"], "name": r.get("title"), "category": r.get("product_type")}
+            for r in (pm.data or [])
+        }
 
     def _prod(sku: str, count: int) -> TopProduct:
         info = product_map.get(sku, {})
-        return TopProduct(sku=sku, name=info.get("title") or sku,
-                          category=clean_category(info.get("product_type")), count=count)
+        return TopProduct(sku=sku, name=info.get("name") or sku, category=info.get("category"), count=count)
 
     top_products = [_prod(sku, cnt) for sku, cnt in sku_view.most_common(5)]
 
     cat_cnt: Counter = Counter()
     for sku, cnt in sku_view.items():
-        cat = clean_category((product_map.get(sku) or {}).get("product_type"))
+        cat = (product_map.get(sku) or {}).get("category")
         if cat:
             cat_cnt[cat] += cnt
     top_categories = [
@@ -401,7 +402,7 @@ def _empty_overview(range_param: str) -> SessionsOverviewResponse:
         kpis=SessionsKpis(sessions=0, unique_visitors=0, registered_share=0,
                           conversion_rate=0, avg_duration_seconds=0, engaged_pct=0,
                           bounce_rate_pct=0.0, new_visitors=0, returning_visitors=0),
-        funnel=[FunnelRow(label=l, count=0, pct=0) for l in _FUNNEL_LABELS],
+        funnel=[FunnelRow(label=lbl, count=0, pct=0) for lbl in _FUNNEL_LABELS],
         who=WhoIsBrowsing(registered=0, anonymous=0, warm=0),
         top_products=[], top_categories=[], viewed_not_bought=[],
         channels=[], devices=[], geo=[],

@@ -34,7 +34,7 @@ logger = logging.getLogger(__name__)
 API_PREFIX = "/api/v1"
 
 
-def _build_scheduler() -> "AsyncIOScheduler | None":
+def _build_scheduler() -> AsyncIOScheduler | None:
     """Create and configure the APScheduler instance. Returns None if not installed."""
     try:
         from apscheduler.schedulers.asyncio import AsyncIOScheduler

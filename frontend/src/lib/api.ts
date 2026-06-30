@@ -409,7 +409,6 @@ export interface CampaignSummary {
   target_segment: string | null;
   launched_at: string | null;
   scheduled_at: string | null;
-  created_at: string | null;
   // GEL results
   revenue_total: number | null;
   roi: number | null;
@@ -417,11 +416,22 @@ export interface CampaignSummary {
   reached: number | null;
   conversion_rate: number | null;
   avg_order_value: number | null;
+  // Month-to-date attributed revenue / ROI (NULL if no MTD orders) — KPI cards
+  revenue_mtd: number | null;
+  roi_mtd: number | null;
   // Meta (USD)
   meta_spend_usd: number;
   meta_roas: number | null;
   meta_impressions: number;
   meta_clicks: number;
+  // Promotion window (for calendar spans and sorting by end date)
+  valid_from: string | null;
+  valid_to: string | null;
+  // Shopify live discount status
+  shopify_discount_status: string | null;
+  shopify_usage_count: number | null;
+  shopify_usage_limit: number | null;
+  source_app: string | null;
 }
 
 export async function fetchCampaigns(): Promise<CampaignSummary[]> {
@@ -452,6 +462,22 @@ export async function createCampaign(input: CampaignCreateInput): Promise<Campai
   return res.json() as Promise<CampaignSummary>;
 }
 
+export async function setCampaignStatus(
+  id: string,
+  status: "active" | "completed",
+): Promise<{ status: string }> {
+  const res = await fetch(`${BASE}/api/v1/campaigns/${encodeURIComponent(id)}/status`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ status }),
+  });
+  if (!res.ok) {
+    const detail = await res.json().catch(() => null) as { detail?: string } | null;
+    throw new Error(detail?.detail ?? `set status ${res.status}`);
+  }
+  return res.json() as Promise<{ status: string }>;
+}
+
 export interface CampaignProductRow {
   sku: string | null;
   title: string | null;
@@ -466,7 +492,6 @@ export interface CampaignDetail extends CampaignSummary {
   discount_type: string | null;
   min_order_value: number | null;
   valid_from: string | null;
-  valid_to: string | null;
   tag_pattern: string | null;
   excluded_segments: string[];
   products: CampaignProductRow[];
@@ -509,4 +534,27 @@ export async function fetchMetaOverview(): Promise<MetaOverview> {
   const res = await fetch(`${BASE}/api/v1/campaigns/meta-overview`);
   if (!res.ok) throw new Error(`meta-overview ${res.status}`);
   return res.json() as Promise<MetaOverview>;
+}
+
+// Product catalog synced from the commercial-master sheet — powers the promo
+// calculator's product/bundle pickers (price + COGS selected, not typed).
+export interface CatalogProduct {
+  sku: string;
+  name_en: string | null;
+  name_ka: string | null;
+  product_type: "capsule" | "classic_coffee" | "machine" | "accessory";
+  category: string | null;
+  subcategory: string | null;
+  status: string;
+  caps_per_pack: number | null;
+  price_per_pack: number | null;
+  price_per_unit: number | null;
+  total_cogs: number | null;
+  full_margin: number | null;
+}
+
+export async function fetchCatalogProducts(): Promise<CatalogProduct[]> {
+  const res = await fetch(`${BASE}/api/v1/campaigns/products`);
+  if (!res.ok) return [];
+  return res.json() as Promise<CatalogProduct[]>;
 }

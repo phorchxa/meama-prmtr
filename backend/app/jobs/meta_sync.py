@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import json
 import logging
-import sys
 from datetime import date, timedelta
 
 from supabase import create_client
