@@ -47,6 +47,7 @@ type SortDir = "desc" | "asc";
 type CommercialCat = "all" | "coffee" | "tea" | "wellness";
 type IntensityFilter = "all" | "light" | "medium" | "strong";
 type PerformerFilter = "all" | "top_returning" | "worst";
+type StatusFilter = "all" | "active" | "draft" | "archived";
 
 // Catalog grid/table render in batches instead of mounting every filtered
 // product (and its image) at once — the DOM/image cost scales with what's
@@ -927,6 +928,7 @@ export default function Products() {
   const [commercialCat, setCommercialCat] = useState<CommercialCat>("all");
   const [flavorSearch, setFlavorSearch] = useState("");
   const [performerFilter, setPerformerFilter] = useState<PerformerFilter>("all");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [sortKey, setSortKey] = useState<SortKey>("revenue");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [view, setView] = useState<"grid" | "table">("grid");
@@ -955,6 +957,7 @@ export default function Products() {
       );
     }
     if (category !== "all") out = out.filter((p) => p.category === category);
+    if (statusFilter !== "all") out = out.filter((p) => p.status === statusFilter);
     if (caffeine !== "all") out = out.filter((p) => caffeineBucket(p.caffeine_mg) === caffeine);
     if (bioOnly) out = out.filter((p) => p.bio);
     if (hotcold !== "all") {
@@ -993,7 +996,7 @@ export default function Products() {
       return out.slice(0, 20);
     }
     return sortProducts(out, sortKey, sortDir);
-  }, [products, search, category, caffeine, bioOnly, hotcold, trendFilter, intensityFilter, commercialCat, flavorSearch, performerFilter, sortKey, sortDir]);
+  }, [products, search, category, statusFilter, caffeine, bioOnly, hotcold, trendFilter, intensityFilter, commercialCat, flavorSearch, performerFilter, sortKey, sortDir]);
 
   // Reset to the first batch whenever the filtered set changes (new search,
   // filter, sort, or the initial load) rather than keeping a stale scroll depth.
@@ -1032,7 +1035,7 @@ export default function Products() {
   ];
 
   const activeFilterCount = [
-    search, category !== "all", caffeine !== "all", bioOnly,
+    search, category !== "all", statusFilter !== "all", caffeine !== "all", bioOnly,
     hotcold !== "all", trendFilter !== "all", intensityFilter !== "all",
     commercialCat !== "all", flavorSearch, performerFilter !== "all",
   ].filter(Boolean).length;
@@ -1122,6 +1125,18 @@ export default function Products() {
               <option value="wellness">Wellness</option>
             </select>
 
+            {/* Status */}
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
+              className="border border-meama-charcoal bg-meama-ivory px-3 py-1.5 font-mono text-xs text-meama-cream focus:border-meama-gold focus:outline-none"
+            >
+              <option value="all">All statuses</option>
+              <option value="active">Active</option>
+              <option value="draft">Draft</option>
+              <option value="archived">Archived</option>
+            </select>
+
             {/* Intensity */}
             <select
               value={intensityFilter}
@@ -1205,7 +1220,7 @@ export default function Products() {
             {activeFilterCount > 0 && (
               <button
                 onClick={() => {
-                  setSearch(""); setCategory("all"); setCaffeine("all");
+                  setSearch(""); setCategory("all"); setStatusFilter("all"); setCaffeine("all");
                   setBioOnly(false); setHotcold("all"); setTrendFilter("all");
                   setIntensityFilter("all"); setCommercialCat("all");
                   setFlavorSearch(""); setPerformerFilter("all");

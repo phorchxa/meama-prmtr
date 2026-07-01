@@ -9,6 +9,7 @@ export interface ProductSummary {
   subcategory: string | null;
   price: number;
   cogs: number | null;
+  status: "active" | "draft" | "archived";
 
   // Enrichment
   image_url: string | null;
