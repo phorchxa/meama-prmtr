@@ -304,11 +304,83 @@ export interface OverviewAction {
   to: string;
 }
 
+export interface OverviewDelta {
+  current: number;
+  previous: number;
+  delta_pct: number | null;
+}
+
+export interface OverviewCustomer {
+  new_customers: OverviewDelta;
+  active_buyers_90d: number;
+  total_registered: number;
+  registered_pct: number;
+  guest_pct: number;
+  ltv_avg: number;
+  churn_rate: number | null; // PLACEHOLDER — formula pending
+  machine_to_capsule_pct: number | null;
+}
+
+export interface OverviewChannelPair {
+  ecom: number;
+  brand_store: number;
+}
+
+export interface OverviewRevenue {
+  aov: OverviewChannelPair;
+  capsule_aov: OverviewChannelPair;
+  contribution_margin_pct: number | null;
+  contribution_margin_covered_pct: number;
+  total_orders_all_channels: number;
+  ad_cost_30d_usd: number;
+  ad_cost_total_usd: number;
+  forecast: { current_month: number | null; next_month: number | null }; // PLACEHOLDER
+  health_score: number | null; // PLACEHOLDER — composite formula pending
+}
+
+export interface OverviewProductRef {
+  sku: string;
+  title: string;
+  revenue?: number;
+  units?: number;
+  repeat_rate?: number;
+}
+
+export interface OverviewProduct {
+  top_by_revenue: OverviewProductRef | null;
+  top_by_units: OverviewProductRef | null;
+  most_returned_to: OverviewProductRef | null;
+  avg_capsule_price: OverviewChannelPair;
+}
+
+export interface OverviewChannel {
+  region: { capital: number; regional: number; unknown: number };
+  delivery_vs_pickup: { delivery: number; pickup: number; other: number };
+}
+
+export interface OverviewPromotion {
+  name: string;
+  promo_type: string | null;
+  discount_type: string | null;
+  discount_value: number | null;
+  shopify_code: string | null;
+  valid_from: string | null;
+  valid_to: string | null;
+  status: string;
+}
+
 export interface OverviewResponse {
   kpis: OverviewKpis;
   revenue_trend_30d: OverviewTrendPoint[];
   alerts: OverviewAlert[];
   actions: OverviewAction[];
+  // Added by the executive-homepage buildout — all optional so the page still
+  // renders if the backend is mid-rollout.
+  customer?: OverviewCustomer;
+  revenue?: OverviewRevenue;
+  product?: OverviewProduct;
+  channel?: OverviewChannel;
+  promotions?: OverviewPromotion[];
 }
 
 export async function fetchOverview(): Promise<OverviewResponse> {

@@ -1,11 +1,11 @@
-import { useEffect, useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
 import { Badge } from "../components/Badge";
 import { Kicker } from "../components/Kicker";
-import { type OverviewResponse, fetchOverview } from "../lib/api";
-import { formatGEL0, formatNumber, formatPercent, tbilisiTime } from "../lib/format";
+import { type OverviewDelta, type OverviewResponse, fetchOverview } from "../lib/api";
+import { formatGEL, formatGEL0, formatNumber, formatPercent, formatUSD0, tbilisiTime } from "../lib/format";
 import { PageHeader } from "./PageHeader";
 
 // ── Inline SVG area chart (inline-SVG only — no chart library) ────────────────
@@ -81,6 +81,56 @@ function KpiCard({ label, value, sub, tone = "default" }: KpiCardProps) {
   );
 }
 
+// ── Section wrapper (kicker + content) ──────────────────────────────────────────
+function Section({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <div className="mt-8">
+      <Kicker>{title}</Kicker>
+      <div className="mt-3">{children}</div>
+    </div>
+  );
+}
+
+function SkeletonGrid({ n }: { n: number }) {
+  return (
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      {Array.from({ length: n }, (_, i) => <KpiSkeleton key={i} />)}
+    </div>
+  );
+}
+
+// ── Two-segment split bar (same look as the revenue channel bar) ────────────────
+function SplitBar({
+  leftLabel, leftValue, rightLabel, rightValue,
+}: { leftLabel: string; leftValue: number; rightLabel: string; rightValue: number }) {
+  const total = leftValue + rightValue;
+  const leftPct = total > 0 ? leftValue / total : 0.5;
+  return (
+    <>
+      <div className="mb-1 flex justify-between text-xs text-meama-muted">
+        <span>{leftLabel} {formatPercent(leftPct, 0)}</span>
+        <span>{rightLabel} {formatPercent(1 - leftPct, 0)}</span>
+      </div>
+      <div className="flex h-1.5 overflow-hidden">
+        <div className="bg-green-500" style={{ width: `${leftPct * 100}%` }} />
+        <div className="bg-gray-200" style={{ width: `${(1 - leftPct) * 100}%` }} />
+      </div>
+    </>
+  );
+}
+
+// ── Period-over-period delta → sub-label + tone ─────────────────────────────────
+function deltaLabel(d?: OverviewDelta): string {
+  if (!d || d.delta_pct == null) return "vs full last month";
+  const sign = d.delta_pct >= 0 ? "+" : "";
+  return `${sign}${d.delta_pct}% vs full last month`;
+}
+
+function deltaTone(d?: OverviewDelta): "green" | "red" | "default" {
+  if (!d || d.delta_pct == null) return "default";
+  return d.delta_pct >= 0 ? "green" : "red";
+}
+
 // ── Main ──────────────────────────────────────────────────────────────────────
 export default function CommandCenter() {
   const { t } = useTranslation();
@@ -108,8 +158,12 @@ export default function CommandCenter() {
   const trend = data?.revenue_trend_30d ?? [];
   const trendValues = trend.map((p) => p.revenue);
   const recentAlerts = (data?.alerts ?? []).filter((a) => a.severity !== "info").slice(0, 3);
-  const topActions = (data?.actions ?? []).slice(0, 3);
   const ecomPct = kpis?.ecom_pct ?? 0;
+  const customer = data?.customer;
+  const revenue = data?.revenue;
+  const product = data?.product;
+  const chan = data?.channel;
+  const promotions = data?.promotions ?? [];
 
   return (
     <div>
@@ -258,8 +312,8 @@ export default function CommandCenter() {
         </Link>
       </div>
 
-      {/* Alerts + Actions */}
-      <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
+      {/* Recent alerts */}
+      <div className="mt-6">
         <div className="card-m">
           <div className="mb-3 flex items-center justify-between">
             <Kicker>Recent alerts</Kicker>
@@ -308,60 +362,199 @@ export default function CommandCenter() {
             </ul>
           )}
         </div>
+      </div>
 
-        <div className="card-m">
-          <div className="mb-3 flex items-center justify-between">
-            <Kicker>Recommended actions</Kicker>
-            <Link
-              to="/stock"
-              className="font-mono text-[10px] uppercase tracking-[0.18em] text-meama-muted transition-colors hover:text-meama-brown"
-            >
-              Stock →
-            </Link>
-          </div>
-          {loading ? (
-            <div className="space-y-3">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="flex gap-3">
-                  <div className="skeleton-shine h-6 w-6 rounded-full" />
-                  <div className="flex-1 space-y-1.5">
-                    <div className="skeleton-shine h-3 w-3/4 rounded" />
-                    <div className="skeleton-shine h-3 w-1/2 rounded" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : topActions.length === 0 ? (
-            <div className="border border-dashed border-meama-charcoal py-8 text-center">
-              <div className="font-mono text-xs uppercase tracking-[0.22em] text-meama-muted">
-                No actions required
-              </div>
-              <div className="mt-1 text-[11px] text-meama-charcoal">Stock levels look healthy</div>
-            </div>
+      {/* ── Customer ─────────────────────────────────────────────────────────── */}
+      {(loading || customer) && (
+        <Section title="Customer">
+          {loading || !customer ? (
+            <SkeletonGrid n={6} />
           ) : (
-            <ul className="space-y-3">
-              {topActions.map((a, idx) => (
-                <li key={a.sku ?? idx} className="flex items-start justify-between gap-3 text-sm">
-                  <div className="flex items-start gap-3">
-                    <span className="tabular mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center border border-meama-charcoal font-mono text-[9px] font-bold text-meama-muted">
-                      {idx + 1}
-                    </span>
-                    <div>
-                      <div className="font-semibold text-meama-brown">{a.title}</div>
-                      <div className="text-xs text-meama-muted">{a.signal}</div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <KpiCard
+                label="New customers · MTD"
+                value={formatNumber(customer.new_customers.current)}
+                sub={deltaLabel(customer.new_customers)}
+                tone={deltaTone(customer.new_customers)}
+              />
+              <KpiCard
+                label="Active buyers · 90d"
+                value={formatNumber(customer.active_buyers_90d)}
+                sub="≥1 order in last 3 months"
+              />
+              <KpiCard
+                label="Registered customers"
+                value={formatNumber(customer.total_registered)}
+                sub={`${formatPercent(customer.registered_pct, 0)} of orders · ${formatPercent(customer.guest_pct, 0)} guest`}
+              />
+              <KpiCard
+                label="Avg LTV"
+                value={formatGEL0(customer.ltv_avg)}
+                sub="Registered · lifetime spend"
+              />
+              <KpiCard
+                label="Machine → capsule"
+                value={customer.machine_to_capsule_pct == null ? "—" : formatPercent(customer.machine_to_capsule_pct, 0)}
+                sub="Bought capsules after a machine"
+                tone="gold"
+              />
+              <KpiCard label="Monthly churn" value="—" sub="formula pending" />
+            </div>
+          )}
+        </Section>
+      )}
+
+      {/* ── Revenue & orders ─────────────────────────────────────────────────── */}
+      {(loading || revenue) && (
+        <Section title="Revenue & orders">
+          {loading || !revenue ? (
+            <SkeletonGrid n={7} />
+          ) : (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <KpiCard
+                label="AOV · e-commerce"
+                value={formatGEL0(revenue.aov.ecom)}
+                sub={`Brand stores ${formatGEL0(revenue.aov.brand_store)}`}
+              />
+              <KpiCard
+                label="Capsule AOV · e-com"
+                value={formatGEL0(revenue.capsule_aov.ecom)}
+                sub={`Brand stores ${formatGEL0(revenue.capsule_aov.brand_store)}`}
+              />
+              <KpiCard
+                label="Contribution margin"
+                value={revenue.contribution_margin_pct == null ? "—" : formatPercent(revenue.contribution_margin_pct)}
+                sub={revenue.contribution_margin_pct == null
+                  ? "COGS not loaded"
+                  : `Net of VAT · ${formatPercent(revenue.contribution_margin_covered_pct, 0)} of rev covered`}
+                tone={revenue.contribution_margin_pct != null && revenue.contribution_margin_pct < 0.4 ? "red" : undefined}
+              />
+              <KpiCard
+                label="Total orders · all channels"
+                value={formatNumber(revenue.total_orders_all_channels)}
+                sub="Last 30 days · incl. vending / B2B"
+              />
+              <KpiCard
+                label="Ad spend · 30 days"
+                value={formatUSD0(revenue.ad_cost_30d_usd)}
+                sub={`${formatUSD0(revenue.ad_cost_total_usd)} all-time · Meta`}
+              />
+              <KpiCard label="Revenue forecast" value="—" sub="formula pending" />
+              <KpiCard label="Business health score" value="—" sub="formula pending" />
+            </div>
+          )}
+        </Section>
+      )}
+
+      {/* ── Product highlights ───────────────────────────────────────────────── */}
+      {(loading || product || promotions.length > 0) && (
+        <Section title="Product highlights">
+          {loading || !product ? (
+            <SkeletonGrid n={4} />
+          ) : (
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:col-span-2">
+                <KpiCard
+                  label="Top product · revenue"
+                  value={product.top_by_revenue ? formatGEL0(product.top_by_revenue.revenue ?? 0) : "—"}
+                  sub={product.top_by_revenue?.title ?? undefined}
+                />
+                <KpiCard
+                  label="Top product · units (30d)"
+                  value={product.top_by_units ? formatNumber(product.top_by_units.units ?? 0) : "—"}
+                  sub={product.top_by_units?.title ?? undefined}
+                />
+                <KpiCard
+                  label="Most returned-to capsule"
+                  value={product.most_returned_to ? formatPercent(product.most_returned_to.repeat_rate ?? 0, 0) : "—"}
+                  sub={product.most_returned_to ? `repeat buyers · ${product.most_returned_to.title}` : undefined}
+                  tone="gold"
+                />
+                <KpiCard
+                  label="Avg capsule price"
+                  value={formatGEL(product.avg_capsule_price.ecom)}
+                  sub={`E-com · brand stores ${formatGEL(product.avg_capsule_price.brand_store)}`}
+                />
+              </div>
+
+              {/* Active & upcoming promotions */}
+              <div className="card-m">
+                <div className="mb-3 flex items-center justify-between">
+                  <Kicker>Promotions</Kicker>
+                  <Link
+                    to="/campaigns"
+                    className="font-mono text-[10px] uppercase tracking-[0.18em] text-meama-muted transition-colors hover:text-meama-brown"
+                  >
+                    {t("common.viewAll")} →
+                  </Link>
+                </div>
+                {promotions.length === 0 ? (
+                  <div className="border border-dashed border-meama-charcoal py-8 text-center">
+                    <div className="font-mono text-xs uppercase tracking-[0.22em] text-meama-muted">
+                      No active promotions
                     </div>
                   </div>
-                  {a.est_impact_gel > 0 && (
-                    <Badge tone={a.severity === "critical" ? "red" : "gold"}>
-                      {formatGEL0(a.est_impact_gel)}
-                    </Badge>
-                  )}
-                </li>
-              ))}
-            </ul>
+                ) : (
+                  <ul className="space-y-3">
+                    {promotions.slice(0, 5).map((p) => (
+                      <li key={p.shopify_code ?? p.name} className="flex items-start justify-between gap-3 text-sm">
+                        <div>
+                          <div className="font-semibold text-meama-brown">{p.name}</div>
+                          {p.shopify_code && (
+                            <div className="tabular text-[10px] text-meama-charcoal">{p.shopify_code}</div>
+                          )}
+                        </div>
+                        <Badge tone={p.status === "active" ? "green" : "gold"}>
+                          {p.status === "active" ? "Active" : "Upcoming"}
+                        </Badge>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
           )}
-        </div>
-      </div>
+        </Section>
+      )}
+
+      {/* ── Channel & delivery ───────────────────────────────────────────────── */}
+      {(loading || chan) && (
+        <Section title="Channel & delivery">
+          {loading || !chan ? (
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+              <div className="skeleton-shine h-24 w-full rounded" />
+              <div className="skeleton-shine h-24 w-full rounded" />
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+              <div className="card-m">
+                <div className="mb-3 text-[12px] font-medium text-meama-muted">Region vs capital</div>
+                <SplitBar
+                  leftLabel="Capital"
+                  leftValue={chan.region.capital}
+                  rightLabel="Regions"
+                  rightValue={chan.region.regional}
+                />
+                <div className="mt-2 text-[11px] text-meama-charcoal">
+                  {formatNumber(chan.region.unknown)} unknown location
+                </div>
+              </div>
+              <div className="card-m">
+                <div className="mb-3 text-[12px] font-medium text-meama-muted">Delivery vs pickup</div>
+                <SplitBar
+                  leftLabel="Delivery"
+                  leftValue={chan.delivery_vs_pickup.delivery}
+                  rightLabel="Pickup / store"
+                  rightValue={chan.delivery_vs_pickup.pickup}
+                />
+                <div className="mt-2 text-[11px] text-meama-charcoal">
+                  {formatNumber(chan.delivery_vs_pickup.other)} mixed / unknown
+                </div>
+              </div>
+            </div>
+          )}
+        </Section>
+      )}
     </div>
   );
 }
