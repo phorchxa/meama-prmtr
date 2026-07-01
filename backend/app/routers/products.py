@@ -3,23 +3,26 @@ from __future__ import annotations
 
 import asyncio
 import re
-import time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import date
-from fastapi import APIRouter, Depends, HTTPException, Response
 
+from fastapi import APIRouter, Depends, HTTPException, Response
 from pydantic import BaseModel
 
 from ..business_rules import RETAIL_CHANNELS
 from ..deps import get_supabase
 from ..schemas.products import AffinityPair, ProductIntelligenceResponse, ProductSummary
+from ..services.cache import SWRCache
 from ..services.catalog import clean_category, dedupe_geo, fetch_fina_stock, normalize_status
 
 router = APIRouter(prefix="/products", tags=["products"])
 
-_CACHE_TTL = 60  # 1 minute — favor fresh data over speed (user request)
-_cache: dict[str, object] = {"ts": 0.0, "data": None}
-_aff_cache: dict[str, object] = {"ts": 0.0, "data": None}
+_CACHE_TTL = 60  # "fresh" cutoff — favor fresh data over speed (user request);
+# staleness beyond this is served instantly and refreshed in the background
+# (see SWRCache), so raising this number would only delay background
+# refreshes, not add latency for users.
+_cache: SWRCache[ProductIntelligenceResponse] = SWRCache(ttl=_CACHE_TTL)
+_aff_cache: SWRCache[list[AffinityPair]] = SWRCache(ttl=_CACHE_TTL)
 
 def _parse_caffeine_mg(raw: str | None) -> int | None:
     if not raw:
@@ -46,43 +49,32 @@ def _int0(v) -> int:
         return 0
 
 
-@router.get("", response_model=ProductIntelligenceResponse)
-async def get_product_intelligence(sb=Depends(get_supabase), response: Response = None) -> ProductIntelligenceResponse:
-    if _cache["data"] and (time.time() - float(_cache["ts"])) < _CACHE_TTL:
-        if response:
-            response.headers["Cache-Control"] = "s-maxage=60, stale-while-revalidate=30"
-        return _cache["data"]  # type: ignore[return-value]
-
+async def _build_product_intelligence(sb) -> ProductIntelligenceResponse:
     # ── 1. Products_georgia — the single product catalog (keyed on variant_sku) ─
     # order_items.sku == products_georgia.variant_sku (direct 1:1 match). The
     # catalog has duplicate variant_sku rows (ACTIVE/DRAFT/ARCHIVED + (POS) +
     # Tier-Point copies), so we DEDUPLICATE to one canonical row per SKU:
     # prefer ACTIVE, non-(POS), non-Tier-Point, real (non-zero) price.
-    try:
-        geo_raw: list[dict] = (
-            sb.table("products_georgia")
-            .select("variant_sku, title, product_type, status, variant_price, cost_per_item, "
-                    "inventory_quantity, image_url, flavor_profile, capsule_format")
-            .execute()
-            .data or []
-        )
-    except Exception:
-        geo_raw = []
-
-    geo_map = dedupe_geo(geo_raw)
+    def _geo() -> list[dict]:
+        try:
+            return (
+                sb.table("products_georgia")
+                .select("variant_sku, title, product_type, status, variant_price, cost_per_item, "
+                        "inventory_quantity, image_url, flavor_profile, capsule_format")
+                .execute()
+                .data or []
+            )
+        except Exception:
+            return []
 
     # ── 2. Bible enrichment (best-effort; keyed by code) ────────────────────
-    try:
-        bible_raw: list[dict] = (
-            sb.table("Meama Products Bible").select("*").execute().data or []
-        )
-        bible_map: dict[str, dict] = {
-            r["Fina Code"]: r for r in bible_raw if r.get("Fina Code")
-        }
-    except Exception:
-        bible_map = {}
+    def _bible() -> list[dict]:
+        try:
+            return sb.table("Meama Products Bible").select("*").execute().data or []
+        except Exception:
+            return []
 
-    # ── 3–7. Run all 5 product RPCs in parallel (independent queries) ───────
+    # ── 3–7. Run the catalog fetches + all 5 product RPCs in parallel ────────
     def _rpc(name: str) -> list[dict]:
         try:
             return sb.rpc(name).execute().data or []
@@ -90,16 +82,25 @@ async def get_product_intelligence(sb=Depends(get_supabase), response: Response 
             return []
 
     loop = asyncio.get_event_loop()
-    with ThreadPoolExecutor(max_workers=6) as pool:
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        geo_fut    = loop.run_in_executor(pool, _geo)
+        bible_fut  = loop.run_in_executor(pool, _bible)
         stats_fut  = loop.run_in_executor(pool, _rpc, "get_product_stats")
         ch_fut     = loop.run_in_executor(pool, _rpc, "get_product_channel_stats")
         rr_fut     = loop.run_in_executor(pool, _rpc, "get_product_reorder_rates")
         nm_fut     = loop.run_in_executor(pool, _rpc, "get_product_new_metrics")
         tb_fut     = loop.run_in_executor(pool, _rpc, "get_product_top_bundles")
         stock_fut  = loop.run_in_executor(pool, fetch_fina_stock, sb)
-        stats_raw, ch_raw, rr_raw, nm_raw, tb_raw, fina_stock = await asyncio.gather(
-            stats_fut, ch_fut, rr_fut, nm_fut, tb_fut, stock_fut
+        (
+            geo_raw, bible_raw, stats_raw, ch_raw, rr_raw, tb_raw, nm_raw, fina_stock,
+        ) = await asyncio.gather(
+            geo_fut, bible_fut, stats_fut, ch_fut, rr_fut, tb_fut, nm_fut, stock_fut
         )
+
+    geo_map = dedupe_geo(geo_raw)
+    bible_map: dict[str, dict] = {
+        r["Fina Code"]: r for r in bible_raw if r.get("Fina Code")
+    }
 
     stats_map = {row["sku"]: row for row in stats_raw}
     ch_map    = {row["sku"]: row for row in ch_raw}
@@ -256,35 +257,36 @@ async def get_product_intelligence(sb=Depends(get_supabase), response: Response 
         )
 
     result.sort(key=lambda x: x.revenue_30d, reverse=True)
-    built = ProductIntelligenceResponse(products=result, affinities=[])
-    _cache["ts"] = time.time()
-    _cache["data"] = built
+    return ProductIntelligenceResponse(products=result, affinities=[])
+
+
+@router.get("", response_model=ProductIntelligenceResponse)
+async def get_product_intelligence(sb=Depends(get_supabase), response: Response = None) -> ProductIntelligenceResponse:
+    data = await _cache.get("default", lambda: _build_product_intelligence(sb))
     if response:
         response.headers["Cache-Control"] = "s-maxage=60, stale-while-revalidate=30"
-    return built
+    return data
 
 
 @router.get("/affinity", response_model=list[AffinityPair])
 async def get_affinity_pairs(sb=Depends(get_supabase)) -> list[AffinityPair]:
-    if _aff_cache["data"] and (time.time() - float(_aff_cache["ts"])) < _CACHE_TTL:
-        return _aff_cache["data"]  # type: ignore[return-value]
-    try:
-        raw: list[dict] = sb.rpc("get_product_affinity_pairs").execute().data or []
-    except Exception:
-        raw = []
-    result = [
-        AffinityPair(
-            sku_a=r["sku_a"],
-            sku_b=r["sku_b"],
-            co_orders=int(r["co_orders"]),
-            name_a=r.get("name_a"),
-            name_b=r.get("name_b"),
-        )
-        for r in raw
-    ]
-    _aff_cache["ts"] = time.time()
-    _aff_cache["data"] = result
-    return result
+    async def _build() -> list[AffinityPair]:
+        try:
+            raw: list[dict] = sb.rpc("get_product_affinity_pairs").execute().data or []
+        except Exception:
+            raw = []
+        return [
+            AffinityPair(
+                sku_a=r["sku_a"],
+                sku_b=r["sku_b"],
+                co_orders=int(r["co_orders"]),
+                name_a=r.get("name_a"),
+                name_b=r.get("name_b"),
+            )
+            for r in raw
+        ]
+
+    return await _aff_cache.get("default", _build)
 
 
 # ── Cross-link schemas ────────────────────────────────────────────────────────

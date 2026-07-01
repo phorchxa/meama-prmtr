@@ -10,7 +10,6 @@ error. Counts/sums default to 0 so an empty table reads as "0", not a crash.
 """
 from __future__ import annotations
 
-import time
 from datetime import datetime, timedelta
 from typing import Any
 from zoneinfo import ZoneInfo
@@ -18,6 +17,7 @@ from zoneinfo import ZoneInfo
 from fastapi import APIRouter, Depends, Response
 
 from ..deps import get_supabase
+from ..services.cache import SWRCache
 
 router = APIRouter(prefix="/marketing", tags=["marketing"])
 
@@ -25,8 +25,9 @@ TBILISI = ZoneInfo("Asia/Tbilisi")
 WINDOW_DAYS = 30
 CADENCE_WEEKS = 6
 
-_CACHE_TTL = 300  # 5 min — social stats sync at most daily
-_cache: dict[str, Any] = {"ts": 0.0, "data": None}
+_CACHE_TTL = 300  # "fresh" cutoff — social stats sync at most daily; stale
+# entries are served instantly and refreshed in the background (SWRCache)
+_cache: SWRCache[dict] = SWRCache(ttl=_CACHE_TTL)
 
 
 # ── small coercion / math helpers ───────────────────────────────────────────
@@ -247,24 +248,20 @@ def _facebook(sb, now: datetime) -> dict[str, Any]:
     }
 
 
-@router.get("/social-kpis")
-async def get_social_kpis(sb=Depends(get_supabase), response: Response = None):
-    """All organic social KPIs (TikTok + Instagram + Facebook) in one payload."""
-    if _cache["data"] and (time.time() - float(_cache["ts"])) < _CACHE_TTL:
-        if response:
-            response.headers["Cache-Control"] = "s-maxage=300, stale-while-revalidate=60"
-        return _cache["data"]
-
+async def _build_social_kpis(sb) -> dict:
     now = datetime.now(TBILISI)
-    result = {
+    return {
         "tiktok": _tiktok(sb, now),
         "instagram": _instagram(sb, now),
         "facebook": _facebook(sb, now),
         "generated_at": now.isoformat(),
     }
 
-    _cache["ts"] = time.time()
-    _cache["data"] = result
+
+@router.get("/social-kpis")
+async def get_social_kpis(sb=Depends(get_supabase), response: Response = None):
+    """All organic social KPIs (TikTok + Instagram + Facebook) in one payload."""
+    data = await _cache.get("default", lambda: _build_social_kpis(sb))
     if response:
         response.headers["Cache-Control"] = "s-maxage=300, stale-while-revalidate=60"
-    return result
+    return data

@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import * as XLSX from "xlsx";
 
 import { MiniBars } from "../components/MiniBars";
@@ -48,6 +48,11 @@ type CommercialCat = "all" | "coffee" | "tea" | "wellness";
 type IntensityFilter = "all" | "light" | "medium" | "strong";
 type PerformerFilter = "all" | "top_returning" | "worst";
 
+// Catalog grid/table render in batches instead of mounting every filtered
+// product (and its image) at once — the DOM/image cost scales with what's
+// actually on screen, not with the size of the catalog.
+const CATALOG_BATCH_SIZE = 24;
+
 // ── Caffeine bucket ────────────────────────────────────────────────────────────
 function caffeineBucket(mg: number | null): "none" | "low" | "medium" | "high" {
   if (mg === null) return "none";
@@ -58,8 +63,12 @@ function caffeineBucket(mg: number | null): "none" | "low" | "medium" | "high" {
 }
 
 // ── Product image placeholder ─────────────────────────────────────────────────
+// Reserves the card's image slot up front (fixed height) so cards never jump,
+// and shows a shimmer skeleton per-card until that image's own request lands —
+// instead of the whole grid waiting on the slowest photo.
 function ProductImage({ src, name }: { src: string | null; name: string }) {
   const [err, setErr] = useState(false);
+  const [loaded, setLoaded] = useState(false);
   if (!src || err) {
     return (
       <div className="flex h-28 w-full items-center justify-center bg-meama-charcoal">
@@ -68,13 +77,18 @@ function ProductImage({ src, name }: { src: string | null; name: string }) {
     );
   }
   return (
-    <img
-      src={src}
-      alt={name}
-      onError={() => setErr(true)}
-      className="h-28 w-full object-contain bg-meama-charcoal p-2"
-      loading="lazy"
-    />
+    <div className="relative h-28 w-full overflow-hidden bg-meama-charcoal">
+      {!loaded && <div className="skeleton-shine absolute inset-0" />}
+      <img
+        src={src}
+        alt={name}
+        onLoad={() => setLoaded(true)}
+        onError={() => setErr(true)}
+        className={`h-28 w-full object-contain p-2 transition-opacity duration-150 ${loaded ? "opacity-100" : "opacity-0"}`}
+        loading="lazy"
+        decoding="async"
+      />
+    </div>
   );
 }
 
@@ -896,6 +910,7 @@ function SegmentIntelTab({ products }: { products: ProductSummary[] }) {
 // ── Main Products page ─────────────────────────────────────────────────────────
 export default function Products() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
 
   const [tab, setTab] = useState<Tab>("catalog");
   const [products, setProducts] = useState<ProductSummary[]>([]);
@@ -916,6 +931,8 @@ export default function Products() {
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [view, setView] = useState<"grid" | "table">("grid");
   const [showExport, setShowExport] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(CATALOG_BATCH_SIZE);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     fetchProducts()
@@ -977,6 +994,34 @@ export default function Products() {
     }
     return sortProducts(out, sortKey, sortDir);
   }, [products, search, category, caffeine, bioOnly, hotcold, trendFilter, intensityFilter, commercialCat, flavorSearch, performerFilter, sortKey, sortDir]);
+
+  // Reset to the first batch whenever the filtered set changes (new search,
+  // filter, sort, or the initial load) rather than keeping a stale scroll depth.
+  useEffect(() => {
+    setVisibleCount(CATALOG_BATCH_SIZE);
+  }, [filtered]);
+
+  const visibleProducts = useMemo(
+    () => filtered.slice(0, visibleCount),
+    [filtered, visibleCount]
+  );
+
+  // Infinite scroll: grow the visible batch as the sentinel nears the viewport,
+  // so cards (and their photos) mount progressively instead of all at once.
+  useEffect(() => {
+    const el = loadMoreRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          setVisibleCount((c) => Math.min(c + CATALOG_BATCH_SIZE, filtered.length));
+        }
+      },
+      { rootMargin: "600px" }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [filtered.length]);
 
   const TABS: { key: Tab; label: string }[] = [
     { key: "catalog", label: "Catalog" },
@@ -1238,7 +1283,9 @@ export default function Products() {
           )}
 
           <div className="mb-3 font-mono text-[10px] text-meama-muted">
-            {loading ? "Loading…" : `${filtered.length} products`}
+            {loading
+              ? "Loading…"
+              : `${filtered.length} products${visibleProducts.length < filtered.length ? ` · showing ${visibleProducts.length}` : ""}`}
           </div>
 
           {/* Grid view */}
@@ -1246,11 +1293,20 @@ export default function Products() {
             <div className="stagger grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {loading
                 ? Array.from({ length: 8 }, (_, i) => <SkeletonCard key={i} />)
-                : filtered.map((p) => {
+                : visibleProducts.map((p) => {
                     const monthly = p.monthly_units.length === 12 ? p.monthly_units : Array(12).fill(0);
                     const declining = monthly[11] < monthly[0];
                     return (
-                      <Link key={p.sku} to={`/products/${p.sku}`} className="card-m card-m-hover block">
+                      <div
+                        key={p.sku}
+                        role="link"
+                        tabIndex={0}
+                        onClick={() => navigate(`/products/${p.sku}`)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") navigate(`/products/${p.sku}`);
+                        }}
+                        className="card-m card-m-hover block cursor-pointer"
+                      >
                         <ProductImage src={p.image_url} name={p.name} />
                         <div className="mt-3">
                           <div className="flex items-start justify-between gap-2">
@@ -1335,11 +1391,9 @@ export default function Products() {
                             />
                           </div>
 
-                          {/* Portfolios cross-link */}
-                          <div
-                            className="mt-2 border-t border-meama-charcoal pt-2"
-                            onClick={(e) => e.preventDefault()}
-                          >
+                          {/* Portfolios cross-link — stopPropagation keeps this
+                              from also triggering the card's own onClick navigation */}
+                          <div className="mt-2 border-t border-meama-charcoal pt-2">
                             <Link
                               to={`/customers?product_sku=${encodeURIComponent(p.sku)}`}
                               className="font-mono text-[9px] text-meama-gold/60 hover:text-meama-gold transition-colors"
@@ -1349,7 +1403,7 @@ export default function Products() {
                             </Link>
                           </div>
                         </div>
-                      </Link>
+                      </div>
                     );
                   })}
             </div>
@@ -1367,7 +1421,7 @@ export default function Products() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.map((p) => {
+                  {visibleProducts.map((p) => {
                     const declining = (p.monthly_units[11] ?? 0) < (p.monthly_units[0] ?? 0);
                     const ib = resolveIntensityBucket(p);
                     const cc = resolveCommercialCat(p);
@@ -1436,6 +1490,19 @@ export default function Products() {
                   })}
                 </tbody>
               </table>
+            </div>
+          )}
+
+          {/* Infinite-scroll sentinel — pulls in the next batch as it nears
+              the viewport; the button is a visible, no-JS-scroll-math fallback. */}
+          {!loading && visibleProducts.length < filtered.length && (
+            <div ref={loadMoreRef} className="mt-6 flex justify-center">
+              <button
+                onClick={() => setVisibleCount((c) => Math.min(c + CATALOG_BATCH_SIZE, filtered.length))}
+                className="border border-meama-charcoal px-4 py-2 font-mono text-xs text-meama-cream transition-colors hover:border-meama-gold hover:text-meama-gold"
+              >
+                Load more ({filtered.length - visibleProducts.length} remaining)
+              </button>
             </div>
           )}
 

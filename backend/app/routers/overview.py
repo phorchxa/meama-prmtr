@@ -1,20 +1,20 @@
 """01 Command Overview — real KPIs aggregated from the same RPCs as the products router."""
 from __future__ import annotations
 
-import time
 from datetime import date, timedelta
-from typing import Any
 
 from fastapi import APIRouter, Depends, Response
 
 from ..business_rules import LOW_STOCK_WEEKS, REORDER_POINT_DAYS, RETAIL_CHANNELS
 from ..deps import get_supabase
+from ..services.cache import SWRCache
 from ..services.catalog import clean_category, dedupe_geo, fetch_fina_stock
 
 router = APIRouter(prefix="/overview", tags=["overview"])
 
-_CACHE_TTL = 60  # 1 minute — favor fresh data over speed (user request)
-_cache: dict[str, Any] = {"ts": 0.0, "data": None}
+_CACHE_TTL = 60  # "fresh" cutoff — favor fresh data over speed (user request);
+# stale entries are served instantly and refreshed in the background (SWRCache)
+_cache: SWRCache[dict] = SWRCache(ttl=_CACHE_TTL)
 
 
 def _float0(v) -> float:
@@ -31,19 +31,7 @@ def _int0(v) -> int:
         return 0
 
 
-@router.get("")
-async def get_overview(sb=Depends(get_supabase), response: Response = None):
-    """Top-line KPIs from the same Supabase RPCs used by the products router.
-
-    - revenue_30d / units_30d: from get_product_stats RPC (order_items.sku)
-    - stock_quantity / cogs / price: from products_georgia (deduped by variant_sku)
-    - revenue_trend_30d / alerts: from orders_flat / alerts tables (empty if ETL not run)
-    """
-    if _cache["data"] and (time.time() - float(_cache["ts"])) < _CACHE_TTL:
-        if response:
-            response.headers["Cache-Control"] = "s-maxage=60, stale-while-revalidate=30"
-        return _cache["data"]
-
+async def _build_overview(sb) -> dict:
     # ── 1. Catalog metadata from products_georgia (deduped by variant_sku) ────
     try:
         geo_raw: list[dict] = (
@@ -221,9 +209,18 @@ async def get_overview(sb=Depends(get_supabase), response: Response = None):
         "alerts": alerts,
         "actions": actions[:5],
     }
+    return result
 
-    _cache["ts"] = time.time()
-    _cache["data"] = result
+
+@router.get("")
+async def get_overview(sb=Depends(get_supabase), response: Response = None):
+    """Top-line KPIs from the same Supabase RPCs used by the products router.
+
+    - revenue_30d / units_30d: from get_product_stats RPC (order_items.sku)
+    - stock_quantity / cogs / price: from products_georgia (deduped by variant_sku)
+    - revenue_trend_30d / alerts: from orders_flat / alerts tables (empty if ETL not run)
+    """
+    data = await _cache.get("default", lambda: _build_overview(sb))
     if response:
         response.headers["Cache-Control"] = "s-maxage=60, stale-while-revalidate=30"
-    return result
+    return data

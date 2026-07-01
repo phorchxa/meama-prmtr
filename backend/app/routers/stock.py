@@ -1,19 +1,18 @@
 """04 Stock — on-hand balance from fina_stock + velocity from get_product_stats RPC."""
 from __future__ import annotations
 
-import time
-from typing import Any
-
 from fastapi import APIRouter, Depends, Response
 
 from ..business_rules import LOW_STOCK_WEEKS, REORDER_POINT_DAYS
 from ..deps import get_supabase
+from ..services.cache import SWRCache
 from ..services.catalog import clean_category, dedupe_geo, fetch_fina_stock
 
 router = APIRouter(prefix="/stock", tags=["stock"])
 
-_CACHE_TTL = 60  # 1 minute — favor fresh data over speed (user request)
-_cache: dict[str, Any] = {"ts": 0.0, "data": None}
+_CACHE_TTL = 60  # "fresh" cutoff — favor fresh data over speed (user request);
+# stale entries are served instantly and refreshed in the background (SWRCache)
+_cache: SWRCache[dict] = SWRCache(ttl=_CACHE_TTL)
 
 
 def _float0(v) -> float:
@@ -23,22 +22,7 @@ def _float0(v) -> float:
         return 0.0
 
 
-@router.get("")
-async def get_stock(low_stock_only: bool = False, sb=Depends(get_supabase), response: Response = None):
-    """Stock levels: inventory_quantity from products_georgia (deduped to one
-    canonical row per variant_sku), velocity from get_product_stats RPC.
-
-    velocity_per_day = units_30d (from RPC) / 30
-    weeks_of_cover   = inventory / (velocity_per_day * 7)
-    status: critical < 2w, low 2–3.99w, ok >= 4w
-    Sorted: critical first, then weeks_of_cover ascending.
-    """
-    if _cache["data"] and (time.time() - float(_cache["ts"])) < _CACHE_TTL:
-        data = _cache["data"]
-        if low_stock_only:
-            return {**data, "items": [i for i in data["items"] if i["status"] in ("critical", "low")]}
-        return data
-
+async def _build_stock(sb) -> dict:
     # ── 1. Catalog from products_georgia (deduped by variant_sku) ─────────────
     try:
         geo_raw: list[dict] = (
@@ -109,16 +93,27 @@ async def get_stock(low_stock_only: bool = False, sb=Depends(get_supabase), resp
     STATUS_ORDER = {"critical": 0, "low": 1, "ok": 2}
     items.sort(key=lambda x: (STATUS_ORDER.get(x["status"], 3), x["weeks_of_cover"]))
 
-    result = {
+    return {
         "items": items,
         "critical_count": sum(1 for i in items if i["status"] == "critical"),
         "low_stock_count": sum(1 for i in items if i["status"] == "low"),
         "total": len(items),
     }
-    _cache["ts"] = time.time()
-    _cache["data"] = result
+
+
+@router.get("")
+async def get_stock(low_stock_only: bool = False, sb=Depends(get_supabase), response: Response = None):
+    """Stock levels: inventory_quantity from products_georgia (deduped to one
+    canonical row per variant_sku), velocity from get_product_stats RPC.
+
+    velocity_per_day = units_30d (from RPC) / 30
+    weeks_of_cover   = inventory / (velocity_per_day * 7)
+    status: critical < 2w, low 2–3.99w, ok >= 4w
+    Sorted: critical first, then weeks_of_cover ascending.
+    """
+    data = await _cache.get("default", lambda: _build_stock(sb))
     if response:
         response.headers["Cache-Control"] = "s-maxage=300, stale-while-revalidate=60"
     if low_stock_only:
-        return {**result, "items": [i for i in items if i["status"] in ("critical", "low")]}
-    return result
+        return {**data, "items": [i for i in data["items"] if i["status"] in ("critical", "low")]}
+    return data
