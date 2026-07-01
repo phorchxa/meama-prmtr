@@ -1,6 +1,9 @@
 """04 Stock — on-hand balance from fina_stock + velocity from get_product_stats RPC."""
 from __future__ import annotations
 
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
+
 from fastapi import APIRouter, Depends, Response
 
 from ..business_rules import LOW_STOCK_WEEKS, REORDER_POINT_DAYS
@@ -23,29 +26,41 @@ def _float0(v) -> float:
 
 
 async def _build_stock(sb) -> dict:
-    # ── 1. Catalog from products_georgia (deduped by variant_sku) ─────────────
-    try:
-        geo_raw: list[dict] = (
-            sb.table("products_georgia")
-            .select("variant_sku, title, product_type, status, variant_price, inventory_quantity")
-            .execute()
-            .data or []
-        )
-    except Exception:
-        geo_raw = []
+    # ── 1. Catalog from products_georgia (deduped by variant_sku) — display
+    # metadata only; NOT the stock source (products_georgia.inventory_quantity
+    # is stale/unreliable — Fina is the source of truth for on-hand balance).
+    def _geo() -> list[dict]:
+        try:
+            return (
+                sb.table("products_georgia")
+                .select("variant_sku, title, product_type, status, variant_price")
+                .execute()
+                .data or []
+            )
+        except Exception:
+            return []
+
+    def _stats() -> list[dict]:
+        try:
+            return sb.rpc("get_product_stats").execute().data or []
+        except Exception:
+            return []
+
+    loop = asyncio.get_event_loop()
+    with ThreadPoolExecutor(max_workers=3) as pool:
+        geo_fut = loop.run_in_executor(pool, _geo)
+        stats_fut = loop.run_in_executor(pool, _stats)
+        stock_fut = loop.run_in_executor(pool, fetch_fina_stock, sb)
+        geo_raw, stats_raw, fina_stock = await asyncio.gather(geo_fut, stats_fut, stock_fut)
 
     geo_map = dedupe_geo(geo_raw)
-
-    # ── 2. Sales velocity from the same RPC the products router uses ──────────
-    try:
-        stats_raw: list[dict] = sb.rpc("get_product_stats").execute().data or []
-    except Exception:
-        stats_raw = []
     stats_map = {r["sku"]: r for r in stats_raw}
 
     items: list[dict] = []
     for sku, p in geo_map.items():
-        sq = p.get("inventory_quantity")
+        # ── 2. Stock on hand from fina_stock.sul_nashti, keyed by product_code
+        # == products_georgia.variant_sku == order_items.sku (Fina = source of truth).
+        sq = fina_stock.get(sku)
         if sq is None:
             continue
 
@@ -103,8 +118,10 @@ async def _build_stock(sb) -> dict:
 
 @router.get("")
 async def get_stock(low_stock_only: bool = False, sb=Depends(get_supabase), response: Response = None):
-    """Stock levels: inventory_quantity from products_georgia (deduped to one
-    canonical row per variant_sku), velocity from get_product_stats RPC.
+    """Stock levels: on-hand balance from fina_stock.sul_nashti (Fina is the
+    source of truth), keyed to products_georgia.variant_sku for display
+    metadata (deduped to one canonical row per SKU); velocity from
+    get_product_stats RPC.
 
     velocity_per_day = units_30d (from RPC) / 30
     weeks_of_cover   = inventory / (velocity_per_day * 7)
