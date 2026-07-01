@@ -475,6 +475,11 @@ function RetentionTab({ products }: { products: ProductSummary[] }) {
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium text-[#F5F7F5]">{p.name}</span>
                   <StockBadge status={p.stock_status} />
+                  {p.stock_quantity != null && (
+                    <span className="tabular font-mono text-[9px] text-[#727B73]">
+                      {formatNumber(p.stock_quantity)} on hand
+                    </span>
+                  )}
                 </div>
                 <div className="mt-1 h-px bg-[#222823]">
                   <div className="h-full bg-[#F5F7F5]" style={{ width: `${p.retention_rate * 100}%` }} />
@@ -552,7 +557,14 @@ function RetentionTab({ products }: { products: ProductSummary[] }) {
                       {formatPercent(p.refund_rate, 2)}
                     </td>
                     <td className="px-3 py-2">
-                      <StockBadge status={p.stock_status} />
+                      <div className="flex items-center gap-2">
+                        <StockBadge status={p.stock_status} />
+                        {p.stock_quantity != null && (
+                          <span className="tabular font-mono text-[10px] text-meama-muted">
+                            {formatNumber(p.stock_quantity)}
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="tabular px-3 py-2 text-right font-mono text-xs text-meama-cream">
                       {formatPercent(p.repeat_rate, 1)}
@@ -818,7 +830,16 @@ function SegmentIntelTab({ products }: { products: ProductSummary[] }) {
                   <td className={`tabular px-3 py-2 font-mono text-xs ${p.refund_rate > 0.05 ? "text-meama-red font-bold" : "text-meama-muted"}`}>
                     {formatPercent(p.refund_rate, 2)}
                   </td>
-                  <td className="px-3 py-2"><StockBadge status={p.stock_status} /></td>
+                  <td className="px-3 py-2">
+                    <div className="flex items-center gap-2">
+                      <StockBadge status={p.stock_status} />
+                      {p.stock_quantity != null && (
+                        <span className="tabular font-mono text-[10px] text-meama-muted">
+                          {formatNumber(p.stock_quantity)}
+                        </span>
+                      )}
+                    </div>
+                  </td>
                   <td className="px-3 py-2">
                     <Link
                       to={`/customers?product_sku=${encodeURIComponent(p.sku)}`}
@@ -1337,6 +1358,11 @@ export default function Products() {
                                 {formatGEL(p.price)}
                               </span>
                               <StockBadge status={p.stock_status} />
+                              {p.stock_quantity != null && (
+                                <span className="tabular font-mono text-[9px] text-meama-muted">
+                                  {formatNumber(p.stock_quantity)} on hand
+                                </span>
+                              )}
                             </div>
                           </div>
 
@@ -1487,7 +1513,14 @@ export default function Products() {
                           {p.bio ? <span className="text-meama-green">✓</span> : <span className="text-meama-muted">—</span>}
                         </td>
                         <td className="px-3 py-2">
-                          <StockBadge status={p.stock_status} />
+                          <div className="flex items-center gap-2">
+                            <StockBadge status={p.stock_status} />
+                            {p.stock_quantity != null && (
+                              <span className="tabular font-mono text-[10px] text-meama-muted">
+                                {formatNumber(p.stock_quantity)}
+                              </span>
+                            )}
+                          </div>
                         </td>
                         <td className={`px-3 py-2 text-center font-mono text-xs ${declining ? "text-meama-red" : "text-meama-green"}`}>
                           {declining ? "▼" : "▲"}

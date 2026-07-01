@@ -72,6 +72,7 @@ export interface ProductSummary {
   top_bundle_count: number;
 
   // Stock
+  stock_quantity: number | null;
   stock_status: "understock" | "in_stock" | "overstock" | null;
 
   ai_insight: string | null;
